@@ -20,14 +20,6 @@ ml_info:
 	$(PYX) setup/ml_info build_ext --build-lib qm3/
 
 
-minimize: cgplus.o
-	$(PYX) setup/minimize build
-	gcc -lpthread $(SHD) -o qm3/_minimize.so \
-		build/cgplus.o \
-		`find build -name minimize.o` \
-		-lm $(PYL)
-
-
 cgplus.o:
 	gfortran -c -w -O1 -fPIC qm3/cgplus.f -o build/cgplus.o
 
@@ -53,8 +45,9 @@ _xtb.so:
 
 _dftd4.so:
 	gfortran $(SHD) -o qm3/_dftd4.so qm3/dftd4.f90 -Jbuild -Ibuild \
-		-fPIC -I$(DFTD4)/$(DFTD4_VER) \
-	   	-I$(DFTD4)/subprojects/mctc-lib/libmctc-lib.a.p \
+		-fPIC -I$(DFTD4)/include \
+	   	$(DFTD4)/subprojects/mctc-lib/libmctc-lib.a \
+	   	$(DFTD4)/subprojects/multicharge/libmulticharge.a \
 		$(DFTD4)/libdftd4.a -fopenmp $(MLB)
 
 
