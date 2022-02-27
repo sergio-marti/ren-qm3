@@ -41,11 +41,9 @@ _mopac.so:
 
 
 _dftb.so:
-	gfortran $(SHD) -o qm3_dftb.so qm3/dftb.f90 -Jbuild -Ibuild \
-		-fPIC -I$(DFTB)/include/dftbplus/modfiles \
-		$(DFTB)/lib/libdftbplus.a \
-		$(DFTB)/lib/libdftd3.a \
-		$(DFTB)/lib/libmudpack.a $(MLB) -fopenmp
+	gfortran $(SHD) -o qm3/_dftb.so qm3/dftb.f90 -Jbuild -Ibuild \
+		-fPIC -I$(DFTB)/src/dftbp/include \
+		$(DFTB)/src/dftbp/libdftbplus.a $(MLB) -fopenmp
 
 
 _xtb.so:

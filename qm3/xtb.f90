@@ -1,6 +1,3 @@
-!
-! gfortran -shared|-dynamiclib -o libxtb.so -Ixtb-mod xtb.f90 libxtb.a -framework Accelerate
-!
 module qm3
     use xtb_type_environment
     use xtb_type_molecule
