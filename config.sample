@@ -1,0 +1,46 @@
+# ------------------------------------------------------------------
+# Python
+
+PYX = python3
+#PYL = -lpython3.9
+PYL = -L/usr/local/Cellar/python@3.9/3.9.10/Frameworks/Python.framework/Versions/3.9/lib -lpython3.9
+
+# ------------------------------------------------------------------
+# Linker
+
+# Darwin/macOS
+SHD = -dynamiclib
+
+# Linux
+#SHD = -shared
+
+# ------------------------------------------------------------------
+# BLAS/LAPACK
+
+MTH = macos_Accelerate
+MLB = -framework Accelerate
+
+#MTH = Lapack
+#MLB = build/lapack_deps.o -lgfortran
+
+#MTH = Intel_MKL
+#MLB = -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_rt -lpthread -lm -ldl
+
+#MTH = OpenBLAS
+#MLB = libopenblas.a -lpthread
+
+# ------------------------------------------------------------------
+# MPI
+
+# Darwin/macOS
+MPI = CC=mpicc
+
+# Linux
+#MPI = CC=mpicc LDSHARED="mpicc -shared"
+
+
+# ------------------------------------------------------------------
+# External programs
+DFTB = PATH_TO_DFTB_BUILD
+XTB = PATH_TO_XTB_BUILD
+SQM = PATH_TO_AMBER_BUILD

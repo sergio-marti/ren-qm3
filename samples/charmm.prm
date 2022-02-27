@@ -1,0 +1,66 @@
+* Force Field Parameter File.
+* 
+
+BOND
+cc na  425.80   1.380
+hn na  408.40   1.010
+cc h5  351.70   1.082
+cc cd  500.90   1.373
+cc h4  352.00   1.082
+cd na  425.80   1.380
+c3 cd  334.80   1.502
+c3 c3  300.90   1.538
+c3 hc  330.60   1.097
+HT   HT      0.000     1.5139
+OT   HT    450.000     0.9572
+
+ANGLE
+na cc na   75.200     106.600
+na cc h5   49.600     121.550
+na cc cd   73.400     106.990
+na cc h4   49.800     120.530
+cc na cc   68.500     109.900
+cc na hn   46.800     125.500
+cc na cd   63.500     128.010
+cc cd na   73.400     106.990
+cc cd c3   64.700     119.450
+na cd c3   65.300     122.730
+cd cc h4   47.300     128.480
+cd na hn   46.800     125.500
+cd c3 c3   63.500     111.930
+cd c3 hc   47.200     110.490
+c3 c3 hc   46.300     109.800
+hc c3 hc   39.400     107.580
+c3 c3 c3   62.900     111.510
+HT   OT   HT     55.000   104.5200
+
+DIHEDRAL
+X  cc na X      1.700         2     180.0
+X  cc cd X      4.000         2     180.0
+X  cd na X      1.700         2     180.0
+X  c3 cd X      0.000         3       0.0
+hc c3 c3 c3     0.160         3       0.0
+X  c3 c3 X      0.156         3       0.0
+hc c3 c3 hc     0.150         3       0.0
+
+IMPHI
+cc cc na hn     1.100         2     180.0
+cc cd na hn     1.100         2     180.0
+h5 na cc na     1.100         2     180.0	! Using default value
+cd h4 cc na     1.100         2     180.0	! Using default value
+c3 cc cd na     1.100         2     180.0	! Using default value
+
+NONBONDED  NBXMOD 5  GROUP SWITCH CDIEL -
+CUTNB 14.0  CTOFNB 12.0  CTONNB 10.0  EPS 1.0  E14FAC 1.0  WMIN 1.4
+na      0.00   -0.1700    1.8240
+cc      0.00   -0.0860    1.9080
+cd      0.00   -0.0860    1.9080
+c3      0.00   -0.1094    1.9080
+hc      0.00   -0.0157    1.4870
+h5      0.00   -0.0150    1.3590
+h4      0.00   -0.0150    1.4090
+hn      0.00   -0.0157    0.6000
+HT     0.000000  -0.046000     0.224500
+OT     0.000000  -0.152100     1.768200
+
+END
