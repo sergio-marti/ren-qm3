@@ -22,3 +22,5 @@ eng.get_grad( mol )
 
 print( mol.func )
 print( numpy.linalg.norm( numpy.array( mol.grad ) ) )
+w = mol.indx["A"][1]["C10"]
+print( numpy.linalg.norm( numpy.array( mol.grad[3*w:3*w+3] ) ) )

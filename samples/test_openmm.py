@@ -37,9 +37,9 @@ if( who == "AMBER" ):
     mol.engines.append( qm3.engines.openmm.run( _sys, _top ) )
     mol.get_grad()
     print( mol.func )
-    assert( numpy.fabs( mol.func - -23032.652737874578 ) < 1.e-4 ), "OpenMM[Amber]: function error"
+    assert( numpy.fabs( mol.func - -23032.652737874578 ) < 1.e-4 ), "[Amber]: function error"
     print( numpy.linalg.norm( mol.grad ) )
-    assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 1158.8759666888445 ) < 1.e-4 ), "OpenMM[Amber]: gradient error"
+    assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 1158.8759666888445 ) < 1.e-4 ), "[Amber]: gradient error"
 
 elif( who == "CHARMM" ):
     # ===================================================================
@@ -60,9 +60,9 @@ elif( who == "CHARMM" ):
     mol.engines.append( qm3.engines.openmm.run( _sys, _psf.topology ) )
     mol.get_grad()
     print( mol.func )
-    assert( numpy.fabs( mol.func - -23239.842677675748 ) < 1.e-4 ), "OpenMM[Charmm]: function error"
+    assert( numpy.fabs( mol.func - -23239.842677675748 ) < 1.e-4 ), "[Charmm]: function error"
     print( numpy.linalg.norm( mol.grad ) )
-    assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 1127.758529992854 ) < 1.e-4 ), "OpenMM[Charmm]: gradient error"
+    assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 1127.758529992854 ) < 1.e-4 ), "[Charmm]: gradient error"
 
 else:
     # ===================================================================
@@ -89,6 +89,6 @@ else:
     mol.engines.append( qm3.engines.openmm.run( _sys, _psf.topology ) )
     mol.get_grad()
     print( mol.func )
-    assert( numpy.fabs( mol.func - -23323.11966375321 ) < 1.e-4 ), "OpenMM[xml]: function error"
+    assert( numpy.fabs( mol.func - -23323.11966375321 ) < 1.e-4 ), "[xml]: function error"
     print( numpy.linalg.norm( mol.grad ) )
-    assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 1127.7546203855309 ) < 1.e-4 ), "OpenMM[xml]: gradient error"
+    assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 1127.7546203855309 ) < 1.e-4 ), "[xml]: gradient error"

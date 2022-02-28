@@ -16,6 +16,7 @@ for a in [ "C6", "C9", "H11", "H12", "H13", "H14", "H15" ]:
 sqm = numpy.logical_not( sqm )
 smm = mol.sph_sel( sqm, 12 )
 sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"] ) ]
+print( sqm.sum(), smm.sum() )
 
 
 opt = { "basis": "def2-svp",
@@ -31,6 +32,8 @@ mol.engines.append( qm3.engines.pyscf.run( mol, opt, sqm, smm, sla ) )
 
 mol.get_grad()
 print( mol.func )
-assert( numpy.fabs( mol.func - -697633.7527203708 ) < 1.e-4 ), "PySCF: function error"
+assert( numpy.fabs( mol.func - -697633.7527203708 ) < 1.e-4 ), "function error"
 print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 575.7223292604597 ) < 1.e-4 ), "PySCF: gradient error"
+assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 575.7223292604597 ) < 1.e-4 ), "gradient error"
+print( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) )
+assert( numpy.fabs( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) - 68.42149798094687 ) < 1.e-4 ), "QM-LA gradient error"
