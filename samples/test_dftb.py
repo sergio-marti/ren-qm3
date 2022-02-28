@@ -1,6 +1,6 @@
 import	numpy
 import	qm3
-import  qm3.engines
+import  qm3.engines.dftb
 import  io
 
 
@@ -60,10 +60,10 @@ qm3_job
 ParserOptions { WriteHSDInput = No }
 """ )
 
-mol.engines.append( qm3.engines.qm3_dftb( mol, f, sqm, smm, sla ) )
+mol.engines.append( qm3.engines.dftb.run( mol, f, sqm, smm, sla ) )
 
 mol.get_grad()
 print( mol.func )
-assert( numpy.fabs( mol.func - -36796.061200114185 ) < 1.e-6 ), "DFTB+: function error"
+assert( numpy.fabs( mol.func - -36796.061200114185 ) < 1.e-4 ), "DFTB+: function error"
 print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 560.9451224737893 ) < 1.e-6 ), "DFTB+: gradient error"
+assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 560.9451224737893 ) < 1.e-4 ), "DFTB+: gradient error"

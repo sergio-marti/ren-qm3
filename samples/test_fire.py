@@ -4,8 +4,9 @@ import  openmm
 import  openmm.app
 import  openmm.unit
 import	qm3
-import  qm3.engines
-import  qm3.actions
+import  qm3.engines.openmm
+import  qm3.engines.xtb
+import  qm3.actions.minimize
 
 
 mol = qm3.molecule()
@@ -29,10 +30,10 @@ _sys.setDefaultPeriodicBoxVectors(
 sqm = mol.resn == "SUS"
 smm = mol.sph_sel( sqm, 10 )
 print( sqm.sum(), smm.sum() )
-mol.engines.append( qm3.engines.qm3_openmm( _sys, _top, sel_QM = sqm, platform = "OpenCL" ) )
-mol.engines.append( qm3.engines.qm3_xtb( mol, 1, 0, sel_QM = sqm, sel_MM = smm ) )
+mol.engines.append( qm3.engines.openmm.run( _sys, _top, sel_QM = sqm, platform = "OpenCL" ) )
+mol.engines.append( qm3.engines.xtb.run( mol, 1, 0, sel_QM = sqm, sel_MM = smm ) )
 
-qm3.actions.fire( mol )
+qm3.actions.minimize.fire( mol )
 
 mol.get_grad()
 print( mol.func )

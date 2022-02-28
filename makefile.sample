@@ -9,19 +9,19 @@ dcd:
 
 
 mpi:
-	$(MPI) $(PYX) setup/mpi build_ext --build-lib qm3/
+	$(MPI) $(PYX) setup/mpi build_ext --build-lib qm3/utils
 
 
-dynamo:
-	$(PYX) setup/dynamo build_ext --build-lib qm3/engines
-
-
-ml_info:
-	$(PYX) setup/ml_info build_ext --build-lib qm3/
+#dynamo:
+#	$(PYX) setup/dynamo build_ext --build-lib qm3/engines
+#
+#
+#ml_info:
+#	$(PYX) setup/ml_info build_ext --build-lib qm3/
 
 
 cgplus.o:
-	gfortran -c -w -O1 -fPIC qm3/cgplus.f -o build/cgplus.o
+	gfortran -c -w -O1 -fPIC qm3/actions/cgplus.f -o build/cgplus.o
 
 
 lapack_deps.o:
@@ -29,22 +29,22 @@ lapack_deps.o:
 
 
 _mopac.so:
-	gfortran $(SHD) -o qm3/_mopac.so -fPIC -Ibuild -Jbuild -O2 qm3/mopac.f90 $(MLB)
+	gfortran $(SHD) -o qm3/engines/_mopac.so -fPIC -Ibuild -Jbuild -O2 qm3/engines/mopac.f90 $(MLB)
 
 
 _dftb.so:
-	gfortran $(SHD) -o qm3/_dftb.so qm3/dftb.f90 -Jbuild -Ibuild \
+	gfortran $(SHD) -o qm3/engines/_dftb.so qm3/engines/dftb.f90 -Jbuild -Ibuild \
 		-fPIC -I$(DFTB)/src/dftbp/include \
 		$(DFTB)/src/dftbp/libdftbplus.a $(MLB) -fopenmp
 
 
 _xtb.so:
-	gfortran $(SHD) -o qm3/_xtb.so qm3/xtb.f90 -Jbuild -Ibuild \
+	gfortran $(SHD) -o qm3/engines/_xtb.so qm3/engines/xtb.f90 -Jbuild -Ibuild \
 		-fPIC -I$(XTB)/include $(XTB)/libxtb.a $(MLB)
 
 
 _dftd4.so:
-	gfortran $(SHD) -o qm3/_dftd4.so qm3/dftd4.f90 -Jbuild -Ibuild \
+	gfortran $(SHD) -o qm3/engines/_dftd4.so qm3/engines/dftd4.f90 -Jbuild -Ibuild \
 		-fPIC -I$(DFTD4)/include \
 	   	$(DFTD4)/subprojects/mctc-lib/libmctc-lib.a \
 	   	$(DFTD4)/subprojects/multicharge/libmulticharge.a \
@@ -52,7 +52,7 @@ _dftd4.so:
 
 
 _sqm.so:
-	gfortran $(SHD) -o qm3/_sqm.so qm3/sqm.f90 -Jbuild -Ibuild \
+	gfortran $(SHD) -o qm3/engines/_sqm.so qm3/engines/sqm.f90 -Jbuild -Ibuild \
 		-fPIC -I$(AMBER)/AmberTools/src/sqm \
 		$(AMBER)/AmberTools/src/sqm/file_io_dat.o \
 		$(AMBER)/AmberTools/src/sqm/constants.o \

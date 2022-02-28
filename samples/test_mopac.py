@@ -1,6 +1,6 @@
 import	numpy
 import	qm3
-import  qm3.engines
+import  qm3.engines.mopac
 
 
 mol = qm3.molecule()
@@ -17,10 +17,10 @@ sqm = numpy.logical_not( sqm )
 smm = mol.sph_sel( sqm, 12 )
 sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"] ) ]
 
-mol.engines.append( qm3.engines.qm3_mopac( mol, "AM1", 1, 1, sqm, smm, sla ) )
+mol.engines.append( qm3.engines.mopac.run( mol, "AM1", 1, 1, sqm, smm, sla ) )
 
 mol.get_grad()
 print( mol.func )
-assert( numpy.fabs( mol.func - 847.3876068545505 ) < 1.e-6 ), "Mopac: function error"
+assert( numpy.fabs( mol.func - 847.3876068545505 ) < 1.e-4 ), "Mopac: function error"
 print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 714.0392108306053 ) < 1.e-6 ), "Mopac: gradient error"
+assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 714.0392108306053 ) < 1.e-4 ), "Mopac: gradient error"

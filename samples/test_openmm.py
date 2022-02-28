@@ -4,7 +4,7 @@ import  openmm
 import  openmm.app
 import  openmm.unit
 import	qm3
-import  qm3.engines
+import  qm3.engines.openmm
 
 
 mol = qm3.molecule()
@@ -34,10 +34,10 @@ if( who == "AMBER" ):
             openmm.Vec3( 0.0, mol.boxl[1], 0.0 ) * openmm.unit.angstrom,
             openmm.Vec3( 0.0, 0.0, mol.boxl[2] ) * openmm.unit.angstrom )
     print( _sys.getDefaultPeriodicBoxVectors() )
-    mol.engines.append( qm3.engines.qm3_openmm( _sys, _top ) )
+    mol.engines.append( qm3.engines.openmm.run( _sys, _top ) )
     mol.get_grad()
     print( mol.func )
-    assert( numpy.fabs( mol.func - -23032.652737874578 ) < 1.e-6 ), "OpenMM[Amber]: function error"
+    assert( numpy.fabs( mol.func - -23032.652737874578 ) < 1.e-4 ), "OpenMM[Amber]: function error"
     print( numpy.linalg.norm( mol.grad ) )
     assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 1158.8759666888445 ) < 1.e-4 ), "OpenMM[Amber]: gradient error"
 
@@ -57,10 +57,10 @@ elif( who == "CHARMM" ):
         switchDistance = 10.0 * openmm.unit.angstrom,
         rigidWater = False )
     print( _sys.getDefaultPeriodicBoxVectors() )
-    mol.engines.append( qm3.engines.qm3_openmm( _sys, _psf.topology ) )
+    mol.engines.append( qm3.engines.openmm.run( _sys, _psf.topology ) )
     mol.get_grad()
     print( mol.func )
-    assert( numpy.fabs( mol.func - -23239.842677675748 ) < 1.e-6 ), "OpenMM[Charmm]: function error"
+    assert( numpy.fabs( mol.func - -23239.842677675748 ) < 1.e-4 ), "OpenMM[Charmm]: function error"
     print( numpy.linalg.norm( mol.grad ) )
     assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 1127.758529992854 ) < 1.e-4 ), "OpenMM[Charmm]: gradient error"
 
@@ -86,9 +86,9 @@ else:
         switchDistance = 10.0 * openmm.unit.angstrom,
         rigidWater = False )
     print( _sys.getDefaultPeriodicBoxVectors() )
-    mol.engines.append( qm3.engines.qm3_openmm( _sys, _psf.topology ) )
+    mol.engines.append( qm3.engines.openmm.run( _sys, _psf.topology ) )
     mol.get_grad()
     print( mol.func )
-    assert( numpy.fabs( mol.func - -23323.11966375321 ) < 1.e-6 ), "OpenMM[xml]: function error"
+    assert( numpy.fabs( mol.func - -23323.11966375321 ) < 1.e-4 ), "OpenMM[xml]: function error"
     print( numpy.linalg.norm( mol.grad ) )
     assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 1127.7546203855309 ) < 1.e-4 ), "OpenMM[xml]: gradient error"

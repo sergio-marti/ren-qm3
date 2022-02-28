@@ -1,6 +1,6 @@
 import	numpy
 import	qm3
-import  qm3.engines
+import  qm3.engines.orca
 import  io
 
 
@@ -25,11 +25,11 @@ qm3_charges
 qm3_atoms
 *
 """ )
-mol.engines.append( qm3.engines.qm3_orca( mol, f, sqm, smm, sla ) )
+mol.engines.append( qm3.engines.orca.run( mol, f, sqm, smm, sla ) )
 mol.engines[-1].exe = "/Users/smarti/Devel/orca/orca_4_2_1_macosx_openmpi314/orca orca.inp > orca.out"
 
 mol.get_grad()
 print( mol.func )
-assert( numpy.fabs( mol.func - -697207.4366939574 ) < 1.e-6 ), "Orca: function error"
+assert( numpy.fabs( mol.func - -697207.4366939574 ) < 1.e-4 ), "Orca: function error"
 print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 575.7080330675025 ) < 1.e-6 ), "Orca: gradient error"
+assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 575.7080330675025 ) < 1.e-2 ), "Orca: gradient error"

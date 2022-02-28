@@ -1,6 +1,6 @@
 import	numpy
 import	qm3
-import  qm3.engines
+import  qm3.engines.pyscf
 
 
 mol = qm3.molecule()
@@ -27,10 +27,10 @@ opt = { "basis": "def2-svp",
     "grid": 3,
     "max_cyc": 50,
     "nproc": 2 }
-mol.engines.append( qm3.engines.qm3_pyscf( mol, opt, sqm, smm, sla ) )
+mol.engines.append( qm3.engines.pyscf.run( mol, opt, sqm, smm, sla ) )
 
 mol.get_grad()
 print( mol.func )
-assert( numpy.fabs( mol.func - -697633.7527203708 ) < 1.e-6 ), "PySCF: function error"
+assert( numpy.fabs( mol.func - -697633.7527203708 ) < 1.e-4 ), "PySCF: function error"
 print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 575.7223292604597 ) < 1.e-6 ), "PySCF: gradient error"
+assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 575.7223292604597 ) < 1.e-4 ), "PySCF: gradient error"

@@ -1,6 +1,6 @@
 import	numpy
 import	qm3
-import  qm3.engines
+import  qm3.engines.dftd4
 
 
 mol = qm3.molecule()
@@ -17,10 +17,10 @@ sqm = numpy.logical_not( sqm )
 sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"] ) ]
 
 prm = { "chrg": 1.0, "s6": 1.00, "s8": 2.02929367, "a1": 0.40868035, "a2": 4.53807137  }
-mol.engines.append( qm3.engines.qm3_dftd4( mol, prm, sqm, sla ) )
+mol.engines.append( qm3.engines.dftd4.run( mol, prm, sqm, sla ) )
 
 mol.get_grad()
 print( mol.func )
-assert( numpy.fabs( mol.func - -37.54695257131499 ) < 1.e-6 ), "DFT-D4: function error"
+assert( numpy.fabs( mol.func - -37.54695257131499 ) < 1.e-4 ), "DFT-D4: function error"
 print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 4.462657574902096 ) < 1.e-6 ), "DFT-D4: gradient error"
+assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 4.462657574902096 ) < 1.e-4 ), "DFT-D4: gradient error"

@@ -1,6 +1,6 @@
 import	numpy
 import	qm3
-import  qm3.engines
+import  qm3.engines.gaussian
 import  io
 
 
@@ -32,11 +32,11 @@ qm3_charges
 
 qm3_field
 """ )
-mol.engines.append( qm3.engines.qm3_gaussian( mol, f, sqm, smm, sla ) )
+mol.engines.append( qm3.engines.gaussian.run( mol, f, sqm, smm, sla ) )
 mol.engines[-1].exe = ". ~/Devel/g09/pgi.imac64/g09.profile; g09 gauss.com"
 
 mol.get_grad()
 print( mol.func )
-assert( numpy.fabs( mol.func - -697633.7376989075 ) < 1.e-6 ), "Gaussian: function error"
+assert( numpy.fabs( mol.func - -697633.7376989075 ) < 1.e-4 ), "Gaussian: function error"
 print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 575.7344091968865 ) < 1.e-6 ), "Gaussian: gradient error"
+assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 575.7344091968865 ) < 1.e-4 ), "Gaussian: gradient error"
