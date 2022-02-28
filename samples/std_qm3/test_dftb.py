@@ -1,22 +1,21 @@
-import	numpy
-import	qm3
-import  qm3.engines
+import  numpy
+import	qm3.mol
+import  qm3.fio.xplor
+import  qm3.engines.dftb
 import  io
 
 
-mol = qm3.molecule()
-mol.pdb_read( open( "charmm.pdb" ) )
-mol.psf_read( open( "charmm.psf" ) )
+mol = qm3.mol.molecule( "../charmm.pdb" )
+qm3.fio.xplor.psf_read( mol, "../charmm.psf" )
 mol.guess_atomic_numbers()
-print( mol.anum )
-print( mol.chrg )
+print( mol.anum[0:3], mol.anum[-3:] )
+print( mol.chrg[0:3], mol.chrg[-3:] )
 
-sqm = mol.resn == "WAT"
-for a in [ "C6", "C9", "H11", "H12", "H13", "H14", "H15" ]:
-    sqm[mol.indx["A"][1][a]] = True
-sqm = numpy.logical_not( sqm )
+sqm = [ mol.indx["A"][1][a] for a in ['N1', 'C2', 'C3', 'N4', 'C5', 'H7', 'H8', 'C10', 'H16', 'H17', 'H18', 'H19'] ]
 smm = mol.sph_sel( sqm, 12 )
-sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"] ) ]
+print( len( sqm ), len( smm ) )
+sla = [ [ mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"] ] ]
+smm = list( set( smm ).difference( set( sqm + sum( sla, [] ) ) ) )
 
 f = io.StringIO( """
 Driver = {}
@@ -59,11 +58,11 @@ qm3_job
 }
 ParserOptions { WriteHSDInput = No }
 """ )
+eng = qm3.engines.dftb.run_dynlib( mol, f, sqm, smm, sla )
 
-mol.engines.append( qm3.engines.qm3_dftb( mol, f, sqm, smm, sla ) )
+mol.func = 0
+mol.grad = [ 0.0 for i in range( 3 * mol.natm ) ]
+eng.get_grad( mol )
 
-mol.get_grad()
 print( mol.func )
-assert( numpy.fabs( mol.func - -36796.061200114185 ) < 1.e-6 ), "DFTB+: function error"
-print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 560.9451224737893 ) < 1.e-6 ), "DFTB+: gradient error"
+print( numpy.linalg.norm( numpy.array( mol.grad ) ) )

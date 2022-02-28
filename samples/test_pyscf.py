@@ -31,4 +31,6 @@ mol.engines.append( qm3.engines.qm3_pyscf( mol, opt, sqm, smm, sla ) )
 
 mol.get_grad()
 print( mol.func )
-print( mol.grad )
+assert( numpy.fabs( mol.func - -697633.7527203708 ) < 1.e-6 ), "PySCF: function error"
+print( numpy.linalg.norm( mol.grad ) )
+assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 575.7223292604597 ) < 1.e-6 ), "PySCF: gradient error"

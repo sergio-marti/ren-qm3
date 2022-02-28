@@ -21,4 +21,6 @@ mol.engines.append( qm3.engines.qm3_dftd4( mol, prm, sqm, sla ) )
 
 mol.get_grad()
 print( mol.func )
-print( mol.grad )
+assert( numpy.fabs( mol.func - -37.54695257131499 ) < 1.e-6 ), "DFT-D4: function error"
+print( numpy.linalg.norm( mol.grad ) )
+assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 4.462657574902096 ) < 1.e-6 ), "DFT-D4: gradient error"

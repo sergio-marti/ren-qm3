@@ -28,14 +28,14 @@ _sys.setDefaultPeriodicBoxVectors(
 
 sqm = mol.resn == "SUS"
 smm = mol.sph_sel( sqm, 10 )
+print( sqm.sum(), smm.sum() )
 mol.engines.append( qm3.engines.qm3_openmm( _sys, _top, sel_QM = sqm, platform = "OpenCL" ) )
 mol.engines.append( qm3.engines.qm3_xtb( mol, 1, 0, sel_QM = sqm, sel_MM = smm ) )
 
-mol.get_grad()
-print( mol.func )
-print( mol.grad )
-
 qm3.actions.fire( mol )
 
-with open( "last.xyz", "wt" ) as f:
-    mol.xyz_write( f )
+mol.get_grad()
+print( mol.func )
+assert( numpy.fabs( mol.func - -95302.54253867632 ) < 0.01 ), "Fire[OpenMM/xTB]: function error"
+print( numpy.linalg.norm( mol.grad ) )
+assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 114.83926498050597 ) < 0.01 ), "Fire[OpenMM/xTB]: gradient error"

@@ -62,8 +62,8 @@ subroutine qm3_dftb_calc( nQM, nMM, siz, dat )
 	do i = 1, nQM
 		dat(i) = qm_chg( i )
 	end do
-    qm_grd = qm_grd * 2625.49964037578d0 / 0.52917721092d0
-    mm_grd = mm_grd * 2625.49964037578d0 / 0.52917721092d0
+    qm_grd = qm_grd * 2625.49964037578d0 * AA__Bohr
+    mm_grd = mm_grd * 2625.49964037578d0 * AA__Bohr
 	do i = 1, nQM
 		j = 1 + nQM + ( i - 1 ) * 3
 		dat(j)   = qm_grd(1,i)

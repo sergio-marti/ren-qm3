@@ -16,9 +16,12 @@ for a in [ "C6", "C9", "H11", "H12", "H13", "H14", "H15" ]:
 sqm = numpy.logical_not( sqm )
 smm = mol.sph_sel( sqm, 12 )
 sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"] ) ]
+print( sqm.sum(), smm.sum() )
 
 mol.engines.append( qm3.engines.qm3_xtb( mol, 1, 0, sqm, smm, sla ) )
 
 mol.get_grad()
 print( mol.func )
-print( mol.grad )
+assert( numpy.fabs( mol.func - -46091.943203479954 ) < 1.e-6 ), "xTB: function error"
+print( numpy.linalg.norm( mol.grad ) )
+assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 589.1365457514921 ) < 1.e-6 ), "xTB: gradient error"

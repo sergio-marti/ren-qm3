@@ -37,4 +37,6 @@ mol.engines[-1].exe = ". ~/Devel/g09/pgi.imac64/g09.profile; g09 gauss.com"
 
 mol.get_grad()
 print( mol.func )
-print( mol.grad )
+assert( numpy.fabs( mol.func - -697633.7376989075 ) < 1.e-6 ), "Gaussian: function error"
+print( numpy.linalg.norm( mol.grad ) )
+assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 575.7344091968865 ) < 1.e-6 ), "Gaussian: gradient error"
