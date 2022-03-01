@@ -1,6 +1,11 @@
 import  sys
 import  numpy
 import  typing
+import  ctypes
+import  os
+
+
+cwd = os.path.abspath( os.path.dirname( __file__ ) ) + os.sep
 
 
 def steepest_descent( mol: object,
@@ -28,7 +33,7 @@ def steepest_descent( mol: object,
     grms = norm / ndf
     fdesc.write( "%10s%20s%20s%20s\n"%( "Step", "Function", "Gradient", "Displacement" ) )
     fdesc.write( "-" * 70 + "\n" )
-    fdesc.write( "%10s%20.5lf%20.8lf%20.10lf\n"%( "", mol.func, grms, ssiz ) )
+    fdesc.write( "%30.5lf%20.8lf%20.10lf\n"%( mol.func, grms, ssiz ) )
     i = 0
     while( i < step_number and grms > gradient_tolerance ):
         mol.coor -= mol.grad / norm * ssiz
@@ -81,7 +86,7 @@ def fire( mol: object,
     qfun = True
     norm = numpy.linalg.norm( mol.grad )
     grms = norm / ndeg
-    fdesc.write( "%10s%20.5lf%20.10lf\n"%( "", mol.func, grms ) )
+    fdesc.write( "%30.5lf%20.10lf\n"%( mol.func, grms ) )
     i = 0
     while( i < step_number and grms > gradient_tolerance and qfun ):
         if( - numpy.sum( velo * mol.grad ) > 0.0 ):
@@ -120,3 +125,86 @@ def fire( mol: object,
     if( i%print_frequency != 0 ):
         fdesc.write( "%10d%20.5lf%20.10lf%20.10lf\n"%( i + 1, mol.func, grms, ssiz ) )
     fdesc.write( "-" * 70 + "\n\n" )
+
+# =================================================================================================
+
+def cgp( mol: object,
+        step_number: typing.Optional[int] = 100,
+        print_frequency: typing.Optional[int] = 10,
+        gradient_tolerance: typing.Optional[float] = 1.5,
+        method: typing.Optional[str] = "Polak-Ribiere", 
+        restart: typing.Optional[bool] = True,
+        fdesc: typing.Optional = sys.stdout ):
+    global  cwd
+    nsel = mol.actv.sum()
+    size = 3 * nsel
+    fdesc.write( "------------------------------------------ Minimization (CG+)\n\n" )
+    fdesc.write( "Degrees of Freedom:   %20ld\n"%( size ) )
+    fdesc.write( "Step Number:          %20d\n"%( step_number ) )
+    fdesc.write( "Print Frequency:      %20d\n"%( print_frequency ) )
+    fdesc.write( "Gradient Tolerance:   %20.10lg\n"%( gradient_tolerance ) )
+    fdesc.write( "Method:             %22s\n\n"%( method ) )
+    fdesc.write( "%10s%20s%20s\n"%( "Step", "Function", "Gradient" ) )
+    fdesc.write( "-" * 50 + "\n" )
+    rest = int( restart )
+    meth = 2
+    kind = { "Fletcher-Reeves" : 1, "Polak-Ribiere" : 2, "Positive Polak-Ribiere": 3 }
+    if( method in kind ):
+        meth = kind[method]
+    dlib = ctypes.CDLL( cwd + "_cgplus.so" )
+    dlib.cgp_cgfam_.argtypes = [ 
+        ctypes.POINTER( ctypes.c_int ),
+        ctypes.POINTER( ctypes.c_double ),
+        ctypes.POINTER( ctypes.c_double ),
+        ctypes.POINTER( ctypes.c_double ),
+        ctypes.POINTER( ctypes.c_double ),
+        ctypes.POINTER( ctypes.c_double ),
+        ctypes.POINTER( ctypes.c_double ),
+        ctypes.POINTER( ctypes.c_double ),
+        ctypes.POINTER( ctypes.c_int ),
+        ctypes.POINTER( ctypes.c_int ),
+        ctypes.POINTER( ctypes.c_int ) ]
+    dlib.cgp_cgfam_.restype = None
+    ndeg = numpy.sqrt( size )
+    sele = numpy.argwhere( mol.actv.ravel() ).ravel()
+    mol.get_grad()
+    grms = numpy.linalg.norm( mol.grad ) / ndeg
+    coor = mol.coor[sele].ravel().ctypes.data_as( ctypes.POINTER( ctypes.c_double ) )
+    grad = mol.grad[sele].ravel().ctypes.data_as( ctypes.POINTER( ctypes.c_double ) )
+    dire = ( ctypes.c_double * size )()
+    gold = ( ctypes.c_double * size )()
+    work = ( ctypes.c_double * size )()
+    iflg = ( ctypes.c_int )()
+    fdesc.write( "%30.5lf%20.10lf\n"%( mol.func, grms ) )
+    k = 0
+    while( k < step_number and grms > gradient_tolerance ):
+        dlib.cgp_cgfam_( ctypes.c_int( size ), coor, ctypes.c_double( mol.func ), grad, dire, gold,
+                ctypes.c_double( gradient_tolerance ), work, iflg, ctypes.c_int( rest ), ctypes.c_int( meth ) )
+        if( iflg == -3 ):
+            fdesc.write( "\n -- Improper input parameters...\n" )
+            k = step_number + 1
+        elif( iflg == -2 ):
+            fdesc.write( "\n -- Descent was not obtained...\n" )
+            k = step_number + 1
+        elif( iflg == -1 ):
+            fdesc.write( "\n -- Line Search failure...\n" )
+            k = step_number + 1
+        else:
+            while( iflg == 2 ):
+                dlib.cgp_cgfam_( ctypes.c_int( size ), coor, ctypes.c_double( mol.func ), grad, dire, gold,
+                        ctypes.c_double( gradient_tolerance ), work, iflg, ctypes.c_int( rest ), ctypes.c_int( meth ) )
+            l = 0
+            for i in sele:
+                for j in [0, 1, 2]:
+                    mol.coor[i,j] = coor[l]
+                    l += 1
+            mol.get_grad()
+            grms = numpy.linalg.norm( mol.grad ) / ndeg
+            grad = mol.grad[sele].ravel().ctypes.data_as( ctypes.POINTER( ctypes.c_double ) )
+        k = k + 1
+        if( k%print_frequency == 0 ):
+            fdesc.write( "%10d%20.5lf%20.10lf\n"%( k, mol.func, grms ) )
+        mol.current_step( i )
+    if( k%print_frequency != 0 ):
+        fdesc.write( "%10d%20.5lf%20.10lf\n"%( k + 1, mol.func, grms ) )
+    fdesc.write( "-" * 50 + "\n" )

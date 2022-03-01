@@ -1,7 +1,7 @@
 include config
 
 
-all: dcd lapack_deps.o _mopac.so
+all: dcd _cgplus.so lapack_deps.o _mopac.so
 
 
 dcd:
@@ -20,8 +20,8 @@ dcd:
 #	$(PYX) setup/ml_info build_ext --build-lib qm3/
 
 
-#cgplus.o:
-#	gfortran -c -w -O1 -fPIC qm3/actions/cgplus.f -o build/cgplus.o
+_cgplus.so:
+	gfortran $(SHD) -o qm3/actions/_cgplus.so -O1 -fPIC qm3/actions/cgplus.f
 
 
 lapack_deps.o:
