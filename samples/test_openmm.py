@@ -5,6 +5,10 @@ import  openmm.app
 import  openmm.unit
 import	qm3
 import  qm3.engines.openmm
+import  os
+
+ 
+cwd = os.path.abspath( os.path.dirname( sys.argv[0] ) ) + os.sep
 
 
 mol = qm3.molecule()
@@ -20,9 +24,9 @@ print( ">>", who )
 if( who == "AMBER" ):
     # ===================================================================
     # Amber PRMTOP
-    mol.pdb_read( open( "amber.pdb" ) )
+    mol.pdb_read( open( cwd + "amber.pdb" ) )
     mol.boxl = box
-    _top = openmm.app.amberprmtopfile.AmberPrmtopFile( "amber.prmtop" )
+    _top = openmm.app.amberprmtopfile.AmberPrmtopFile( cwd + "amber.prmtop" )
     _sys = _top.createSystem(
         nonbondedMethod = openmm.app.CutoffPeriodic,
         nonbondedCutoff = 12.0 * openmm.unit.angstrom,
@@ -44,13 +48,13 @@ if( who == "AMBER" ):
 elif( who == "CHARMM" ):
     # ===================================================================
     # Charmm PSF/TOP/PAR
-    mol.pdb_read( open( "charmm.pdb" ) )
+    mol.pdb_read( open( cwd + "charmm.pdb" ) )
     mol.boxl = box
-    _psf = openmm.app.charmmpsffile.CharmmPsfFile( "charmm.psf" )
+    _psf = openmm.app.charmmpsffile.CharmmPsfFile( cwd + "charmm.psf" )
     _psf.setBox( mol.boxl[0] * openmm.unit.angstrom,
             mol.boxl[1] * openmm.unit.angstrom,
             mol.boxl[2] * openmm.unit.angstrom )
-    _prm = openmm.app.charmmparameterset.CharmmParameterSet( "charmm.top", "charmm.prm" )
+    _prm = openmm.app.charmmparameterset.CharmmParameterSet( cwd + "charmm.top", cwd + "charmm.prm" )
     _sys = _psf.createSystem( _prm,
         nonbondedMethod = openmm.app.CutoffPeriodic,
         nonbondedCutoff = 12.0 * openmm.unit.angstrom,
@@ -73,13 +77,13 @@ else:
     #xml = parmed.openmm.OpenMMParameterSet.from_parameterset( prm )
     #xml.write( "prm.xml" )
     # -------------------------------------------------------------------
-    mol.pdb_read( open( "charmm.pdb" ) )
+    mol.pdb_read( open( cwd + "charmm.pdb" ) )
     mol.boxl = box
-    _psf = openmm.app.charmmpsffile.CharmmPsfFile( "charmm.psf" )
+    _psf = openmm.app.charmmpsffile.CharmmPsfFile( cwd + "charmm.psf" )
     _psf.setBox( mol.boxl[0] * openmm.unit.angstrom,
             mol.boxl[1] * openmm.unit.angstrom,
             mol.boxl[2] * openmm.unit.angstrom )
-    _prm = openmm.app.forcefield.ForceField( "prm.xml" )
+    _prm = openmm.app.forcefield.ForceField( cwd + "prm.xml" )
     _sys = _prm.createSystem( _psf.topology,
         nonbondedMethod = openmm.app.CutoffPeriodic,
         nonbondedCutoff = 12.0 * openmm.unit.angstrom,

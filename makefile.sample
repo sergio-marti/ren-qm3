@@ -1,11 +1,11 @@
 include config
 
 
-all: lapack_deps.o _mopac.so
+all: dcd lapack_deps.o _mopac.so
 
 
 dcd:
-	$(PYX) setup/dcd build_ext --build-lib qm3/
+	$(PYX) setup/dcd build_ext --build-lib qm3/utils
 
 
 mpi:

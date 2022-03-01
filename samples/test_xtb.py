@@ -1,11 +1,16 @@
 import	numpy
 import	qm3
 import  qm3.engines.xtb
+import  os
+import  sys
+
+ 
+cwd = os.path.abspath( os.path.dirname( sys.argv[0] ) ) + os.sep
 
 
 mol = qm3.molecule()
-mol.pdb_read( open( "charmm.pdb" ) )
-mol.psf_read( open( "charmm.psf" ) )
+mol.pdb_read( open( cwd + "charmm.pdb" ) )
+mol.psf_read( open( cwd + "charmm.psf" ) )
 mol.guess_atomic_numbers()
 print( mol.anum )
 print( mol.chrg )

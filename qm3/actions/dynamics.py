@@ -37,7 +37,7 @@ def langevin_verlet( mol: object,
     fdesc.write( "Step Size:          %20.10lg (ps)\n"%( step_size ) )
     fdesc.write( "Temperature:        %20.10lg (K)\n"%( temperature ) )
     fdesc.write( "Gamma Factor:       %20.10lg (ps^-1)\n"%( gamma_factor ) )
-    fesc.write( "Step Number:        %20d\n"%( step_number ) )
+    fdesc.write( "Step Number:        %20d\n"%( step_number ) )
     fdesc.write( "Print Frequency:    %20d\n"%( print_frequency ) )
     ff  = step_size * gamma_factor
     if( ff < 0.01 ):

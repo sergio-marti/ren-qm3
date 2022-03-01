@@ -3,7 +3,7 @@ import  typing
 import  qm3.data
 
 
-def __distance( mol: object, kumb: float, xref: float, a_i: int, a_j: int,
+def f_distance( mol: object, kumb: float, xref: float, a_i: int, a_j: int,
         skip_LE: typing.Optional[float] = 0.0,
         skip_BE: typing.Optional[float] = 9.e99,
         grad: typing.Optional[bool] = False ) -> float:
@@ -25,7 +25,7 @@ def __distance( mol: object, kumb: float, xref: float, a_i: int, a_j: int,
     return( vv )
 
 
-def __angle( mol: object, kumb: float, xref: float, a_i: int, a_j: int, a_k: int,
+def f_angle( mol: object, kumb: float, xref: float, a_i: int, a_j: int, a_k: int,
         grad: typing.Optional[bool] = False ) -> float:
     """
     angle = force_constant / 2 * ( angle - reference )^2
@@ -35,7 +35,7 @@ def __angle( mol: object, kumb: float, xref: float, a_i: int, a_j: int, a_k: int
     return_value [deg]
     """
     dij = mol.coor[a_i] - mol.coor[a_j]
-    rij = numpy.linalg.norn( dij )
+    rij = numpy.linalg.norm( dij )
     dij /= rij
     dkj = mol.coor[a_k] - mol.coor[a_j]
     rkj = numpy.linalg.norm( dkj )
@@ -47,18 +47,18 @@ def __angle( mol: object, kumb: float, xref: float, a_i: int, a_j: int, a_k: int
     df  = kumb * dv
     mol.func += 0.5 * df * dv
     if( grad ):
-        dx  = - 1.0 / math.sqrt( 1.0 - dot * dot )
+        dx  = - 1.0 / numpy.sqrt( 1.0 - dot * dot )
         df *= dx
-        dti = dkj - dot * dij
-        dtk = dij - dot * dkj
-        dtj = - ( dit + dtk )
+        dti = ( dkj - dot * dij ) / rij
+        dtk = ( dij - dot * dkj ) / rkj
+        dtj = - ( dti + dtk )
         mol.grad[a_i] += df * dti
         mol.grad[a_j] += df * dtj
         mol.grad[a_k] += df * dtk
     return( vv * qm3.data.R2D )
 
 
-def __dihedral( mol: object, data: list, a_i: int, a_j: int, a_k: int, a_l: int,
+def f_dihedral( mol: object, data: list, a_i: int, a_j: int, a_k: int, a_l: int,
         grad: typing.Optional[bool] = False ) -> float:
     """
     dihedral = force_constant * ( 1 + cos( periodicity * angle - displacement ) )
@@ -74,13 +74,13 @@ def __dihedral( mol: object, data: list, a_i: int, a_j: int, a_k: int, a_l: int,
     vt  = numpy.cross( dji, dkj )
     vu  = numpy.cross( dkj, dlk )
     vtu = numpy.cross( vt, vu )
-    rt2 = numpy.sum( vt * vt )
-    ru2 = numpy.sum( vu * vu )
+    rt2 = numpy.dot( vt, vt )
+    ru2 = numpy.dot( vu, vu )
     rtu = numpy.sqrt( rt2 * ru2 )
     rkj = numpy.linalg.norm( dkj )
-    cs1 = numpy.sum( vt * vu ) / rtu
+    cs1 = numpy.dot( vt, vu ) / rtu
     cs1 = min( 1.0, max( -1.0, cs1 ) )
-    sn1 = numpy.sum( dkj * vtu ) / ( rkj * rtu )
+    sn1 = numpy.dot( dkj, vtu ) / ( rkj * rtu )
     cs2 = cs1 * cs1 - sn1 * sn1
     sn2 = 2.0 * cs1 * sn1
     cs3 = cs1 * cs2 - sn1 * sn2
@@ -126,18 +126,18 @@ def __dihedral( mol: object, data: list, a_i: int, a_j: int, a_k: int, a_l: int,
         dki = mol.coor[a_k] - mol.coor[a_i]
         dlj = mol.coor[a_l] - mol.coor[a_j]
         dvt = numpy.cross( vt, dkj ) / ( rt2 * rkj )
-        dvu = numpy.cross( vu, dkj ) / ( Ru2 * rkj )
-        mol.grad[a_i] += dph * numpy.cross( dkj, dvt )
-        mol.grad[a_j] += dph * ( numpy.cross( dki, dvt ) + numpy.cross( dlk, dvu ) )
-        mol.grad[a_k] += dph * ( numpy.cross( dji, dvt ) + numpy.cross( dlj, dvu ) )
-        mol.grad[a_l] += dph * numpy.cross( dkj, dvu )
+        dvu = numpy.cross( vu, dkj ) / ( ru2 * rkj )
+        mol.grad[a_i] += dph * numpy.cross( dvt, dkj )
+        mol.grad[a_j] += dph * ( numpy.cross( dki, dvt ) - numpy.cross( dvu, dlk ) )
+        mol.grad[a_k] += dph * ( numpy.cross( dvt, dji ) - numpy.cross( dlj, dvu ) )
+        mol.grad[a_l] -= dph * numpy.cross( dvu, dkj )
     ang = qm3.data.R2D * numpy.arccos( cs1 )
     if( sn1 <= 0.0 ):
         ang = -ang
     return( ang )
 
 
-def __improper( mol: object, kumb: float, xref: float, a_i: int, a_j: int, a_k: int, a_l: int,
+def f_improper( mol: object, kumb: float, xref: float, a_i: int, a_j: int, a_k: int, a_l: int,
         grad: typing.Optional[bool] = False ) -> float:
     """
     improper = force_constant / 2 * ( angle - reference )^2
@@ -170,17 +170,17 @@ def __improper( mol: object, kumb: float, xref: float, a_i: int, a_j: int, a_k: 
     while( dt < -180.0 ):
         dt += 360.0
     dt /= qm3.data.R2D
-    mol.func += 0.5 * kumb * dt * dt * ffac
+    mol.func += 0.5 * kumb * dt * dt
     if( grad ):
         dph = kumb * dt
         dki = mol.coor[a_k] - mol.coor[a_i]
         dlj = mol.coor[a_l] - mol.coor[a_j]
         dvt = numpy.cross( vt, dkj ) / ( rt2 * rkj )
-        dvu = numpy.cross( vu, dkj ) / ( Ru2 * rkj )
-        mol.grad[a_i] += dph * numpy.cross( dkj, dvt )
-        mol.grad[a_j] += dph * ( numpy.cross( dki, dvt ) + numpy.cross( dlk, dvu ) )
-        mol.grad[a_k] += dph * ( numpy.cross( dji, dvt ) + numpy.cross( dlj, dvu ) )
-        mol.grad[a_l] += dph * numpy.cross( dkj, dvu )
+        dvu = numpy.cross( vu, dkj ) / ( ru2 * rkj )
+        mol.grad[a_i] += dph * numpy.cross( dvt, dkj )
+        mol.grad[a_j] += dph * ( numpy.cross( dki, dvt ) - numpy.cross( dvu, dlk ) )
+        mol.grad[a_k] += dph * ( numpy.cross( dvt, dji ) - numpy.cross( dlj, dvu ) )
+        mol.grad[a_l] -= dph * numpy.cross( dvu, dkj )
     return( ang )
 
 
@@ -195,10 +195,10 @@ class distance( object ):
         self.skpB = skip_BE
 
     def get_func( self, mol: object ):
-        mol.rval.append( __distance( mol, self.kumb, self.xref, self.indx[0], self.indx[1], self.skpL, self.skpB ) )
+        mol.rval.append( f_distance( mol, self.kumb, self.xref, self.indx[0], self.indx[1], self.skpL, self.skpB ) )
 
     def get_grad( self, mol: object ):
-        mol.rval.append( __distance( mol, self.kumb, self.xref, self.indx[0], self.indx[1], self.skpL, self.skpB, True ) )
+        mol.rval.append( f_distance( mol, self.kumb, self.xref, self.indx[0], self.indx[1], self.skpL, self.skpB, True ) )
 
 
 class angle( object ):
@@ -208,10 +208,10 @@ class angle( object ):
         self.indx = indx[:]
 
     def get_func( self, mol: object ):
-        mol.rval.append( __angle( mol, self.kumb, self.xref, self.indx[0], self.indx[1], self.indx[2] ) )
+        mol.rval.append( f_angle( mol, self.kumb, self.xref, self.indx[0], self.indx[1], self.indx[2] ) )
 
     def get_grad( self, mol: object ):
-        mol.rval.append( __angle( mol, self.kumb, self.xref, self.indx[0], self.indx[1], self.indx[2], True ) )
+        mol.rval.append( f_angle( mol, self.kumb, self.xref, self.indx[0], self.indx[1], self.indx[2], True ) )
 
 
 class dihedral( object ):
@@ -231,10 +231,10 @@ class dihedral( object ):
         self.indx = indx[:]
 
     def get_func( self, mol: object ):
-        mol.rval.append( __dihedral( mol, self.data, self.indx[0], self.indx[1], self.indx[2], self.indx[3] ) )
+        mol.rval.append( f_dihedral( mol, self.data, self.indx[0], self.indx[1], self.indx[2], self.indx[3] ) )
 
     def get_grad( self, mol: object ):
-        mol.rval.append( __dihedral( mol, self.data, self.indx[0], self.indx[1], self.indx[2], self.indx[3], True ) )
+        mol.rval.append( f_dihedral( mol, self.data, self.indx[0], self.indx[1], self.indx[2], self.indx[3], True ) )
 
 
 class improper( object ):
@@ -244,10 +244,10 @@ class improper( object ):
         self.indx = indx[:]
 
     def get_func( self, mol: object ):
-        mol.rval.append( __improper( mol, self.kumb, self.xref, self.indx[0], self.indx[1], self.indx[2], self.indx[3] ) )
+        mol.rval.append( f_improper( mol, self.kumb, self.xref, self.indx[0], self.indx[1], self.indx[2], self.indx[3] ) )
 
     def get_grad( self, mol: object ):
-        mol.rval.append( __improper( mol, self.kumb, self.xref, self.indx[0], self.indx[1], self.indx[2], self.indx[3], True ) )
+        mol.rval.append( f_improper( mol, self.kumb, self.xref, self.indx[0], self.indx[1], self.indx[2], self.indx[3], True ) )
 
 
 class multiple_distance( object ):
@@ -288,8 +288,8 @@ class multiple_distance( object ):
         mol.func += 0.5 * df * ( vv - self.xref )
         for i in range( self.size ):
             tt = self.weig[i] * df / rr[i]
-            mol.grad[self.indx[2*i]] += rr * dr[i]
-            mol.grad[self.indx[2*i+1]] -= rr * dr[i]
+            mol.grad[self.indx[2*i]] += tt * dr[i]
+            mol.grad[self.indx[2*i+1]] -= tt * dr[i]
         mol.rval.append( vv )
 
 

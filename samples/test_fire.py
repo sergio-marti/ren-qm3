@@ -7,15 +7,19 @@ import	qm3
 import  qm3.engines.openmm
 import  qm3.engines.xtb
 import  qm3.actions.minimize
+import  os
+
+ 
+cwd = os.path.abspath( os.path.dirname( sys.argv[0] ) ) + os.sep
 
 
 mol = qm3.molecule()
 
-mol.pdb_read( open( "amber.pdb" ) )
+mol.pdb_read( open( cwd + "amber.pdb" ) )
 mol.boxl = numpy.array( [ 25.965, 29.928, 28.080 ] )
-mol.prmtop_read( open( "amber.prmtop" ) )
+mol.prmtop_read( open( cwd + "amber.prmtop" ) )
 
-_top = openmm.app.amberprmtopfile.AmberPrmtopFile( "amber.prmtop" )
+_top = openmm.app.amberprmtopfile.AmberPrmtopFile( cwd + "amber.prmtop" )
 _sys = _top.createSystem(
     nonbondedMethod = openmm.app.CutoffPeriodic,
     nonbondedCutoff = 12.0 * openmm.unit.angstrom,

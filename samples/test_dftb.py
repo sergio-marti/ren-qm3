@@ -2,11 +2,15 @@ import	numpy
 import	qm3
 import  qm3.engines.dftb
 import  io
+import  os
+import  sys
 
+ 
+cwd = os.path.abspath( os.path.dirname( sys.argv[0] ) ) + os.sep
 
 mol = qm3.molecule()
-mol.pdb_read( open( "charmm.pdb" ) )
-mol.psf_read( open( "charmm.psf" ) )
+mol.pdb_read( open( cwd + "charmm.pdb" ) )
+mol.psf_read( open( cwd + "charmm.psf" ) )
 mol.guess_atomic_numbers()
 print( mol.anum )
 print( mol.chrg )
@@ -28,7 +32,7 @@ Hamiltonian = DFTB {
   MaxSCCIterations = 1000
   Mixer = DIIS {}
   SlaterKosterFiles = Type2FileNames {
-    Prefix = "./3ob-3-1/"
+    Prefix = "%s/3ob-3-1/"
     Separator = "-"
     Suffix = ".skf"
   }
@@ -58,7 +62,7 @@ Analysis {
 qm3_job
 }
 ParserOptions { WriteHSDInput = No }
-""" )
+"""%( cwd ) )
 
 mol.engines.append( qm3.engines.dftb.run( mol, f, sqm, smm, sla ) )
 
