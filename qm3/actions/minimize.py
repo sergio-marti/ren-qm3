@@ -128,8 +128,8 @@ def fire( mol: object,
 
 # =================================================================================================
 
-def cgp( mol: object,
-        step_number: typing.Optional[int] = 100,
+def cgplus( mol: object,
+        step_number: typing.Optional[int] = 1000,
         print_frequency: typing.Optional[int] = 10,
         gradient_tolerance: typing.Optional[float] = 1.5,
         method: typing.Optional[str] = "Polak-Ribiere", 
