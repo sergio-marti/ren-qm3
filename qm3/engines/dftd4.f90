@@ -2,8 +2,8 @@ module qm3
     use dftd4, only: structure_type, new, d4_model, new_d4_model, rational_damping_param, get_dispersion, realspace_cutoff
     implicit none
     public
-    real*8, parameter  :: AA__Bohr = 1.0d0 / 0.52917726d0
-    real*8, parameter  :: AA__Ener = 2625.49964037578d0
+    real*8, parameter   :: x__Bohr = 1.0d0 / 0.52917721093d0
+    real*8, parameter   :: x__Ener = 2625.49963947555d0
     type( structure_type ) :: mol
     type( d4_model ) :: d4
     type( rational_damping_param ) :: param
@@ -43,16 +43,16 @@ subroutine qm3_dftd4_calc( nat, siz, dat )
 
 	do i = 1, nat
 		j = 3 * ( i - 1 )
-		mol%xyz(1,i) = dat(j  ) * AA__Bohr
-		mol%xyz(2,i) = dat(j+1) * AA__Bohr
-		mol%xyz(3,i) = dat(j+2) * AA__Bohr
+		mol%xyz(1,i) = dat(j  ) * x__Bohr
+		mol%xyz(2,i) = dat(j+1) * x__Bohr
+		mol%xyz(3,i) = dat(j+2) * x__Bohr
 	end do
 
     allocate( grad(1:3,1:nat), sigm(1:3,1:3) )
     call get_dispersion( mol, d4, param, realspace_cutoff(), ener, grad, sigm )
 
-	dat(0) = ener * AA__Ener
-    grad = grad * AA__Ener * AA__Bohr
+	dat(0) = ener * x__Ener
+    grad = grad * x__Ener * x__Bohr
 	do i = 1, nat
 		j = 3 * ( i - 1 )
 		dat(j+1) = grad(1,i)

@@ -13,64 +13,45 @@ class run( qm3.engines.template ):
             sel_MM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool ),
             link: typing.Optional[list] = [] ):
         qm3.engines.template.__init__( self, mol, sel_QM, sel_MM, link )
-
-        self.tbl = { i:None for i in qm3.data.symbol[mol.anum[self.sel]] }
-        if( len( self.lnk ) > 0 ):
-            self.tbl["H"] = None
-        self.tbl = list( self.tbl )
         self.nQM = len( self.sel ) + len( self.lnk )
         self.nMM = len( self.nbn )
-        self.siz = 1 + 3 * ( self.nQM + self.nMM ) + self.nMM + self.nQM
+        self.siz = 1 + 3 * ( self.nQM + self.nMM ) + self.nQM
         self.vec = ( ctypes.c_double * self.siz )()
         cwd = os.path.abspath( os.path.dirname( inspect.getfile( self.__class__ ) ) ) + os.sep
-        self.lib = ctypes.CDLL( cwd + "_dftb.so" )
-        self.lib.qm3_dftb_calc_.argtypes = [
-                ctypes.POINTER( ctypes.c_int ),
-                ctypes.POINTER( ctypes.c_int ),
-                ctypes.POINTER( ctypes.c_int ),
-                ctypes.POINTER( ctypes.c_double ) ]
-        self.lib.qm3_dftb_calc_.restype = None
+        self.lib = ctypes.CDLL( cwd + "_sqm.so" )
+        self.lib.qm3_sqm_calc_.argtypes = [ ctypes.POINTER( ctypes.c_int ), ctypes.POINTER( ctypes.c_double ) ]
+        self.lib.qm3_sqm_calc_.restype = None
         self.inp = fdesc.read()
-        self.mk_input( mol, "grad" )
-        self.lib.qm3_dftb_init_()
+        self.mk_input( mol )
+        self.lib.qm3_sqm_init_()
 
 
-    def mk_input( self, mol, run ):
-        s_qm = "  %d C\n  %s\n"%( len( self.sel ) + len( self.lnk ), str.join( " ", self.tbl ) )
+    def mk_input( self, mol ):
+        s_qm = ""
         j = 0
         for i in self.sel:
-            s_qm += "  %4d%4d%20.10lf%20.10lf%20.10lf\n"%( j + 1,
-                    self.tbl.index( qm3.data.symbol[mol.anum[i]] ) + 1,
+            s_qm += "%3d%4s%20.10lf%20.10lf%20.10lf\n"%( mol.anum[i], qm3.data.symbol[mol.anum[i]],
                     mol.coor[i,0], mol.coor[i,1], mol.coor[i,2] )
             j += 1
         if( len( self.lnk ) > 0 ):
             self.vla = []
             k = len( self.sel )
-            w = self.tbl.index( "H" ) + 1
             for i in range( len( self.lnk ) ):
                 c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
-                s_qm += "  %4d%4d%20.10lf%20.10lf%20.10lf\n"%( k + 1, w, c[0], c[1], c[2] )
+                s_qm += "%3d%4s%20.10lf%20.10lf%20.10lf\n"%( 1, "H", c[0], c[1], c[2] )
                 self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
                 k += 1
-        s_wf = ""
-        if( os.access( "charges.bin", os.R_OK ) ):
-            s_wf = "  ReadInitialCharges = Yes"
-        s_rn = "  CalculateForces = No"
-        if( run == "grad" ):
-            s_rn = "  CalculateForces = Yes"
-        s_nq = ""
+        s_mm = ""
         if( len( self.nbn ) > 0 ):
-            s_nq = str( len( self.nbn ) )
-            g = open( "charges.dat", "wt" )
+            s_mm = "#EXCHARGES\n"
             for i in self.nbn:
                 tmp = mol.coor[i] - mol.boxl * numpy.round( mol.coor[i] / mol.boxl, 0 )
-                g.write( "%20.10lf%20.10lf%20.10lf%12.6lf\n"%( tmp[0], tmp[1], tmp[2], mol.chrg[i] ) )
-            g.close()
-        f = open( "dftb_in.hsd", "wt" )
-        buf = self.inp.replace( "qm3_atoms", s_qm[:-1] )
-        buf = buf.replace( "qm3_guess", s_wf )
-        buf = buf.replace( "qm3_job", s_rn )
-        buf = buf.replace( "qm3_nchg", s_nq )
+                s_mm += "%3d%4s%20.10lf%20.10lf%20.10lf%12.4lf\n"%( 1, "H",
+                        tmp[0], tmp[1], tmp[2], mol.chrg[i] )
+            s_mm += "#END"
+        f = open( "sqm_mdin", "wt" )
+        buf = self.inp.replace( "qm3_atoms", s_qm )
+        buf = buf.replace( "qm3_charges", s_mm )
         f.write( buf )
         f.close()
 
@@ -90,18 +71,16 @@ class run( qm3.engines.template ):
                 l += 1
             self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
             k += 1
-        k = 3 * ( self.nQM + self.nMM )
+        l = 3 * self.nQM
         for i in self.nbn:
             for j in [0, 1, 2]:
                 self.vec[l] = mol.coor[i,j] - mol.boxl[j] * numpy.round( mol.coor[i,j] / mol.boxl[j], 0 )
                 l += 1
-            self.vec[k] = mol.chrg[i]
-            k += 1
 
 
     def get_func( self, mol, density = False ):
         self.update_coor( mol )
-        self.lib.qm3_dftb_calc_( ctypes.c_int( self.nQM ), ctypes.c_int( self.nMM ), ctypes.c_int( self.siz ), self.vec )
+        self.lib.qm3_sqm_calc_( ctypes.c_int( self.siz ), self.vec )
         mol.func += self.vec[0]
         l = 1
         for i in self.sel:
@@ -111,7 +90,7 @@ class run( qm3.engines.template ):
 
     def get_grad( self, mol ):
         self.update_coor( mol )
-        self.lib.qm3_dftb_calc_( ctypes.c_int( self.nQM ), ctypes.c_int( self.nMM ), ctypes.c_int( self.siz ), self.vec )
+        self.lib.qm3_sqm_calc_( ctypes.c_int( self.siz ), self.vec )
         mol.func += self.vec[0]
         l = 1
         for i in self.sel:

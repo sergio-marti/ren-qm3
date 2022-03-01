@@ -42,8 +42,8 @@ mol.engines[-1].exe = ". ~/Devel/g09/pgi.imac64/g09.profile; g09 gauss.com"
 
 mol.get_grad()
 print( mol.func )
-assert( numpy.fabs( mol.func - -697633.7376989075 ) < 1.e-4 ), "function error"
+assert( numpy.fabs( mol.func - -697633.7374597022 ) < 1.e-4 ), "function error"
 print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 575.7344091968865 ) < 1.e-4 ), "gradient error"
+assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 575.7341240781265 ) < 1.e-4 ), "gradient error"
 print( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) - 68.42685642072145 ) < 1.e-4 ), "QM-LA gradient error"
+assert( numpy.fabs( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) - 68.42696536187499 ) < 1.e-4 ), "QM-LA gradient error"

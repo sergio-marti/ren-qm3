@@ -5,6 +5,8 @@ module qm3
 	public
 	type( TDftbPlus ) :: dftbp
 	integer :: devnull
+    real*8, parameter   :: x__Bohr = 1.0d0 / 0.52917721093d0
+    real*8, parameter   :: x__Ener = 2625.49963947555d0
 end module qm3
 
 
@@ -58,12 +60,12 @@ subroutine qm3_dftb_calc( nQM, nMM, siz, dat )
 	call dftbp%getGradients( qm_grd )
 	call dftbp%getExtChargeGradients( mm_grd )
 
-	dat(0) = ener * 2625.49964037578d0
+	dat(0) = ener * x__Ener
 	do i = 1, nQM
 		dat(i) = qm_chg( i )
 	end do
-    qm_grd = qm_grd * 2625.49964037578d0 * AA__Bohr
-    mm_grd = mm_grd * 2625.49964037578d0 * AA__Bohr
+    qm_grd = qm_grd * x__Ener * x__Bohr
+    mm_grd = mm_grd * x__Ener * x__Bohr
 	do i = 1, nQM
 		j = 1 + nQM + ( i - 1 ) * 3
 		dat(j)   = qm_grd(1,i)

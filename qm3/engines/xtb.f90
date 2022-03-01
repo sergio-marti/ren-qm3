@@ -38,8 +38,8 @@ module qm3
     real*8              :: ene, gap
     type(TxTBParameter) :: globpar
     logical             :: okpar, okbas, okrun
-    real*8, parameter   :: AA__Bohr = 1.0d0 / 0.52917726d0
-    real*8, parameter   :: AA__Ener = 2625.49964037578d0
+    real*8, parameter   :: x__Bohr = 1.0d0 / 0.52917721093d0
+    real*8, parameter   :: x__Ener = 2625.49963947555d0
 end module qm3
 
 
@@ -59,9 +59,9 @@ subroutine qm3_xtb_calc( nQM, nMM, siz, dat )
     do i = 1, nQM
         atn(i) = dint( dat(2+i) )
         j = 3 + nQM + 3 * ( i - 1 )
-        xyz(1,i) = dat(j)   * AA__Bohr
-        xyz(2,i) = dat(j+1) * AA__Bohr
-        xyz(3,i) = dat(j+2) * AA__Bohr
+        xyz(1,i) = dat(j)   * x__Bohr
+        xyz(2,i) = dat(j+1) * x__Bohr
+        xyz(3,i) = dat(j+2) * x__Bohr
     end do
     if( nMM > 0 ) then
         if( .not. restart ) call pcem%allocate( nMM )
@@ -69,9 +69,9 @@ subroutine qm3_xtb_calc( nQM, nMM, siz, dat )
         do i = 1, nMM
             pcem%q(i) = dat(2+5*nQM+i)
             j = 3 + 5 * nQM + nMM + 3 * ( i - 1 )
-            pcem%xyz(1,i) = dat(j)   * AA__Bohr 
-            pcem%xyz(2,i) = dat(j+1) * AA__Bohr
-            pcem%xyz(3,i) = dat(j+2) * AA__Bohr
+            pcem%xyz(1,i) = dat(j)   * x__Bohr 
+            pcem%xyz(2,i) = dat(j+1) * x__Bohr
+            pcem%xyz(3,i) = dat(j+2) * x__Bohr
         end do
     end if
 
@@ -105,8 +105,8 @@ subroutine qm3_xtb_calc( nQM, nMM, siz, dat )
         gap, et, maxiter, prlevel, restart, lgrad, acc, ene, grd, res )
     call env%check( okrun )
 
-    dat(0) = ene * AA__Ener
-    grd = grd * AA__Ener * AA__Bohr
+    dat(0) = ene * x__Ener
+    grd = grd * x__Ener * x__Bohr
     do i = 1, nQM
         j = 3 + nQM + 3 * ( i - 1 )
         dat(j)   = grd(1,i)
@@ -115,7 +115,7 @@ subroutine qm3_xtb_calc( nQM, nMM, siz, dat )
         dat(3+4*nQM+i-1) = wfn%q(i)
     end do
     if( nMM > 0 ) then
-        pcem%grd = pcem%grd * AA__Ener * AA__Bohr
+        pcem%grd = pcem%grd * x__Ener * x__Bohr
         do i = 1, nMM
             j = 3 + 5 * nQM + nMM + 3 * ( i - 1 )
             dat(j)   = pcem%grd(1,i)

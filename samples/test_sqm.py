@@ -1,12 +1,12 @@
 import	numpy
 import	qm3
-import  qm3.engines.pyscf
+import  qm3.engines.sqm
+import  io
 import  os
 import  sys
 
  
 cwd = os.path.abspath( os.path.dirname( sys.argv[0] ) ) + os.sep
-
 
 mol = qm3.molecule()
 mol.pdb_read( open( cwd + "charmm.pdb" ) )
@@ -23,22 +23,25 @@ smm = mol.sph_sel( sqm, 12 )
 sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"] ) ]
 print( sqm.sum(), smm.sum() )
 
+f = io.StringIO( """
+_slave_
+&qmmm 
+maxcyc    = 0,
+qm_theory = "AM1",
+qmcharge  = 1,
+qmmm_int  = 1,
+verbosity = 4
+ /
+qm3_atoms
+qm3_charges
+""" )
 
-opt = { "basis": "def2-svp",
-    "conv_tol": 1.e-9,
-    "charge": 1,
-    "spin": 0,
-    "method": "b3lypg",
-    "memory": 4096, # MB
-    "grid": 3,
-    "max_cyc": 50,
-    "nproc": 2 }
-mol.engines.append( qm3.engines.pyscf.run( mol, opt, sqm, smm, sla ) )
+mol.engines.append( qm3.engines.sqm.run( mol, f, sqm, smm, sla ) )
 
 mol.get_grad()
 print( mol.func )
-assert( numpy.fabs( mol.func - -697633.7524811694 ) < 1.e-4 ), "function error"
+assert( numpy.fabs( mol.func - 845.8023959570883 ) < 1.e-4 ), "function error"
 print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 575.7223290637156 ) < 1.e-4 ), "gradient error"
+assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 714.1929152568235 ) < 1.e-4 ), "gradient error"
 print( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) - 68.42149795651093 ) < 1.e-4 ), "QM-LA gradient error"
+assert( numpy.fabs( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) - 155.11025156379822 ) < 1.e-4 ), "QM-LA gradient error"

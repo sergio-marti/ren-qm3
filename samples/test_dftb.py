@@ -21,6 +21,7 @@ for a in [ "C6", "C9", "H11", "H12", "H13", "H14", "H15" ]:
 sqm = numpy.logical_not( sqm )
 smm = mol.sph_sel( sqm, 12 )
 sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"] ) ]
+print( sqm.sum(), smm.sum() )
 
 f = io.StringIO( """
 Driver = {}
@@ -68,8 +69,8 @@ mol.engines.append( qm3.engines.dftb.run( mol, f, sqm, smm, sla ) )
 
 mol.get_grad()
 print( mol.func )
-assert( numpy.fabs( mol.func - -36796.061200114185 ) < 1.e-4 ), "function error"
+assert( numpy.fabs( mol.func - -36796.061187497566 ) < 1.e-4 ), "function error"
 print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 560.9451224737893 ) < 1.e-4 ), "gradient error"
+assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 560.9451626368956 ) < 1.e-4 ), "gradient error"
 print( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) - 61.85761803787428 ) < 1.e-4 ), "QM-LA gradient error"
+assert( numpy.fabs( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) - 61.85762246681752 ) < 1.e-4 ), "QM-LA gradient error"
