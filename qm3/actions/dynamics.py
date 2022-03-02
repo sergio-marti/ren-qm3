@@ -7,6 +7,25 @@ import  qm3.data
 numpy.random.seed()
 
 
+def current_temperature( mol: object, mass: numpy.array, ndeg: int ) -> ( float, float ):
+    kine = numpy.sum( mass * numpy.square( mol.velo ) )
+    temp = kine * 10.0 / ( ndeg * qm3.data.KB * qm3.data.NA )
+    kine *= 0.005
+    return( temp, kine )
+
+
+def assign_velocities( mol: object, temperature: float, mass: numpy.array, proj: numpy.array, ndeg: int ):
+    sd = numpy.sqrt( qm3.data.KB * temperature * 1000.0 * qm3.data.NA / mass )
+    vx = numpy.random.normal( 0.0, sd )
+    vy = numpy.random.normal( 0.0, sd )
+    vz = numpy.random.normal( 0.0, sd )
+    mol.velo = numpy.column_stack( ( vx, vy, vz ) ) * mol.actv * 0.01
+    mol.velo -= numpy.sum( mol.velo * proj, axis = 0 ) * proj
+    cur, kin = current_temperature( mol, mass, ndeg )
+    mol.velo *= numpy.sqrt( temperature / cur )
+
+
+
 def langevin_verlet( mol: object,
         step_size: typing.Optional[float] = 0.001,
         temperature: typing.Optional[float] = 300.0,
@@ -14,23 +33,6 @@ def langevin_verlet( mol: object,
         print_frequency: typing.Optional[int] = 100,
         step_number: typing.Optional[int] = 1000,
         fdesc: typing.Optional = sys.stdout ):
-
-    def __current_temperature( mol: object, mass: numpy.array, ndeg: int ) -> ( float, float ):
-        kine = numpy.sum( mass * numpy.square( mol.velo ) )
-        temp = kine * 10.0 / ( ndeg * qm3.data.KB * qm3.data.NA )
-        kine *= 0.005
-        return( temp, kine )
-
-    def __assign_velocities( mol: object, temperature: float, mass: numpy.array, proj: numpy.array, ndeg: int ):
-        sd = numpy.sqrt( qm3.data.KB * temperature * 1000.0 * qm3.data.NA / mass )
-        vx = numpy.random.normal( 0.0, sd )
-        vy = numpy.random.normal( 0.0, sd )
-        vz = numpy.random.normal( 0.0, sd )
-        mol.velo = numpy.column_stack( ( vx, vy, vz ) ) * mol.actv * 0.01
-        mol.velo -= numpy.sum( mol.velo * proj, axis = 0 ) * proj
-        cur, kin = __current_temperature( mol, mass, ndeg )
-        mol.velo *= numpy.sqrt( temperature / cur )
-
     fdesc.write( "---------------------------------------- Dynamics: Langevin-Verlet (NVT)\n\n" )
     ndeg = 3 * mol.actv.sum()
     fdesc.write( "Degrees of Freedom: %20ld\n"%( ndeg ) )
@@ -59,10 +61,10 @@ def langevin_verlet( mol: object,
     mass = mol.mass.reshape( ( mol.natm, 1 ) )
     sdev = 0.01 * numpy.sqrt( qm3.data.KB * temperature * 1000.0 * qm3.data.NA / mass ) * mol.actv
     ndeg -= 3
-    proj = ( numpy.sqrt( mass / numpy.sum( mass * mol.actv ) ) * mol.actv )
+    proj = numpy.sqrt( mass / numpy.sum( mass * mol.actv ) ) * mol.actv
     if( not hasattr( mol, "velo" ) ):
-        __assign_velocities( mol, temperature, mass, proj, ndeg )
-    temp, kine = __current_temperature( mol, mass, ndeg )
+        assign_velocities( mol, temperature, mass, proj, ndeg )
+    temp, kine = current_temperature( mol, mass, ndeg )
     mol.get_grad()
     cacc = - mol.grad / mass * 100.0
     cacc -= numpy.sum( cacc * proj, axis = 0 ) * proj
@@ -83,7 +85,7 @@ def langevin_verlet( mol: object,
         cacc -= numpy.sum( cacc * proj, axis = 0 ) * proj
         mol.velo = oacc + fv2 * cacc
         mol.velo -= numpy.sum( mol.velo * proj, axis = 0 ) * proj
-        temp, kine = __current_temperature( mol, mass, ndeg )
+        temp, kine = current_temperature( mol, mass, ndeg )
         xtmp = numpy.array( [ mol.func, kine, mol.func + kine, temp ] )
         xavr += xtmp
         xrms += numpy.square( xtmp )
