@@ -33,7 +33,7 @@ opt = { "basis": "def2-svp",
     "grid": 3,
     "max_cyc": 50,
     "nproc": 2 }
-mol.engines.append( qm3.engines.pyscf.run( mol, opt, sqm, smm, sla ) )
+mol.engines["qm"] = qm3.engines.pyscf.run( mol, opt, sqm, smm, sla )
 
 mol.get_grad()
 print( mol.func )

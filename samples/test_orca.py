@@ -30,8 +30,8 @@ qm3_charges
 qm3_atoms
 *
 """ )
-mol.engines.append( qm3.engines.orca.run( mol, f, sqm, smm, sla ) )
-mol.engines[-1].exe = "/Users/smarti/Devel/orca/orca_4_2_1_macosx_openmpi314/orca orca.inp > orca.out"
+mol.engines["qm"] = qm3.engines.orca.run( mol, f, sqm, smm, sla )
+mol.engines["qm"].exe = "/Users/smarti/Devel/orca/orca_4_2_1_macosx_openmpi314/orca orca.inp > orca.out"
 
 mol.get_grad()
 print( mol.func )

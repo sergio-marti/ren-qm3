@@ -65,7 +65,7 @@ qm3_job
 ParserOptions { WriteHSDInput = No }
 """%( cwd ) )
 
-mol.engines.append( qm3.engines.dftb.run( mol, f, sqm, smm, sla ) )
+mol.engines["qm"] = qm3.engines.dftb.run( mol, f, sqm, smm, sla )
 
 mol.get_grad()
 print( mol.func )

@@ -23,7 +23,7 @@ smm = mol.sph_sel( sqm, 12 )
 sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"] ) ]
 print( sqm.sum(), smm.sum() )
 
-mol.engines.append( qm3.engines.xtb.run( mol, 1, 0, sqm, smm, sla ) )
+mol.engines["qm"] = qm3.engines.xtb.run( mol, 1, 0, sqm, smm, sla )
 
 mol.get_grad()
 print( mol.func )

@@ -22,7 +22,7 @@ sqm = numpy.logical_not( sqm )
 sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"] ) ]
 
 prm = { "chrg": 1.0, "s6": 1.00, "s8": 2.02929367, "a1": 0.40868035, "a2": 4.53807137  }
-mol.engines.append( qm3.engines.dftd4.run( mol, prm, sqm, sla ) )
+mol.engines["qm"] = qm3.engines.dftd4.run( mol, prm, sqm, sla )
 
 mol.get_grad()
 print( mol.func )

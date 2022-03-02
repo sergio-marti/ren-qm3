@@ -7,21 +7,21 @@ import  qm3.data
 numpy.random.seed()
 
 
-def current_temperature( mol: object, mass: numpy.array, ndeg: int ) -> ( float, float ):
-    kine = numpy.sum( mass * numpy.square( mol.velo ) )
+def current_temperature( mol: object, ndeg: int ) -> ( float, float ):
+    kine = numpy.sum( mol.mass * numpy.square( mol.velo ) )
     temp = kine * 10.0 / ( ndeg * qm3.data.KB * qm3.data.NA )
     kine *= 0.005
     return( temp, kine )
 
 
-def assign_velocities( mol: object, temperature: float, mass: numpy.array, proj: numpy.array, ndeg: int ):
-    sd = numpy.sqrt( qm3.data.KB * temperature * 1000.0 * qm3.data.NA / mass )
+def assign_velocities( mol: object, temperature: float, proj: numpy.array, ndeg: int ):
+    sd = numpy.sqrt( qm3.data.KB * temperature * 1000.0 * qm3.data.NA / mol.mass )
     vx = numpy.random.normal( 0.0, sd )
     vy = numpy.random.normal( 0.0, sd )
     vz = numpy.random.normal( 0.0, sd )
-    mol.velo = numpy.column_stack( ( vx, vy, vz ) ) * mol.actv * 0.01
+    mol.velo = numpy.column_stack( ( vx, vy, vz ) ) * mol.actv.astype( numpy.float64 ) * 0.01
     mol.velo -= numpy.sum( mol.velo * proj, axis = 0 ) * proj
-    cur, kin = current_temperature( mol, mass, ndeg )
+    cur, kin = current_temperature( mol, ndeg )
     mol.velo *= numpy.sqrt( temperature / cur )
 
 
@@ -58,15 +58,14 @@ def langevin_verlet( mol: object,
     fv1  = step_size * ( c1 - c2 )
     fv2  = step_size * c2
     fr2  = step_size * fv2
-    mass = mol.mass.reshape( ( mol.natm, 1 ) )
-    sdev = 0.01 * numpy.sqrt( qm3.data.KB * temperature * 1000.0 * qm3.data.NA / mass ) * mol.actv
+    sdev = 0.01 * numpy.sqrt( qm3.data.KB * temperature * 1000.0 * qm3.data.NA / mol.mass ) * mol.actv.astype( numpy.float64 )
     ndeg -= 3
-    proj = numpy.sqrt( mass / numpy.sum( mass * mol.actv ) ) * mol.actv
+    proj = numpy.sqrt( mol.mass / numpy.sum( mol.mass * mol.actv.astype( numpy.float64 ) ) ) * mol.actv.astype( numpy.float64 )
     if( not hasattr( mol, "velo" ) ):
-        assign_velocities( mol, temperature, mass, proj, ndeg )
-    temp, kine = current_temperature( mol, mass, ndeg )
+        assign_velocities( mol, temperature, proj, ndeg )
+    temp, kine = current_temperature( mol, ndeg )
     mol.get_grad()
-    cacc = - mol.grad / mass * 100.0
+    cacc = - mol.grad / mol.mass * 100.0
     cacc -= numpy.sum( cacc * proj, axis = 0 ) * proj
     xtmp = numpy.array( [ mol.func, kine, mol.func + kine, temp ] )
     xavr = xtmp.copy()
@@ -76,16 +75,16 @@ def langevin_verlet( mol: object,
     for istp in range( 1, step_number + 1 ):
         time += step_size
         mol.coor += fr1 * mol.velo + fr2 * cacc
-        r1 = numpy.random.normal( 0.0, 1.0, ( mol.natm, 3 ) ) * mol.actv
-        r2 = numpy.random.normal( 0.0, 1.0, ( mol.natm, 3 ) ) * mol.actv
+        r1 = numpy.random.normal( 0.0, 1.0, ( mol.natm, 3 ) ) * mol.actv.astype( numpy.float64 )
+        r2 = numpy.random.normal( 0.0, 1.0, ( mol.natm, 3 ) ) * mol.actv.astype( numpy.float64 )
         mol.coor += sdev * sr * r1
         oacc = c0 * mol.velo + fv1 * cacc + sdev * sv * ( cv1 * r1 + cv2 * r2 )
         mol.get_grad()
-        cacc = - mol.grad / mass * 100.0
+        cacc = - mol.grad / mol.mass * 100.0
         cacc -= numpy.sum( cacc * proj, axis = 0 ) * proj
         mol.velo = oacc + fv2 * cacc
         mol.velo -= numpy.sum( mol.velo * proj, axis = 0 ) * proj
-        temp, kine = current_temperature( mol, mass, ndeg )
+        temp, kine = current_temperature( mol, ndeg )
         xtmp = numpy.array( [ mol.func, kine, mol.func + kine, temp ] )
         xavr += xtmp
         xrms += numpy.square( xtmp )

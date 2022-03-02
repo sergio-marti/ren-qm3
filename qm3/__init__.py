@@ -22,12 +22,12 @@ class molecule( object ):
         self.resi = None # dtype=numpy.int32
         self.resn = None # dtype=numpy.unicode
         self.anum = None # dtype=numpy.int16
-        self.chrg = None # dtype=numpy.float32
-        self.mass = None # dtype=numpy.float32
+        self.chrg = None # dtype=numpy.float64
+        self.mass = None # dtype=numpy.float64
         self.rlim = None # dtype=numpy.int32
         self.actv = None # dtype=numpy.bool
         self.indx = None
-        self.engines = []
+        self.engines = {}
         self.func = 0.0
         self.grad = None # dtype=numpy.float64
         self.rval = None
@@ -108,7 +108,7 @@ class molecule( object ):
         out.resn = self.resn[lsel]
         out.anum = self.anum[lsel]
         out.chrg = self.chrg[lsel]
-        out.mass = self.mass[lsel]
+        out.mass = self.mass[lsel].reshape( ( out.natm, 1 ) )
         out.actv = numpy.ones( ( out.natm, 1 ), dtype=numpy.bool )
         out.rebuild()
         return( out )
@@ -127,12 +127,12 @@ class molecule( object ):
                 anum.append( qm3.data.rsymbol["".join( [ j for j in self.labl[i] if j.isalpha() ] ).title()] )
                 mass.append( qm3.data.mass[anum[i]] )
             self.anum = numpy.array( anum, dtype=numpy.int16 )
-            self.mass = numpy.array( mass, dtype=numpy.float32 )
+            self.mass = numpy.array( mass, dtype=numpy.float64 ).reshape( ( self.natm, 1 ) )
 
 
     def fill_masses( self ):
         if( self.anum.sum() > 0 ):
-            self.mass = qm3.data.mass[self.anum]
+            self.mass = qm3.data.mass[self.anum].reshape( ( self.natm, 1 ) )
         else:
             self.guess_atomic_numbers()
 
@@ -195,10 +195,10 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         self.resi = numpy.array( resi, dtype=numpy.int32 )
         self.resn = numpy.array( resn, dtype=numpy.unicode )
         self.anum = numpy.zeros( self.natm, dtype=numpy.int16 )
-        self.chrg = numpy.zeros( self.natm, dtype=numpy.float32 )
-        self.mass = numpy.zeros( self.natm, dtype=numpy.float32 )
+        self.chrg = numpy.zeros( self.natm, dtype=numpy.float64 )
+        self.mass = numpy.zeros( ( self.natm, 1 ), dtype=numpy.float64 )
         self.actv = numpy.ones( ( self.natm, 1 ), dtype=numpy.bool )
-        self.engines = []
+        self.engines = {}
         self.func = 0.0
         self.grad = numpy.zeros( ( self.natm, 3 ), dtype=numpy.float64 )
         self.rebuild()
@@ -249,12 +249,12 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             self.resi = numpy.ones( self.natm, dtype=numpy.int16 )
             self.resn = numpy.array( temp, dtype=numpy.unicode )
             self.anum = numpy.zeros( self.natm, dtype=numpy.int16 )
-            self.chrg = numpy.zeros( self.natm, dtype=numpy.float32 )
-            self.mass = numpy.zeros( self.natm, dtype=numpy.float32 )
+            self.chrg = numpy.zeros( self.natm, dtype=numpy.float64 )
+            self.mass = numpy.zeros( ( self.natm, 1 ), dtype=numpy.float64 )
             self.actv = numpy.ones( ( self.natm, 1 ), dtype=numpy.bool )
             self.rlim = numpy.array( [ 0, self.natm ], dtype=numpy.int32 )
             self.indx = None
-            self.engines = []
+            self.engines = {}
             self.func = 0.0
             self.grad = numpy.zeros( ( self.natm, 3 ), dtype=numpy.float64 )
 
@@ -299,8 +299,8 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
                 print( "- Invalid number of atoms in PSF!" )
                 flag = False
             if( flag ):
-                self.chrg = numpy.array( chrg, dtype=numpy.float32 )
-                self.mass = numpy.array( mass, dtype=numpy.float32 )
+                self.chrg = numpy.array( chrg, dtype=numpy.float64 )
+                self.mass = numpy.array( mass, dtype=numpy.float64 ).reshape( ( self.natm, 1 ) )
 
 
     def prmtop_read( self, fdesc ):
@@ -313,7 +313,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
                 while( len( chrg ) < self.natm ):
                     l = fdesc.readline()
                     chrg += [ float( l[i:i+dsp] ) / 18.2223 for i in range( 0, len( l ) - 1, dsp ) ]
-                self.chrg = numpy.array( chrg, dtype=numpy.float32 )
+                self.chrg = numpy.array( chrg, dtype=numpy.float64 )
             elif( l[0:19].upper() == "%FLAG ATOMIC_NUMBER" ):
                 anum = []
                 l = fdesc.readline()
@@ -329,7 +329,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
                 while( len( mass ) < self.natm ):
                     l = fdesc.readline()
                     mass += [ float( l[i:i+dsp] ) for i in range( 0, len( l ) - 1, dsp ) ]
-                self.mass = numpy.array( mass, dtype=numpy.float32 )
+                self.mass = numpy.array( mass, dtype=numpy.float64 ).reshape( ( self.natm, 1 ) )
             l = fdesc.readline()
 
 # =================================================================================================
@@ -343,7 +343,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         self.func = 0.0
         self.grad = numpy.zeros( ( self.natm, 3 ), dtype=numpy.float64 )
         for itm in self.engines:
-            itm.get_func( self )
+            self.engines[itm].get_func( self )
 
 
     def get_grad( self ):
@@ -351,5 +351,5 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         self.func = 0.0
         self.grad = numpy.zeros( ( self.natm, 3 ), dtype=numpy.float64 )
         for itm in self.engines:
-            itm.get_grad( self )
-        self.grad *= self.actv
+            self.engines[itm].get_grad( self )
+        self.grad *= self.actv.astype( numpy.float64 )

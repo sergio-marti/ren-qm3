@@ -30,7 +30,7 @@ _sys.setDefaultPeriodicBoxVectors(
     openmm.Vec3( 0.0, mol.boxl[1], 0.0 ) * openmm.unit.angstrom,
     openmm.Vec3( 0.0, 0.0, mol.boxl[2] ) * openmm.unit.angstrom )
 
-mol.engines.append( qm3.engines.openmm.run( _sys, _top, platform = "OpenCL" ) )
+mol.engines["mm"] = qm3.engines.openmm.run( _sys, _top, platform = "OpenCL" )
 
 qm3.actions.minimize.cgplus( mol, print_frequency = 100 )
 

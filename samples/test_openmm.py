@@ -38,7 +38,7 @@ if( who == "AMBER" ):
             openmm.Vec3( 0.0, mol.boxl[1], 0.0 ) * openmm.unit.angstrom,
             openmm.Vec3( 0.0, 0.0, mol.boxl[2] ) * openmm.unit.angstrom )
     print( _sys.getDefaultPeriodicBoxVectors() )
-    mol.engines.append( qm3.engines.openmm.run( _sys, _top ) )
+    mol.engines["mm"] = qm3.engines.openmm.run( _sys, _top )
     mol.get_grad()
     print( mol.func )
     assert( numpy.fabs( mol.func - -23032.652737874578 ) < 1.e-4 ), "[Amber]: function error"
@@ -61,7 +61,7 @@ elif( who == "CHARMM" ):
         switchDistance = 10.0 * openmm.unit.angstrom,
         rigidWater = False )
     print( _sys.getDefaultPeriodicBoxVectors() )
-    mol.engines.append( qm3.engines.openmm.run( _sys, _psf.topology ) )
+    mol.engines["mm"] = qm3.engines.openmm.run( _sys, _psf.topology )
     mol.get_grad()
     print( mol.func )
     assert( numpy.fabs( mol.func - -23239.842677675748 ) < 1.e-4 ), "[Charmm]: function error"
@@ -90,7 +90,7 @@ else:
         switchDistance = 10.0 * openmm.unit.angstrom,
         rigidWater = False )
     print( _sys.getDefaultPeriodicBoxVectors() )
-    mol.engines.append( qm3.engines.openmm.run( _sys, _psf.topology ) )
+    mol.engines["mm"] = qm3.engines.openmm.run( _sys, _psf.topology )
     mol.get_grad()
     print( mol.func )
     assert( numpy.fabs( mol.func - -23323.11966375321 ) < 1.e-4 ), "[xml]: function error"

@@ -37,8 +37,8 @@ qm3_charges
 
 qm3_field
 """ )
-mol.engines.append( qm3.engines.gaussian.run( mol, f, sqm, smm, sla ) )
-mol.engines[-1].exe = ". ~/Devel/g09/pgi.imac64/g09.profile; g09 gauss.com"
+mol.engines["qm"] = qm3.engines.gaussian.run( mol, f, sqm, smm, sla )
+mol.engines["qm"].exe = ". ~/Devel/g09/pgi.imac64/g09.profile; g09 gauss.com"
 
 mol.get_grad()
 print( mol.func )

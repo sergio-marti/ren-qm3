@@ -36,7 +36,7 @@ qm3_atoms
 qm3_charges
 """ )
 
-mol.engines.append( qm3.engines.sqm.run( mol, f, sqm, smm, sla ) )
+mol.engines["qm"] = qm3.engines.sqm.run( mol, f, sqm, smm, sla )
 
 mol.get_grad()
 print( mol.func )
