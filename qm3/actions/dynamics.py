@@ -76,8 +76,8 @@ def langevin_verlet( mol: object,
     for istp in range( 1, step_number + 1 ):
         time += step_size
         mol.coor += fr1 * mol.velo + fr2 * cacc
-        r1 = numpy.random.normal( 0.0, 1.0, ( mol.natm, 3 ) )
-        r2 = numpy.random.normal( 0.0, 1.0, ( mol.natm, 3 ) )
+        r1 = numpy.random.normal( 0.0, 1.0, ( mol.natm, 3 ) ) * mol.actv
+        r2 = numpy.random.normal( 0.0, 1.0, ( mol.natm, 3 ) ) * mol.actv
         mol.coor += sdev * sr * r1
         oacc = c0 * mol.velo + fv1 * cacc + sdev * sv * ( cv1 * r1 + cv2 * r2 )
         mol.get_grad()
