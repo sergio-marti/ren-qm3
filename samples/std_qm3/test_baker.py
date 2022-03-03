@@ -1,10 +1,10 @@
 import  numpy
 import  qm3.mol
+import  qm3.utils
 import  qm3.problem
 import  qm3.engines.mopac
-import  qm3.utils
+import  qm3.actions.minimize
 import  io
-import  os
 import  pickle
 
 
@@ -64,45 +64,13 @@ H           7.2054065864       -5.1951553158       -1.9398695949
         self.grad = self.mol.grad
 
 
+    def get_hess( self ):
+        self.num_hess()
+        qm3.utils.raise_hessian_RT( self.mass, self.coor, self.hess )
+
+
+
 
 
 obj = my_problem()
-if( not os.path.isfile( "hessian.pk" ) ):
-    obj.num_hess() 
-    with open( "hessian.pk", "wb" ) as f:
-        pickle.dump( obj.hess, f )
-else:
-    obj.get_func()
-    with open( "hessian.pk", "rb" ) as f:
-        obj.hess = pickle.load( f )
-
-print( numpy.trace( numpy.array( obj.hess).reshape( ( obj.size, obj.size ) ) ) )
-
-coor = obj.coor[:]
-print( numpy.linalg.norm( numpy.array( qm3.utils.center( obj.mass, coor ) ) ) )
-
-print( numpy.array( qm3.utils.get_RT_modes( obj.mass, obj.coor ) ).reshape( ( 6, obj.size ) )[-1].sum() )
-
-bak = obj.hess[:]
-qm3.utils.raise_hessian_RT( obj.mass, obj.coor, bak )
-val, vec = qm3.utils.hessian_frequencies( obj.mass, obj.coor, bak )
-print( val[0:7] )
-print( numpy.linalg.norm( numpy.array( val ) ) )
-
-val, vec = qm3.utils.hessian_frequencies( obj.mass, obj.coor, obj.hess )
-print( val[0:7] )
-print( numpy.linalg.norm( numpy.array( val ) ) )
-tmp = numpy.array( vec ).reshape( ( obj.size, obj.size ) )
-print( numpy.linalg.norm( tmp[:,-1] ) )
-
-iri = qm3.utils.intensities( obj.mol.chrg, vec )
-print( numpy.linalg.norm( numpy.array( iri[6:] ) ) )
-
-qm3.utils.spectrum( val, iri )
-
-rms, frc = qm3.utils.force_constants( obj.mass, val, vec )
-print( numpy.linalg.norm( numpy.array( rms[6:] ) ) )
-
-zpe, gib = qm3.utils.gibbs_rrho( obj.mass, obj.coor, val )
-print( zpe )
-print( gib )
+qm3.actions.minimize.baker( obj, step_number = 10, print_frequency = 1, follow_mode = 0 )

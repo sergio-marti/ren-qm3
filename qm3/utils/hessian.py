@@ -40,7 +40,7 @@ def numerical( mol: object,
 def RT_modes( mol: object ) -> numpy.array:
     size = 3 * mol.actv.sum()
     sele = numpy.argwhere( mol.actv.ravel() )
-    mode = numpy.zeros( ( 6, size ) )
+    mode = numpy.zeros( ( 6, size ), dtype=numpy.float64 )
     cent = numpy.sum( mol.mass * mol.coor * mol.actv, axis = 0 ) / numpy.sum( mol.mass * mol.actv )
     k = 0
     for i in sele:
@@ -71,12 +71,22 @@ def project_RT( hess: numpy.array, mode: numpy.array ) -> numpy.array:
 # -----------------------------------------------------
     # P = I - Tx * Tx - ... - Rx * Rx - ... 
     proj = numpy.identity( size )
-    for i in range( size ):
-        for j in range( size ):
-            for l in range( 6 ):
-                proj[i,j] -= mode[l,i] * mode[l,j]
+    for i in range( 6 ):
+        tmp = mode[i].reshape( ( size, 1 ) )
+        proj -= numpy.dot( tmp, tmp.T )
     # H' = P * H * P
     return( numpy.dot( proj, numpy.dot( hess, proj ) ) )
+
+
+def raise_RT( hess: numpy.array, mode: numpy.array,
+        large: typing.Optional[float] = 5.0e4 ) -> numpy.array:
+    size = hess.shape[0]
+    # H' = H + large * ( Tx * Tx + ... + Rx * Rx + ... )
+    proj = numpy.zeros( ( size, size ), dtype=numpy.float64 )
+    for i in range( 6 ):
+        tmp = mode[i].reshape( ( size, 1 ) )
+        proj += numpy.dot( tmp, tmp.T )
+    return( hess + large * proj )
 
 
 def frequencies( mol: object, hess: numpy.array, project: typing.Optional[bool] = True ) -> tuple:
@@ -109,7 +119,7 @@ def IR_intensities( mol: object, mode: numpy.array ) -> numpy.array:
     size = 3 * actv
     chrg = mol.chrg[mol.actv.ravel()]
     chrg = numpy.column_stack( ( chrg, chrg, chrg ) ).reshape( size )
-    inte = numpy.zeros( size )
+    inte = numpy.zeros( size, dtype=numpy.float64 )
     for i in range( 6, size ):
         temp = chrg * mode[:,i]
         temp.shape = ( actv, 3 )

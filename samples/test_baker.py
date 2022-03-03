@@ -2,8 +2,8 @@ import  numpy
 import  qm3
 import  qm3.engines.mopac
 import  qm3.utils.hessian
+import  qm3.actions.minimize
 import  io
-import  os
 import  pickle
 
 
@@ -41,59 +41,9 @@ mol.xyz_read( f )
 mol.guess_atomic_numbers()
 mol.engines["qm"] = qm3.engines.mopac.run( mol, "AM1", 0 )
 
-if( not os.path.isfile( "hessian.pk" ) ):
+def get_hess( mol, step ):
     hes = qm3.utils.hessian.numerical( mol )
-    with open( "hessian.pk", "wb" ) as f:
-        pickle.dump( hes, f )
-else:
-    mol.get_func()
-    with open( "hessian.pk", "rb" ) as f:
-        hes = pickle.load( f )
+    mol.get_grad()
+    return( qm3.utils.hessian.raise_RT( hes, qm3.utils.hessian.RT_modes( mol ) ) )
 
-tmp = numpy.trace( hes )
-print( tmp )
-assert( numpy.fabs( tmp - 273925.98919048626 ) < 1.e-2 ), "Hessian calculation error"
-
-tmp = numpy.linalg.norm( numpy.sum( mol.mass * mol.coor * mol.actv, axis = 0 ) / numpy.sum( mol.mass * mol.actv ) )
-print( tmp )
-assert( numpy.fabs( tmp - 5.631736568935114 ) < 1.e-4 ), "Center of mass error"
-
-rtm = qm3.utils.hessian.RT_modes( mol )
-tmp = rtm[-1].sum()
-print( tmp )
-assert( numpy.fabs( tmp - -0.019048162487360343 ) < 1.e-4 ), "RT modes error"
-
-val, vec = qm3.utils.hessian.frequencies( mol, qm3.utils.hessian.raise_RT( hes, rtm ) )
-print( val[0:7] )
-tmp = numpy.linalg.norm( val )
-print( tmp )
-assert( numpy.fabs( tmp - 13993.713951772517 ) < 1.e-4 ), "raise RT modes error"
-
-val, vec = qm3.utils.hessian.frequencies( mol, hes )
-print( val[0:7] )
-tmp = numpy.linalg.norm( val )
-print( tmp )
-assert( numpy.fabs( tmp - 13112.662906261467 ) < 1.e-4 ), "Frequencies error"
-tmp = numpy.linalg.norm( vec[:,-1] )
-print( tmp )
-assert( numpy.fabs( tmp - 0.9960534860021342 ) < 1.e-4 ), "Normal Modes error"
-
-iri = qm3.utils.hessian.IR_intensities( mol, vec )
-tmp = numpy.linalg.norm( iri[6:] )
-print( tmp )
-assert( numpy.fabs( tmp - 463.84391448258356 ) < 0.1 ), "IR intensities error"
-
-qm3.utils.hessian.IR_spectrum( val, iri )
-
-rms, frc = qm3.utils.hessian.force_constants( mol, val, vec )
-tmp = numpy.linalg.norm( rms[6:] )
-print( tmp )
-assert( numpy.fabs( tmp - 39.447483898850365 ) < 1.e-4 ), "Reduced masses error"
-
-qm3.utils.hessian.normal_mode( mol, val, vec, 0, afac = 8.0 )
-
-zpe, gib = qm3.utils.hessian.rrho( mol, val )
-print( zpe )
-assert( numpy.fabs( zpe - 518.0466085854382 ) < 1.e-4 ), "ZPE error"
-print( gib )
-assert( numpy.fabs( gib - -110.76834124569572 ) < 1.e-4 ), "Gibbs error"
+qm3.actions.minimize.baker( mol, get_hess, step_number = 10, print_frequency = 1, follow_mode = 0 )

@@ -33,7 +33,7 @@ class molecule( object ):
         self.rval = None
 
 
-    def current_step( self, step ):
+    def current_step( self, step: int ):
         pass
 
 
@@ -146,7 +146,7 @@ class molecule( object ):
 
 # =================================================================================================
 
-    def pdb_read( self, fdsc ):
+    def pdb_read( self, fdsc: typing.IO ):
         """
           1         2         3         4         5         6         7         8
 .123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.
@@ -204,7 +204,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         self.rebuild()
 
 
-    def pdb_write( self, fdsc,
+    def pdb_write( self, fdsc: typing.IO,
             sele: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool ) ):
         if( sele.sum() > 0 ):
             lsel = sele
@@ -223,7 +223,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
 
 # =================================================================================================
 
-    def xyz_read( self, fdsc,
+    def xyz_read( self, fdsc: typing.IO,
             replace: typing.Optional[bool] = False ):
         n = int( fdsc.readline().strip() )
         fdsc.readline()
@@ -259,7 +259,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             self.grad = numpy.zeros( ( self.natm, 3 ), dtype=numpy.float64 )
 
 
-    def xyz_write( self, fdsc,
+    def xyz_write( self, fdsc: typing.IO,
             sele: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool ),
             formt: typing.Optional[str] = "%20.10lf" ):
         fmt = "%-4s" + 3 * formt + "\n"
@@ -276,7 +276,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
 
 # =================================================================================================
 
-    def psf_read( self, fdsc ):
+    def psf_read( self, fdsc: typing.IO ):
         if( fdsc.readline().split()[0] == "PSF" ):
             fdsc.readline()
             for i in range( int( fdsc.readline().split()[0] ) + 1 ):
@@ -303,7 +303,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
                 self.mass = numpy.array( mass, dtype=numpy.float64 ).reshape( ( self.natm, 1 ) )
 
 
-    def prmtop_read( self, fdesc ):
+    def prmtop_read( self, fdesc: typing.IO ):
         __frmt = re.compile( "[aAiIeEdD]([0-9]+)" )
         l = fdesc.readline()
         while( l != "" ):
@@ -331,10 +331,6 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
                     mass += [ float( l[i:i+dsp] ) for i in range( 0, len( l ) - 1, dsp ) ]
                 self.mass = numpy.array( mass, dtype=numpy.float64 ).reshape( ( self.natm, 1 ) )
             l = fdesc.readline()
-
-# =================================================================================================
-
-# dcd_read / dcd_next; dcd_write / dcd_append
 
 # =================================================================================================
 

@@ -32,7 +32,7 @@ def langevin_verlet( mol: object,
         gamma_factor: typing.Optional[float] = 50.0, 
         print_frequency: typing.Optional[int] = 100,
         step_number: typing.Optional[int] = 1000,
-        fdesc: typing.Optional = sys.stdout ):
+        fdesc: typing.Optional[typing.IO] = sys.stdout ):
     fdesc.write( "---------------------------------------- Dynamics: Langevin-Verlet (NVT)\n\n" )
     ndeg = 3 * mol.actv.sum()
     fdesc.write( "Degrees of Freedom: %20ld\n"%( ndeg ) )

@@ -13,7 +13,7 @@ def steepest_descent( mol: object,
         step_size: typing.Optional[float] = 0.1,
         print_frequency: typing.Optional[int] = 10,
         gradient_tolerance: typing.Optional[float] = 15.,
-        fdesc: typing.Optional = sys.stdout ):
+        fdesc: typing.Optional[typing.IO] = sys.stdout ):
     fdesc.write( "---------------------------------------- Minimization (SD)\n\n" )
     ndf = 3 * mol.actv.sum()
     fdesc.write( "Degrees of Freedom: %20ld\n"%( ndf ) )
@@ -34,8 +34,8 @@ def steepest_descent( mol: object,
     fdesc.write( "%10s%20s%20s%20s\n"%( "Step", "Function", "Gradient", "Displacement" ) )
     fdesc.write( "-" * 70 + "\n" )
     fdesc.write( "%30.5lf%20.8lf%20.10lf\n"%( mol.func, grms, ssiz ) )
-    i = 0
-    while( i < step_number and grms > gradient_tolerance ):
+    itr  = 0
+    while( itr < step_number and grms > gradient_tolerance ):
         mol.coor -= mol.grad / norm * ssiz
         mol.get_grad()
         norm = numpy.linalg.norm( mol.grad )
@@ -46,12 +46,12 @@ def steepest_descent( mol: object,
         else:
             ssiz = gradient_tolerance
         grms = norm / ndf
-        i = i + 1
-        if( i%print_frequency == 0 ):
-            fdesc.write( "%10d%20.5lf%20.10lf%20.10lf\n"%( i, mol.func, grms, ssiz ) )
-        mol.current_step( i )
-    if( i%print_frequency != 0 ):
-        fdesc.write( "%10d%20.5lf%20.10lf%20.10lf\n"%( i + 1, mol.func, grms, ssiz ) )
+        itr += 1
+        if( itr % print_frequency == 0 ):
+            fdesc.write( "%10d%20.5lf%20.10lf%20.10lf\n"%( itr, mol.func, grms, ssiz ) )
+        mol.current_step( itr )
+    if( itr % print_frequency != 0 ):
+        fdesc.write( "%10d%20.5lf%20.10lf%20.10lf\n"%( itr + 1, mol.func, grms, ssiz ) )
     fdesc.write( "-" * 70 + "\n\n" )
 
 # =================================================================================================
@@ -64,7 +64,7 @@ def fire( mol: object,
         mixing_alpha: typing.Optional[float] = 0.1,
         delay_step: typing.Optional[int] = 5,
         exit_uphill: typing.Optional[bool] = False,
-        fdesc: typing.Optional = sys.stdout ):
+        fdesc: typing.Optional[typing.IO] = sys.stdout ):
     fdesc.write( "---------------------------------------- Minimization (FIRE)\n\n" )
     ndeg = 3 * mol.actv.sum()
     fdesc.write( "Degrees of Freedom: %20ld\n"%( ndeg ) )
@@ -74,21 +74,21 @@ def fire( mol: object,
     fdesc.write( "Gradient Tolerance: %20.10lg\n"%( gradient_tolerance ) )
     fdesc.write( "Checking UpHill:    %20s\n"%( exit_uphill ) )
     fdesc.write( "Mixing Alpha:       %20.10lg\n"%( mixing_alpha ) )
-    fdesc.write( "Delay Step:         %20d\n"%( delay_step ) )
+    fdesc.write( "Delay Step:         %20d\n\n"%( delay_step ) )
     fdesc.write( "%10s%20s%20s%20s\n"%( "Step", "Function", "Gradient", "Displacement" ) )
     fdesc.write( "-" * 70 + "\n" )
     ndeg = numpy.sqrt( ndeg )
     nstp = 0
     ssiz = step_size
     alph = mixing_alpha
-    velo = numpy.zeros( ( mol.natm, 3 ) )
+    velo = numpy.zeros( ( mol.natm, 3 ), dtype=numpy.float64 )
     mol.get_grad()
     qfun = True
     norm = numpy.linalg.norm( mol.grad )
     grms = norm / ndeg
     fdesc.write( "%30.5lf%20.10lf\n"%( mol.func, grms ) )
-    i = 0
-    while( i < step_number and grms > gradient_tolerance and qfun ):
+    itr  = 0
+    while( itr < step_number and grms > gradient_tolerance and qfun ):
         if( - numpy.sum( velo * mol.grad ) > 0.0 ):
             vsiz = numpy.linalg.norm( velo )
             velo = ( 1.0 - alph ) * velo - alph * mol.grad / norm * vsiz
@@ -100,7 +100,7 @@ def fire( mol: object,
             alph = mixing_alpha
             ssiz *= 0.5
             nstp = 0
-            velo = numpy.zeros( ( mol.natm, 3 ) )
+            velo = numpy.zeros( ( mol.natm, 3 ), dtype=numpy.float64 )
         velo -= ssiz * mol.grad
         step = ssiz * velo
         tmp  = numpy.linalg.norm( step )
@@ -118,12 +118,12 @@ def fire( mol: object,
                 qfun = False
                 mol.coor -= step
 
-        i = i + 1
-        if( i%print_frequency == 0 ):
-            fdesc.write( "%10d%20.5lf%20.10lf%20.10lf\n"%( i, mol.func, grms, ssiz ) )
-        mol.current_step( i )
-    if( i%print_frequency != 0 ):
-        fdesc.write( "%10d%20.5lf%20.10lf%20.10lf\n"%( i + 1, mol.func, grms, ssiz ) )
+        itr += 1
+        if( itr % print_frequency == 0 ):
+            fdesc.write( "%10d%20.5lf%20.10lf%20.10lf\n"%( itr, mol.func, grms, ssiz ) )
+        mol.current_step( itr )
+    if( itr % print_frequency != 0 ):
+        fdesc.write( "%10d%20.5lf%20.10lf%20.10lf\n"%( itr + 1, mol.func, grms, ssiz ) )
     fdesc.write( "-" * 70 + "\n\n" )
 
 # =================================================================================================
@@ -134,7 +134,7 @@ def cgplus( mol: object,
         gradient_tolerance: typing.Optional[float] = 1.5,
         method: typing.Optional[str] = "Polak-Ribiere", 
         restart: typing.Optional[bool] = True,
-        fdesc: typing.Optional = sys.stdout ):
+        fdesc: typing.Optional[typing.IO] = sys.stdout ):
     global  cwd
     nsel = mol.actv.sum()
     size = 3 * nsel
@@ -176,19 +176,19 @@ def cgplus( mol: object,
     work = ( ctypes.c_double * size )()
     iflg = ( ctypes.c_int )()
     fdesc.write( "%30.5lf%20.10lf\n"%( mol.func, grms ) )
-    k = 0
-    while( k < step_number and grms > gradient_tolerance ):
+    itr  = 0
+    while( itr < step_number and grms > gradient_tolerance ):
         dlib.cgp_cgfam_( ctypes.c_int( size ), coor, ctypes.c_double( mol.func ), grad, dire, gold,
                 ctypes.c_double( gradient_tolerance ), work, iflg, ctypes.c_int( rest ), ctypes.c_int( meth ) )
         if( iflg == -3 ):
             fdesc.write( "\n -- Improper input parameters...\n" )
-            k = step_number + 1
+            itr = step_number + 1
         elif( iflg == -2 ):
             fdesc.write( "\n -- Descent was not obtained...\n" )
-            k = step_number + 1
+            itr = step_number + 1
         elif( iflg == -1 ):
             fdesc.write( "\n -- Line Search failure...\n" )
-            k = step_number + 1
+            itr = step_number + 1
         else:
             while( iflg == 2 ):
                 dlib.cgp_cgfam_( ctypes.c_int( size ), coor, ctypes.c_double( mol.func ), grad, dire, gold,
@@ -201,10 +201,159 @@ def cgplus( mol: object,
             mol.get_grad()
             grms = numpy.linalg.norm( mol.grad ) / ndeg
             grad = mol.grad[sele].ravel().ctypes.data_as( ctypes.POINTER( ctypes.c_double ) )
-        k = k + 1
-        if( k%print_frequency == 0 ):
-            fdesc.write( "%10d%20.5lf%20.10lf\n"%( k, mol.func, grms ) )
-        mol.current_step( i )
-    if( k%print_frequency != 0 ):
-        fdesc.write( "%10d%20.5lf%20.10lf\n"%( k + 1, mol.func, grms ) )
-    fdesc.write( "-" * 50 + "\n" )
+        itr += 1
+        if( itr % print_frequency == 0 ):
+            fdesc.write( "%10d%20.5lf%20.10lf\n"%( itr, mol.func, grms ) )
+        mol.current_step( itr )
+    if( itr % print_frequency != 0 ):
+        fdesc.write( "%10d%20.5lf%20.10lf\n"%( itr + 1, mol.func, grms ) )
+    fdesc.write( "-" * 50 + "\n\n" )
+
+# =================================================================================================
+
+def baker( mol: object, get_hess: typing.Callable,
+        step_number: typing.Optional[int] = 100,
+        step_size: typing.Optional[float] = 0.1,
+        print_frequency: typing.Optional[int] = 10,
+        gradient_tolerance: typing.Optional[float] = 1.5,
+        follow_mode: typing.Optional[int] = -1,
+        fdesc: typing.Optional[typing.IO] = sys.stdout ):
+    """
+    import  qm3.utils
+
+    def get_hess( mol: object, step: int ):
+        hes = qm3.utils.hessian.numerical( mol )
+        mol.get_grad()
+        return( hes )
+    """
+    actv = mol.actv.sum()
+    size = 3 * actv
+    if( follow_mode >= size or follow_mode < -1 ):
+        follow_mode = -1
+    fdesc.write( "---------------------------------------- Minimization (Baker)\n\n" )
+    fdesc.write( "Degrees of Freedom: %20ld\n"%( size ) )
+    fdesc.write( "Following Mode:     %20d\n"%( follow_mode ) )
+    fdesc.write( "Step Number:        %20d\n"%( step_number ) )
+    fdesc.write( "Step Size:          %20.10lg\n"%( step_size ) )
+    fdesc.write( "Print Frequency:    %20d\n"%( print_frequency ) )
+    fdesc.write( "Gradient Tolerance: %20.10lg\n\n"%( gradient_tolerance ) )
+    if( follow_mode > -1 ):
+        fdesc.write( "%10s%20s%20s%20s\n"%( "Step", "Function", "Gradient", "Nneg,Fmode,Eval" ) )
+        fdesc.write( "-" * 70 + "\n" )
+    else:
+        fdesc.write( "%10s%20s%20s%5s\n"%( "Step", "Function", "Gradient", "Nneg" ) )
+        fdesc.write( "-" * 55 + "\n" )
+    mstp = 1.0e-1
+    lrge = 1.0e+6
+    step = 50.0
+    tol1 = 1.0e-4
+    tol2 = 1.0e-8
+    emax = 1.0e5
+    emin = 1.0e-3
+    mxit = 999
+    ndeg = numpy.sqrt( size )
+    sele = numpy.argwhere( mol.actv.ravel() ).ravel()
+    grms = gradient_tolerance * 2.0
+    crd  = numpy.zeros( ( actv, 3 ), dtype=numpy.float64 )
+    flg  = True
+    itr  = 0
+    while( itr < step_number and grms > gradient_tolerance and flg ):
+        mol.coor[sele] += crd
+
+        crd = numpy.zeros( ( actv, 3 ), dtype=numpy.float64 )
+        hes = get_hess( mol, itr )
+        val, vec = numpy.linalg.eigh( hes )
+        idx = numpy.argsort( val )
+        val = val[idx]
+        vec = vec[:,idx]
+        nneg = 0
+        for i in range( size ):
+            nneg += val[i] < 0.0
+            if( numpy.fabs( val[i] ) < emin ):
+                val[i] = numpy.sign( val[i] ) * emin
+            elif( numpy.fabs( val[i] ) > emax ):
+                val[i] = numpy.sign( val[i] ) * emax
+        grd = mol.grad[sele].ravel().reshape( ( size, 1 ) )
+        grd = numpy.dot( vec.T, grd )
+
+        if( follow_mode > -1 ):
+            who = val[follow_mode]
+            if( numpy.fabs( grd[follow_mode] ) > tol1 ):
+                lmbd = 0.5 * ( who + numpy.sqrt( who * who + 4.0 * grd[follow_mode] * grd[follow_mode] ) ) 
+                lmbd = grd[follow_mode] / ( lmbd - val[follow_mode] )
+            else:
+                if( nneg == 1 ):
+                    lmbd = - grd[follow_mode] / val[follow_mode]
+                else:
+                    lmbd = mstp
+            crd = lmbd * vec[:,follow_mode]
+            crd.shape = ( actv, 3 )
+
+        if( follow_mode == 0 ):
+            lowr = 1
+        else:
+            lowr = 0 
+        lmbd = 0.0
+        if( val[lowr] < 0.0 ):
+            lmbd = val[lowr] - step
+            l1   = val[lowr]
+            l2   = - lrge
+        tmp  = 0.0;
+        for j in range( size ):
+            if( j != follow_mode ):
+                tmp += ( grd[j] * grd[j] ) / ( lmbd - val[j] )
+        i = 0
+        while( i < mxit and numpy.fabs( lmbd - tmp ) >= tol2 ):
+            if( val[lowr] > 0.0 ):
+                lmbd = tmp;
+            else:
+                if( tmp < lmbd ):
+                    l1 = lmbd;
+                if( tmp > lmbd ):
+                    l2 = lmbd;
+                if( l2 > - lrge ):
+                    lmbd = 0.5 * ( l1 + l2 )
+                elif( l2 == - lrge ):
+                    lmbd -= step;
+            tmp  = 0.0;
+            for j in range( size ):
+                if( j != follow_mode ):
+                    tmp += ( grd[j] * grd[j] ) / ( lmbd - val[j] )
+            i += 1
+        if( i > mxit ):
+            fdesc.write( "\n -- Too much lambda iterations...\n" )
+            flg = False
+
+        if( follow_mode > -1 ):
+            val[follow_mode] = lmbd - 1.0
+            vec[:,follow_mode] = 0.0
+
+        val.shape = ( size, 1 )
+        tmp = numpy.dot( vec, grd / ( lmbd - val ) )
+        tmp.shape = ( actv, 3 )
+        crd += tmp
+        tmp = numpy.linalg.norm( crd )
+        if( tmp < tol2 ):
+            fdesc.write( "\n -- The step size is *very* small...\n" )
+            flg = False
+        if( tmp > step_size ):
+            crd *= step_size / tmp
+
+        itr += 1
+        grms = numpy.linalg.norm( mol.grad ) / ndeg
+        if( itr % print_frequency == 0 ):
+            if( follow_mode < 0 ):
+                fdesc.write( "%10ld%20.5lf%20.10lf%5ld\n"%( itr, mol.func, grms, nneg ) )
+            else:
+                fdesc.write( "%10ld%20.5lf%20.10lf%5ld%5ld%10.2lf\n"%( itr, mol.func, grms, nneg, follow_mode, who ) )
+        mol.current_step( itr )
+
+    if( itr % print_frequency != 0 ):
+        if( follow_mode < 0 ):
+            fdesc.write( "%10ld%20.5lf%20.10lf%5ld\n"%( itr, mol.func, grms, nneg ) )
+        else:
+            fdesc.write( "%10ld%20.5lf%20.10lf%5ld%5ld%10.2lf\n"%( itr, mol.func, grms, nneg, follow_mode, who ) )
+    if( follow_mode > -1 ):
+        fdesc.write( "-" * 70 + "\n" )
+    else:
+        fdesc.write( "-" * 55 + "\n" )

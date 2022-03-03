@@ -270,7 +270,7 @@ class multiple_distance( object ):
         self.size = len( weigth )
 
     def get_func( self, mol: object ):
-        rr = numpy.zeros( self.size )
+        rr = numpy.zeros( self.size, dtype=numpy.float64 )
         for i in range( self.size ):
             rr[i] = numpy.linalg.norm( mol.coor[self.indx[2*i]] - mol.coor[self.indx[2*i+1]] )
         vv = numpy.sum( rr * self.weig )
@@ -278,8 +278,8 @@ class multiple_distance( object ):
         mol.rval.append( vv )
 
     def get_grad( self, mol: object ):
-        dr = numpy.zeros( ( self.size, 3 ) )
-        rr = numpy.zeros( self.size )
+        dr = numpy.zeros( ( self.size, 3 ), dtype=numpy.float64 )
+        rr = numpy.zeros( self.size, dtype=numpy.float64 )
         for i in range( self.size ):
             dr[i] = mol.coor[self.indx[2*i]] - mol.coor[self.indx[2*i+1]]
             rr[i] = numpy.linalg.norm( dr[i] )
