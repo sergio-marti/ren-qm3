@@ -1,19 +1,19 @@
 include config
 
 
-all: dcd _cgplus.so lapack_deps.o _mopac.so
+all: dcd grids _cgplus.so lapack_deps.o _mopac.so
 
 
 dcd:
 	$(PYX) setup/dcd build_ext --build-lib qm3/utils
 
 
+grids:
+	$(PYX) setup/grids build_ext --build-lib qm3/utils
+
+
 #mpi:
 #	$(MPI) $(PYX) setup/mpi build_ext --build-lib qm3/utils
-
-
-#dynamo:
-#	$(PYX) setup/dynamo build_ext --build-lib qm3/engines
 
 
 #ml_info:

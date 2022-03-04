@@ -8,13 +8,13 @@ import  qm3.engines
 
 
 class run( qm3.engines.template ):
-    def __init__( self, mol: object, fdesc,
+    def __init__( self, mol: object, fdsc,
             sel_QM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool ),
             sel_MM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool ),
             link: typing.Optional[list] = [] ):
         qm3.engines.template.__init__( self, mol, sel_QM, sel_MM, link )
         self.exe = "bash r.orca"
-        self.inp = fdesc.read()
+        self.inp = fdsc.read()
         self.ce  = qm3.data.H2J
         self.cg  = self.ce / qm3.data.A0
 

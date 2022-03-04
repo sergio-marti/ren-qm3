@@ -8,7 +8,7 @@ import  qm3.engines
 
 
 class run( qm3.engines.template ):
-    def __init__( self, mol: object, fdesc,
+    def __init__( self, mol: object, fdsc,
             sel_QM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool ),
             sel_MM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool ),
             link: typing.Optional[list] = [] ):
@@ -21,7 +21,7 @@ class run( qm3.engines.template ):
         self.lib = ctypes.CDLL( cwd + "_sqm.so" )
         self.lib.qm3_sqm_calc_.argtypes = [ ctypes.POINTER( ctypes.c_int ), ctypes.POINTER( ctypes.c_double ) ]
         self.lib.qm3_sqm_calc_.restype = None
-        self.inp = fdesc.read()
+        self.inp = fdsc.read()
         self.mk_input( mol )
         self.lib.qm3_sqm_init_()
 

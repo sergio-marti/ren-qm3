@@ -303,34 +303,34 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
                 self.mass = numpy.array( mass, dtype=numpy.float64 ).reshape( ( self.natm, 1 ) )
 
 
-    def prmtop_read( self, fdesc: typing.IO ):
+    def prmtop_read( self, fdsc: typing.IO ):
         __frmt = re.compile( "[aAiIeEdD]([0-9]+)" )
-        l = fdesc.readline()
+        l = fdsc.readline()
         while( l != "" ):
             if( l[0:12].upper() == "%FLAG CHARGE" ):
-                dsp = int( __frmt.findall( fdesc.readline() )[0] )
+                dsp = int( __frmt.findall( fdsc.readline() )[0] )
                 chrg = []
                 while( len( chrg ) < self.natm ):
-                    l = fdesc.readline()
+                    l = fdsc.readline()
                     chrg += [ float( l[i:i+dsp] ) / 18.2223 for i in range( 0, len( l ) - 1, dsp ) ]
                 self.chrg = numpy.array( chrg, dtype=numpy.float64 )
             elif( l[0:19].upper() == "%FLAG ATOMIC_NUMBER" ):
                 anum = []
-                l = fdesc.readline()
+                l = fdsc.readline()
                 dsp = int( __frmt.findall( l )[0] )
                 while( len( anum ) < self.natm ):
-                    l = fdesc.readline()
+                    l = fdsc.readline()
                     anum += [ int( l[i:i+dsp] ) for i in range( 0, len( l ) - 1, dsp ) ]
                 self.anum = numpy.array( anum, dtype=numpy.int16 )
             elif( l[0:10].upper() == "%FLAG MASS" ):
                 mass = []
-                l = fdesc.readline()
+                l = fdsc.readline()
                 dsp = int( __frmt.findall( l )[0] )
                 while( len( mass ) < self.natm ):
-                    l = fdesc.readline()
+                    l = fdsc.readline()
                     mass += [ float( l[i:i+dsp] ) for i in range( 0, len( l ) - 1, dsp ) ]
                 self.mass = numpy.array( mass, dtype=numpy.float64 ).reshape( ( self.natm, 1 ) )
-            l = fdesc.readline()
+            l = fdsc.readline()
 
 # =================================================================================================
 
