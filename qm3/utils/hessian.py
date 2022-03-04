@@ -1,5 +1,7 @@
 import  numpy
 import  typing
+import  struct
+import  os
 import  qm3.data
 
 
@@ -37,6 +39,7 @@ def numerical( mol: object,
     return( hess )
 
 
+
 def RT_modes( mol: object ) -> numpy.array:
     size = 3 * mol.actv.sum()
     sele = numpy.argwhere( mol.actv.ravel() )
@@ -62,7 +65,8 @@ def RT_modes( mol: object ) -> numpy.array:
     return( mode )
 
 
-def project_RT( hess: numpy.array, mode: numpy.array ) -> numpy.array:
+
+def project_RT( hess: numpy.array, rtmd: numpy.array ) -> numpy.array:
     size = hess.shape[0]
 # -----------------------------------------------------
 #    # G' = G - Tx * G * Tx - ... - Rx * G * Rx - ...
@@ -72,21 +76,23 @@ def project_RT( hess: numpy.array, mode: numpy.array ) -> numpy.array:
     # P = I - Tx * Tx - ... - Rx * Rx - ... 
     proj = numpy.identity( size )
     for i in range( 6 ):
-        tmp = mode[i].reshape( ( size, 1 ) )
+        tmp = rtmd[i].reshape( ( size, 1 ) )
         proj -= numpy.dot( tmp, tmp.T )
     # H' = P * H * P
     return( numpy.dot( proj, numpy.dot( hess, proj ) ) )
 
 
-def raise_RT( hess: numpy.array, mode: numpy.array,
+
+def raise_RT( hess: numpy.array, rtmd: numpy.array,
         large: typing.Optional[float] = 5.0e4 ) -> numpy.array:
     size = hess.shape[0]
     # H' = H + large * ( Tx * Tx + ... + Rx * Rx + ... )
     proj = numpy.zeros( ( size, size ), dtype=numpy.float64 )
     for i in range( 6 ):
-        tmp = mode[i].reshape( ( size, 1 ) )
+        tmp = rtmd[i].reshape( ( size, 1 ) )
         proj += numpy.dot( tmp, tmp.T )
     return( hess + large * proj )
+
 
 
 def frequencies( mol: object, hess: numpy.array, project: typing.Optional[bool] = True ) -> tuple:
@@ -114,6 +120,7 @@ def frequencies( mol: object, hess: numpy.array, project: typing.Optional[bool] 
     return( freq, mods )
 
 
+
 def IR_intensities( mol: object, mode: numpy.array ) -> numpy.array:
     actv = mol.actv.sum()
     size = 3 * actv
@@ -129,28 +136,29 @@ def IR_intensities( mol: object, mode: numpy.array ) -> numpy.array:
     return( inte * 974.8802240597 )
 
 
-try:
-    import matplotlib.pyplot
-    # -----------------------------------------------
-    # adjust frequency values:
-    # https://cccbdb.nist.gov/vibscalejust.asp
-    # -----------------------------------------------
-    # https://en.wikipedia.org/wiki/Spectral_line_shape
-    # Lorentzian: L = 1 over { 1 + x^2 } ~~~~~~ x = { p^0 - p } over { s / 2 }
-    # -----------------------------------------------
-    def IR_spectrum( freq: numpy.array, inte: numpy.array,
-            sigm: typing.Optional[float] = 100.,
-            minf: typing.Optional[float] = 100.,
-            maxf: typing.Optional[float] = 4000.,
-            scal: typing.Optional[float] = 1.0 ):
-        nn = len( freq )
-        hs = 0.5 * sigm
-        sx = numpy.arange( int( minf ), int( maxf ), dtype=numpy.float64 )
-        sy = numpy.zeros( len( sx ), dtype=numpy.float64 )
-        for i in range( nn ):
-            if( freq[i] >= minf ):
-                sy += inte[i] / ( 1.0 + numpy.square( ( freq[i] * scal - sx ) / hs ) )
-        sy /= numpy.max( sy )
+
+# -----------------------------------------------
+# adjust frequency values:
+# https://cccbdb.nist.gov/vibscalejust.asp
+# -----------------------------------------------
+# https://en.wikipedia.org/wiki/Spectral_line_shape
+# Lorentzian: L = 1 over { 1 + x^2 } ~~~~~~ x = { p^0 - p } over { s / 2 }
+# -----------------------------------------------
+def IR_spectrum( freq: numpy.array, inte: numpy.array,
+        sigm: typing.Optional[float] = 100.,
+        minf: typing.Optional[float] = 100.,
+        maxf: typing.Optional[float] = 4000.,
+        scal: typing.Optional[float] = 1.0 ) -> tuple:
+    nn = len( freq )
+    hs = 0.5 * sigm
+    sx = numpy.arange( int( minf ), int( maxf ), dtype=numpy.float64 )
+    sy = numpy.zeros( len( sx ), dtype=numpy.float64 )
+    for i in range( nn ):
+        if( freq[i] >= minf ):
+            sy += inte[i] / ( 1.0 + numpy.square( ( freq[i] * scal - sx ) / hs ) )
+    sy /= numpy.max( sy )
+    try:
+        import  matplotlib.pyplot
         matplotlib.pyplot.clf()
         matplotlib.pyplot.grid( True )
         matplotlib.pyplot.xlim( maxf + sigm, minf - sigm )
@@ -158,8 +166,9 @@ try:
         matplotlib.pyplot.plot( sx, sy, '-' )
         matplotlib.pyplot.tight_layout()
         matplotlib.pyplot.savefig( "spectrum.pdf" )
-except:
-    pass
+    except:
+        error
+    return( sx, sy )
 
 
 
@@ -249,4 +258,92 @@ def rrho( mol: object, freq: numpy.array,
     gg = - qm3.data.R * temp * ( qt + qr + qv ) * 1.0e-3
     return( ( zz, gg ) )
 
+
+
+def update_bfgs( dx: numpy.array, dg: numpy.array, hess: numpy.array ):
+    size = hess.shape[0]
+    vec  = []
+    tys  = 0.0
+    tshs = 0.0
+    for i in range( size ):
+        t0 = 0.0
+        for j in range( size ):
+            t0 += dx[j] * hess[i,j]
+        vec.append( t0 )
+        tshs += dx[i] * t0
+        tys += dg[i] * dx[i]
+    for i in range( size ):
+        for j in range( size ):
+            hess[i,j] += dg[i] * dg[j] / tys - vec[i] * vec[j] / tshs
+
+
+
+def update_psb( dx: numpy.array, dg: numpy.array, hess: numpy.array ):
+    size = hess.shape[0]
+    vec  = []
+    tss  = 0.0
+    ths  = 0.0
+    for i in range( size ):
+        t0 = 0.0
+        for j in range( size ):
+            t0 += dx[j] * hess[i,j]
+        vec.append( t0 - dg[i] )
+        tss += dx[i] * dx[i]
+        ths += vec[i] * dx[i]
+    t0 = tss * tss
+    for i in range( size ):
+        for j in range( size ):
+            hess[i,j] += dx[i] * dx[j] * ths / t0 - ( vec[i] * dx[j] + vec[j] * dx[i] ) / tss
+
+
+
+def update_bofill( dx: numpy.array, dg: numpy.array, hess: numpy.array ):
+    size = hess.shape[0]
+    vec  = []
+    tvv  = 0.0
+    tss  = 0.0
+    tvs  = 0.0
+    for i in range( size ):
+        t0 = 0.0
+        for j in range( size ):
+            t0 += dx[j] * hess[i,j]
+        vec.append( t0 - dg[i] )
+        tvv += vec[i] * vec[i]
+        tss += dx[i] * dx[i]
+        tvs += vec[i] * dx[i]
+    ph = tvs * tvs / ( tvv * tss )
+    t0 = tss * tss
+    for i in range( size ):
+        for j in range( size ):
+            hess[i,j] += - ph * ( vec[i] * vec[j] / tvs ) + \
+                    ( 1.0 - ph ) * ( dx[i] * dx[j] * tvs / t0 - ( vec[i] * dx[j] + vec[j] * dx[i] ) / tss )
+
+
+
+def manage( mol: object, hess: numpy.array,
+        should_update: typing.Optional[bool] = False,
+        update_func: typing.Optional[typing.Callable] = update_bofill,
+        dump_name: typing.Optional[str] = "update.dump" ):
+    size = 3 * mol.actv.sum()
+    sele = numpy.argwhere( mol.actv ).ravel()
+    rr   = mol.coor[sele].ravel()
+    gg   = mol.grad[sele].ravel()
+    if( should_update and os.access( dump_name, os.R_OK ) and os.stat( dump_name )[stat.ST_SIZE] == size * ( size * 8 + 16 ) ):
+        f = open( dump_name, "rb" )
+        dx = rr - numpy.array( struct.unpack( "%dd"%( size ), f.read( size * 8 ) )[:] )
+        dg = gg - numpy.array( struct.unpack( "%dd"%( size ), f.read( size * 8 ) )[:] )
+        hh = numpy.array( struct.unpack( "%dd"%( size * size ), f.read( size * size * 8 ) )[:] )
+        f.close()
+        if( numpy.linalg.norm( dx ) > 1.0e-4 ):
+            update_func( dx, dg, hh )
+        hess[:,:] = hh[:,:]
+    f = open( dump_name, "wb" )
+    for i in range( size ):
+        f.write( struct.pack( "d", rr[i] ) )
+    for i in range( size ):
+        f.write( struct.pack( "d", gg[i] ) )
+    for i in range( size ):
+        for j in range( size ):
+            f.write( struct.pack( "d", hess[i,j] ) )
+    f.close()
 

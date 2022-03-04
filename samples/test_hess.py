@@ -1,11 +1,12 @@
 import  numpy
 import  qm3
-import  qm3.engines.mopac
 import  qm3.utils.hessian
 import  io
+import  sys
 import  os
 import  pickle
 
+cwd = os.path.abspath( os.path.dirname( sys.argv[0] ) ) + os.sep
 
 mol = qm3.molecule()
 f = io.StringIO( """26
@@ -39,20 +40,17 @@ H           7.2054065864       -5.1951553158       -1.9398695949
 """ )
 mol.xyz_read( f )
 mol.guess_atomic_numbers()
-mol.engines["qm"] = qm3.engines.mopac.run( mol, "AM1", 0 )
 
-if( not os.path.isfile( "hessian.pk" ) ):
-    hes = qm3.utils.hessian.numerical( mol )
-    with open( "hessian.pk", "wb" ) as f:
-        pickle.dump( hes, f )
-else:
-    mol.get_func()
-    with open( "hessian.pk", "rb" ) as f:
-        hes = pickle.load( f )
+with open( cwd + "test_hess.pk", "rb" ) as f:
+    hes = numpy.array( pickle.load( f ) )
+    hes.shape = ( 3 * mol.natm, 3 * mol.natm )
+    mol.chrg = numpy.array( pickle.load( f ) )
+    dsp = numpy.array( pickle.load( f ) )
+    grd = numpy.array( pickle.load( f ) )
 
 tmp = numpy.trace( hes )
 print( tmp )
-assert( numpy.fabs( tmp - 273925.98919048626 ) < 1.e-2 ), "Hessian calculation error"
+assert( numpy.fabs( tmp - 273925.9891863297 ) < 1.e-2 ), "Hessian calculation error"
 
 tmp = numpy.linalg.norm( numpy.sum( mol.mass * mol.coor * mol.actv, axis = 0 ) / numpy.sum( mol.mass * mol.actv ) )
 print( tmp )
@@ -67,33 +65,46 @@ val, vec = qm3.utils.hessian.frequencies( mol, qm3.utils.hessian.raise_RT( hes, 
 print( val[0:7] )
 tmp = numpy.linalg.norm( val )
 print( tmp )
-assert( numpy.fabs( tmp - 13993.713951772517 ) < 1.e-4 ), "raise RT modes error"
+assert( numpy.fabs( tmp - 13993.713955226269 ) < 1.e-4 ), "raise RT modes error"
 
 val, vec = qm3.utils.hessian.frequencies( mol, hes )
 print( val[0:7] )
 tmp = numpy.linalg.norm( val )
 print( tmp )
-assert( numpy.fabs( tmp - 13112.662906261467 ) < 1.e-4 ), "Frequencies error"
+assert( numpy.fabs( tmp - 13112.662906820218 ) < 1.e-4 ), "Frequencies error"
 tmp = numpy.linalg.norm( vec[:,-1] )
 print( tmp )
-assert( numpy.fabs( tmp - 0.9960534860021342 ) < 1.e-4 ), "Normal Modes error"
+assert( numpy.fabs( tmp - 0.9960534860021327 ) < 1.e-4 ), "Normal Modes error"
 
 iri = qm3.utils.hessian.IR_intensities( mol, vec )
 tmp = numpy.linalg.norm( iri[6:] )
 print( tmp )
-assert( numpy.fabs( tmp - 463.84391448258356 ) < 0.1 ), "IR intensities error"
+assert( numpy.fabs( tmp - 463.79961524343355 ) < 0.1 ), "IR intensities error"
 
 qm3.utils.hessian.IR_spectrum( val, iri )
 
 rms, frc = qm3.utils.hessian.force_constants( mol, val, vec )
 tmp = numpy.linalg.norm( rms[6:] )
 print( tmp )
-assert( numpy.fabs( tmp - 39.447483898850365 ) < 1.e-4 ), "Reduced masses error"
+assert( numpy.fabs( tmp - 39.45034042598193 ) < 1.e-4 ), "Reduced masses error"
 
 qm3.utils.hessian.normal_mode( mol, val, vec, 0, afac = 8.0 )
 
 zpe, gib = qm3.utils.hessian.rrho( mol, val )
 print( zpe )
-assert( numpy.fabs( zpe - 518.0466085854382 ) < 1.e-4 ), "ZPE error"
+assert( numpy.fabs( zpe - 518.0466082503954 ) < 1.e-4 ), "ZPE error"
 print( gib )
-assert( numpy.fabs( gib - -110.76834124569572 ) < 1.e-4 ), "Gibbs error"
+assert( numpy.fabs( gib - -110.76834276640075 ) < 1.e-4 ), "Gibbs error"
+
+bak = hes.copy()
+for func, check in [ ( qm3.utils.hessian.update_bfgs, 13120.366115373925 ),
+        ( qm3.utils.hessian.update_psb, 13112.733197367319 ),
+        ( qm3.utils.hessian.update_bofill, 13112.756700043336 ) ]:
+    hes = bak.copy()
+    func( dsp, grd, hes )
+    val, vec = qm3.utils.hessian.frequencies( mol, hes )
+    tmp = numpy.linalg.norm( val )
+    print( val[0], tmp )
+    assert( numpy.fabs( tmp - check ) < 1.e-4 ), "Hessian update error"
+
+qm3.utils.hessian.manage( mol, bak )
