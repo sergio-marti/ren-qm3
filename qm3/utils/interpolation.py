@@ -8,7 +8,7 @@ def find_center( rx: float, x: numpy.array ) -> int:
         w = numpy.where( x <= rx )[0][-1]
     except:
         w = 0
-    if( w == len( x ) ):
+    if( w >= len( x ) - 1 ):
         return( w - 1 )
     else:
         return( w )
@@ -18,17 +18,18 @@ def find_center( rx: float, x: numpy.array ) -> int:
 class gaussian( object ):
     def __init__( self, x: numpy.array, y: numpy.array,
             sigma: typing.Optional[float] = 0.1 ):
-        self.x = x.copy()
-        self.y = y.copy()
+        self.x = x
+        self.y = y
         self.sigma = sigma
 
 
     def calc( self, rx: float ) -> tuple:
-        w  = numpy.exp( - numpy.power( ( rx - self.x ) / self.sigma, 2 ) )
+        d  = ( rx - self.x ) / self.sigma
+        w  = numpy.exp( - numpy.square( d ) )
         t  = numpy.sum( w )
         ry = numpy.sum( self.y * w ) / t
-        dy = numpy.sum( self.y * w * 2.0 * ( rx - self.x ) / self.sigma ) / t
-        return( ry, - dy )
+        dy = ( ry * numpy.sum( w * d ) - numpy.sum( self.y * w * d ) ) / ( t * self.sigma )
+        return( ry, 2.0 * dy )
 
 
 
