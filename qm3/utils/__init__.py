@@ -67,3 +67,36 @@ def dihedral( ci: numpy.array, cj: numpy.array, ck: numpy.array, cl: numpy.array
     cl:       array( 3 )
     """
     return( dihedralRAD( ci, cj, ck, cl ) * qm3.data.R2D )
+
+
+
+def k_means( data: numpy.array, K: int ):
+    M = [ data[numpy.random.randint(data.shape[0])] ]
+    while( len( M ) < K ):
+        d2 = numpy.array( [ min( [ numpy.power( numpy.linalg.norm( x - c ), 2.0 ) for c in M ] ) for x in data ] )
+        cp = ( d2 / d2.sum() ).cumsum()
+        r  = numpy.random.random()
+        M.append( data[numpy.where( cp >= r )[0][0]] )
+    M = numpy.array( M )
+    C = None
+    I = None
+    o = data[numpy.random.choice( range( data.shape[0] ), K, replace = False )]
+    while( C == None or numpy.setdiff1d( numpy.unique( o ), numpy.unique( M ) ).size != 0 ):
+        o = M 
+        C = {}
+        I = {}
+        for j in range( data.shape[0] ):
+            w = min( [ ( numpy.linalg.norm( data[j] - M[i] ), i ) for i in range( M.shape[0] ) ] )[1]
+            try:
+                C[w].append( data[j] )
+                I[w].append( j )
+            except:
+                C[w] = [ data[j] ]
+                I[w] = [ j ]
+        M = numpy.array( [ numpy.mean( C[k], axis = 0 ) for k in iter( C ) ] )
+    if( type( C[0][0] ) == numpy.array ):
+        C = { k: numpy.array( C[k] ).reshape( ( len( C[k] ), len( C[k][0] ) ) ) for k in iter( C ) }
+    else:
+        C = { k: numpy.array( C[k] ) for k in iter( C ) }
+    return( C, I )
+

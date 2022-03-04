@@ -1,5 +1,6 @@
-import numpy
-import qm3.utils.interpolation
+import  numpy
+import  matplotlib.pyplot as plt
+import  qm3.utils.interpolation
 
 x = numpy.linspace( 0, 10, 101 )
 y = numpy.sin( x )
@@ -43,3 +44,16 @@ print( "CSpline:  ", qm3.utils.interpolation.cubic_spline( x, y ).calc( 9.5 ) )
 print( "Fritsch.C:", qm3.utils.interpolation.hermite_spline( x, y ).calc( 9.5 ) )
 print( "Steffen:  ", qm3.utils.interpolation.hermite_spline( x, y, "steffen" ).calc( 9.5 ) )
 print( "Akima:    ", qm3.utils.interpolation.hermite_spline( x, y, "akima" ).calc( 9.5 ) )
+
+
+numpy.random.seed()
+x = numpy.linspace( 0, 2 * numpy.pi, 100 )
+y = numpy.sin( x )
+p = y + numpy.random.random( 100 ) - 0.5
+f = qm3.utils.interpolation.savitzky_golay( x, p )
+g = qm3.utils.interpolation.gaussian( x, f, 0.5 )
+plt.plot( x, y, '.' )
+plt.plot( x, p, 'o' )
+plt.plot( x, f, '-' )
+plt.plot( x, [ g.calc( i )[0] for i in x ], '-' )
+plt.show()
