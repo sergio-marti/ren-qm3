@@ -38,6 +38,10 @@ class my_problem( qm3.problem.template ):
         self.emm = qm3.engines.openmm.run_native( _sys, _top, qm_atom = sqm, platform = "OpenCL" )
         self.eqm = qm3.engines.xtb.run_dynlib( self.mol, 1, 0, sqm, smm )
 
+        for i in sqm:
+            self.mol.chrg[i] = 0.0
+        self.emm.update_chrg( self.mol )
+
         self.size = 3 * self.mol.natm
         self.coor = self.mol.coor
 

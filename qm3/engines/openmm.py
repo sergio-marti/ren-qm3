@@ -21,7 +21,9 @@ class run( object ):
                     for i in range( 0, nqm - 1 ):
                         for j in range( i + 1, nqm ):
                             cur.addException( idx[i], idx[j], 0.0, 0.0, 0.0, replace = True )
-                    self.nbn = cur
+                    for i in idx:
+                        tmp = cur.getParticleParameters( i )
+                        cur.setParticleParameters( i, 0.0, tmp[1], tmp[2] )
                 elif( type( cur ) == openmm.HarmonicBondForce ):
                     for i in range( cur.getNumBonds() ):
                         tmp = cur.getBondParameters( i )
@@ -69,8 +71,8 @@ class run( object ):
     def update_chrg( self, mol: object ):
         if( self.nbn != None ):
             for i in range( mol.natm ):
-                t = self.nbn.getParticleParameters( i )
-                self.nbn.setParticleParameters( i, mol.chrg[i], t[1], t[2] )
+                tmp = self.nbn.getParticleParameters( i )
+                self.nbn.setParticleParameters( i, mol.chrg[i], tmp[1], tmp[2] )
             self.nbn.updateParametersInContext( self.sim.context )
         else:
             print( ">> Unable to update charges: no openmm.NonbondedForce available!" )

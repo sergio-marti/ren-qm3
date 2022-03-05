@@ -35,8 +35,8 @@ mol.engines["qm"].exe = "/Users/smarti/Devel/orca/orca_4_2_1_macosx_openmpi314/o
 
 mol.get_grad()
 print( mol.func )
-assert( numpy.fabs( mol.func - -697207.4364563406 ) < 1.e-4 ), "function error"
+assert( numpy.fabs( mol.func - -697207.4365 ) < 0.001 ), "function error"
 print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 575.7003584043927 ) < 1.e-2 ), "gradient error"
+assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 575.700 ) < 0.01 ), "gradient error"
 print( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) - 68.44375773955394 ) < 1.e-4 ), "QM-LA gradient error"
+assert( numpy.fabs( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) - 68.4438 ) < 0.001 ), "QM-LA gradient error"

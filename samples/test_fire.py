@@ -41,6 +41,6 @@ qm3.actions.minimize.fire( mol )
 
 mol.get_grad()
 print( mol.func )
-assert( numpy.fabs( mol.func - -95302.54253867632 ) < 0.01 ), "Fire[OpenMM/xTB]: function error"
+assert( numpy.fabs( mol.func - -95302.543 ) < 0.01 ), "Fire[OpenMM/xTB]: function error"
 print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 114.83926498050597 ) < 0.01 ), "Fire[OpenMM/xTB]: gradient error"
+assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 114.839 ) < 0.01 ), "Fire[OpenMM/xTB]: gradient error"
