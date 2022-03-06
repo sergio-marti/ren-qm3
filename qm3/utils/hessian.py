@@ -3,6 +3,7 @@ import  typing
 import  struct
 import  os
 import  qm3.data
+import  qm3.utils
 
 
 def numerical( mol: object,
@@ -37,32 +38,6 @@ def numerical( mol: object,
     # symmetrize
     hess = 0.5 * ( hess + hess.T )
     return( hess )
-
-
-
-def RT_modes( mol: object ) -> numpy.array:
-    size = 3 * mol.actv.sum()
-    sele = numpy.argwhere( mol.actv.ravel() )
-    mode = numpy.zeros( ( 6, size ), dtype=numpy.float64 )
-    cent = numpy.sum( mol.mass * mol.coor * mol.actv, axis = 0 ) / numpy.sum( mol.mass * mol.actv )
-    k = 0
-    for i in sele:
-        sqrm = numpy.sqrt( mol.mass[i] )
-        mode[0,k:k+3] = [ sqrm, 0.0, 0.0 ]
-        mode[1,k:k+3] = [ 0.0, sqrm, 0.0 ]
-        mode[2,k:k+3] = [ 0.0, 0.0, sqrm ]
-        mode[3,k:k+3] = [ 0.0, - ( mol.coor[i,2] - cent[2] ) * sqrm, ( mol.coor[i,1] - cent[1] ) * sqrm ]
-        mode[4,k:k+3] = [ ( mol.coor[i,2] - cent[2] ) * sqrm, 0.0, - ( mol.coor[i,0] - cent[0] ) * sqrm ]
-        mode[5,k:k+3] = [ - ( mol.coor[i,1] - cent[1] ) * sqrm, ( mol.coor[i,0] - cent[0] ) * sqrm, 0.0 ]
-        k += 3
-    # orthogonalize modes
-    for i in range( 6 ):
-        for j in range( i ):
-            mode[i] -= numpy.sum( mode[i] * mode[j] ) * mode[j]
-        tmp = numpy.sqrt( numpy.sum( mode[i] * mode[i] ) )
-        if( tmp > 0.0 ):
-            mode[i] /= tmp
-    return( mode )
 
 
 
@@ -103,7 +78,7 @@ def frequencies( mol: object, hess: numpy.array, project: typing.Optional[bool] 
         for j in range( size ):
             temp[i,j] *= mass[i//3] * mass[j//3]
     if( project ):
-        temp = project_RT( temp, RT_modes( mol ) )
+        temp = project_RT( temp, qm3.utils.RT_modes( mol ) )
     freq, mods = numpy.linalg.eigh( temp )
     sidx = numpy.argsort( freq )
     freq = freq[sidx]

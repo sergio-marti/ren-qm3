@@ -229,7 +229,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         fdsc.readline()
         if( replace and self.natm == n ):
             for i in range( n ):
-                temp = f.readline().split()
+                temp = fdsc.readline().split()
                 for j in [0, 1, 2]:
                     self.coor[i,j] = float( temp[j+1] )
         else:
@@ -349,3 +349,13 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         for itm in self.engines:
             self.engines[itm].get_grad( self )
         self.grad *= self.actv.astype( numpy.float64 )
+
+
+    def project_gRT( self ):
+        rtmd = qm3.utils.RT_modes( self )
+        sele = numpy.argwhere( self.actv.ravel() ).ravel()
+        rtmd.shape = ( 6, len( sele ), 3 )
+        grad = self.grad[sele]
+        for i in range( 6 ):
+            grad -= numpy.sum( grad * rtmd[i] ) * rtmd[i]
+        self.grad[sele] = grad

@@ -1,5 +1,6 @@
 import  numpy
 import  qm3
+import	qm3.utils
 import  qm3.utils.hessian
 import  io
 import  sys
@@ -56,7 +57,7 @@ tmp = numpy.linalg.norm( numpy.sum( mol.mass * mol.coor * mol.actv, axis = 0 ) /
 print( tmp )
 assert( numpy.fabs( tmp - 5.6317 ) < 0.001 ), "Center of mass error"
 
-rtm = qm3.utils.hessian.RT_modes( mol )
+rtm = qm3.utils.RT_modes( mol )
 tmp = rtm[-1].sum()
 print( tmp )
 assert( numpy.fabs( tmp - -0.0191 ) < 0.001 ), "RT modes error"
