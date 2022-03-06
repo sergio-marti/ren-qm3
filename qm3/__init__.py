@@ -359,3 +359,29 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         for i in range( 6 ):
             grad -= numpy.sum( grad * rtmd[i] ) * rtmd[i]
         self.grad[sele] = grad
+
+# =================================================================================================
+
+    def to_principal_axes( self, geometrical: typing.Optional[bool] = False ):
+        if( geometrical ):
+            mass = numpy.ones( ( self.natm, 1 ), dtype=numpy.float64 )
+        else:
+            mass = self.mass
+        cen = numpy.sum( mass * self.coor, axis = 0 ) / mass.sum()
+        print( cen )
+        xx = 0.0; xy = 0.0; xz = 0.0; yy = 0.0; yz = 0.0; zz = 0.0
+        for i in range( self.natm ):
+            xx += mass[i] * self.coor[i,0] * self.coor[i,0]
+            xy += mass[i] * self.coor[i,0] * self.coor[i,1]
+            xz += mass[i] * self.coor[i,0] * self.coor[i,2]
+            yy += mass[i] * self.coor[i,1] * self.coor[i,1]
+            yz += mass[i] * self.coor[i,1] * self.coor[i,2]
+            zz += mass[i] * self.coor[i,2] * self.coor[i,2]
+        val, vec = numpy.linalg.eigh( numpy.array( [ yy+zz, -xy, -xz, -xy, xx+zz, -yz, -xz, -yz, xx+yy ] ).reshape( ( 3, 3 ) ) )
+        idx = numpy.argsort( val );
+        val = val[idx];
+        vec = vec[:,idx]
+        if( numpy.linalg.det( vec ) < 0.0 ):
+            vec[:,0] = - vec[:,0]
+        for i in range( self.natm ):
+            self.coor[i] = numpy.dot( self.coor[i] - cen, vec ) 

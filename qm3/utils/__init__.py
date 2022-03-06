@@ -14,6 +14,23 @@ except:
 
 # =================================================================================================
 
+def from_upper_diagonal( vec: list, by_rows: typing.Optional[bool] = True ) -> numpy.array:
+    t = len( vec )
+    n = int( round( 0.5 * ( numpy.sqrt( 1.0 + 8.0 * t ) - 1.0 ), 0 ) )
+    if( n * ( n + 1 ) // 2 == t ):
+        out = numpy.zeros( ( n, n ) )
+        if( by_rows ):
+            ii,jj = numpy.triu_indices( n )
+        else:
+            ii,jj = numpy.tril_indices( n )
+        out[ii,jj] = vec
+        out[jj,ii] = vec
+        return( out )
+    else:
+        raise Exception( "from_upper_diagonal: invalid dimensions" )
+
+# =================================================================================================
+
 def distanceSQ( ci: numpy.array, cj: numpy.array,
         box: typing.Optional[numpy.array] = numpy.array(
             [ qm3.data.MXLAT, qm3.data.MXLAT, qm3.data.MXLAT ] ) ) -> float:
