@@ -40,7 +40,8 @@ _dftb.so:
 
 _xtb.so:
 	gfortran $(SHD) -o qm3/engines/_xtb.so qm3/engines/xtb.f90 -Jbuild -Ibuild \
-		-fPIC -I$(XTB)/include $(XTB)/libxtb.a $(MLB)
+		-fPIC -I$(XTB)/include \
+		$(XTB)/libxtb.a $(XTB)/dist/_deps/mctc-lib-build/libmctc-lib.a $(MLB)
 
 
 _dftd4.so:
