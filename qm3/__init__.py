@@ -199,8 +199,6 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         self.mass = numpy.zeros( ( self.natm, 1 ), dtype=numpy.float64 )
         self.actv = numpy.ones( ( self.natm, 1 ), dtype=numpy.bool )
         self.engines = {}
-        self.func = 0.0
-        self.grad = numpy.zeros( ( self.natm, 3 ), dtype=numpy.float64 )
         self.rebuild()
 
 
@@ -236,7 +234,6 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             self.natm = 0
             labl = []
             coor = []
-            labl = []
             for i in range( n ):
                 temp = fdsc.readline().split()
                 labl.append( temp[0] )
@@ -255,8 +252,6 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             self.rlim = numpy.array( [ 0, self.natm ], dtype=numpy.int32 )
             self.indx = None
             self.engines = {}
-            self.func = 0.0
-            self.grad = numpy.zeros( ( self.natm, 3 ), dtype=numpy.float64 )
 
 
     def xyz_write( self, fdsc: typing.IO,
@@ -273,6 +268,67 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         for i in range( self.natm ):
             if( lsel[i] ):
                 fdsc.write( fmt%( qm3.data.symbol[self.anum[i]], self.coor[i,0], self.coor[i,1], self.coor[i,2] ) )
+
+# =================================================================================================
+
+    def sdf_read( self, fdsc: typing.IO ):
+        for i in range( 4 ):
+            l = fdsc.readline()
+        self.natm = int( l.strip().split()[0] )
+        labl = []
+        coor = []
+        for i in range( self.natm ):
+            temp = fdsc.readline().split()
+            labl.append( temp[3] )
+            coor += [ float( j ) for j in temp[0:3] ]
+        self.labl = numpy.array( labl, dtype=numpy.unicode )
+        self.coor = numpy.array( coor, dtype=numpy.float64 ).reshape( ( self.natm, 3 ) )
+        temp = [ "X" ] * self.natm
+        self.segn = numpy.array( temp, dtype=numpy.unicode )
+        self.resi = numpy.ones( self.natm, dtype=numpy.int16 )
+        self.resn = numpy.array( temp, dtype=numpy.unicode )
+        self.anum = numpy.zeros( self.natm, dtype=numpy.int16 )
+        self.chrg = numpy.zeros( self.natm, dtype=numpy.float64 )
+        self.mass = numpy.zeros( ( self.natm, 1 ), dtype=numpy.float64 )
+        self.actv = numpy.ones( ( self.natm, 1 ), dtype=numpy.bool )
+        self.rlim = numpy.array( [ 0, self.natm ], dtype=numpy.int32 )
+        self.indx = None
+        self.engines = {}
+
+
+    def mol2_read( self, fdsc: typing.IO ):
+        labl = []
+        coor = []
+        resi = []
+        resn = []
+        segn = []
+        chrg = []
+        l = fdsc.readline()
+        while( l != "" ):
+            if( l.strip() == "@<TRIPOS>MOLECULE" ):
+                fdsc.readline()
+                self.natm = int( fdsc.readline().strip().split()[0] )
+            if( l.strip() == "@<TRIPOS>ATOM" ):
+                for i in range( self.natm ):
+                    temp = fdsc.readline().strip().split()
+                    labl.append( temp[1] )
+                    coor += [ float( temp[2] ), float( temp[3] ), float( temp[4] ) ]
+                    resi.append( int( temp[6] ) )
+                    resn.append( temp[7][0:3] )
+                    chrg.append( float( temp[8] ) )
+                    segn.append( "X" )
+            l = fdsc.readline()
+        self.labl = numpy.array( labl, dtype=numpy.unicode )
+        self.coor = numpy.array( coor, dtype=numpy.float64 ).reshape( ( self.natm, 3 ) )
+        self.segn = numpy.array( segn, dtype=numpy.unicode )
+        self.resi = numpy.array( resi, dtype=numpy.int32 )
+        self.resn = numpy.array( resn, dtype=numpy.unicode )
+        self.anum = numpy.zeros( self.natm, dtype=numpy.int16 )
+        self.chrg = numpy.array( chrg, dtype=numpy.float64 )
+        self.mass = numpy.zeros( ( self.natm, 1 ), dtype=numpy.float64 )
+        self.actv = numpy.ones( ( self.natm, 1 ), dtype=numpy.bool )
+        self.engines = {}
+        self.rebuild()
 
 # =================================================================================================
 
