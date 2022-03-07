@@ -352,6 +352,9 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
 
 
     def project_gRT( self ):
+        """
+        projects R/T from the gradient vector using the RT-modes of the active selection
+        """
         rtmd = qm3.utils.RT_modes( self )
         sele = numpy.argwhere( self.actv.ravel() ).ravel()
         rtmd.shape = ( 6, len( sele ), 3 )
@@ -363,14 +366,16 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
 # =================================================================================================
 
     def to_principal_axes( self, geometrical: typing.Optional[bool] = False ):
+        """
+        Transforms the whole molecule, using the inertia moments and center of the active selection
+        """
         if( geometrical ):
             mass = numpy.ones( ( self.natm, 1 ), dtype=numpy.float64 )
         else:
             mass = self.mass
-        cen = numpy.sum( mass * self.coor, axis = 0 ) / mass.sum()
-        print( cen )
+        self.coor -= numpy.sum( mass * self.coor * self.actv, axis = 0 ) / numpy.sum( mass * self.actv )
         xx = 0.0; xy = 0.0; xz = 0.0; yy = 0.0; yz = 0.0; zz = 0.0
-        for i in range( self.natm ):
+        for i in numpy.argwhere( self.actv.ravel() ):
             xx += mass[i] * self.coor[i,0] * self.coor[i,0]
             xy += mass[i] * self.coor[i,0] * self.coor[i,1]
             xz += mass[i] * self.coor[i,0] * self.coor[i,2]
@@ -378,10 +383,50 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             yz += mass[i] * self.coor[i,1] * self.coor[i,2]
             zz += mass[i] * self.coor[i,2] * self.coor[i,2]
         val, vec = numpy.linalg.eigh( numpy.array( [ yy+zz, -xy, -xz, -xy, xx+zz, -yz, -xz, -yz, xx+yy ] ).reshape( ( 3, 3 ) ) )
-        idx = numpy.argsort( val );
-        val = val[idx];
-        vec = vec[:,idx]
+        vec = vec[:,numpy.argsort( val )]
         if( numpy.linalg.det( vec ) < 0.0 ):
             vec[:,0] = - vec[:,0]
         for i in range( self.natm ):
-            self.coor[i] = numpy.dot( self.coor[i] - cen, vec ) 
+            self.coor[i] = numpy.dot( self.coor[i], vec ) 
+
+
+    def superimpose( self, cref: numpy.array ):
+        """
+        Transforms the whole molecule, by using the active selection on the reference coordinates (cref)
+        """
+        rcrd = cref.copy()
+        rcen = numpy.average( rcrd, axis = 0 )
+        rcrd -= rcen
+        lcrd = self.coor[self.actv.ravel()]
+        lcen = numpy.average( lcrd, axis = 0 )
+        lcrd -= lcen
+        covm = numpy.dot( lcrd.T, rcrd )
+        r1, ss, r2 = numpy.linalg.svd( covm )
+        if( numpy.linalg.det( covm ) < 0 ):
+            r2[2,:] *= -1.0
+        self.coor = numpy.dot( self.coor - lcen, numpy.dot( r1, r2 ) ) + rcen
+        
+
+    def rotate( self, center: numpy.array, axis: numpy.array, theta: float ):
+        """
+        rotates only the active selection
+        """
+        cos = numpy.cos( - theta / qm3.data.R2D )
+        sin = numpy.sin( - theta / qm3.data.R2D )
+        mcb = numpy.zeros( (3,3) )
+        mcb[2,:] = axis / numpy.linalg.norm( axis )
+        if( mcb[2,2] != 0.0 ):
+            mcb[0,:] = [ 1.0, 1.0, - ( mcb[2,0] + mcb[2,1] ) / mcb[2,2] ]
+        else:
+            if( mcb[2,1] != 0.0 ):
+                mcb[0,:] = [ 1.0, - mcb[2,0] / mcb[2,1], 0.0 ]
+            else:
+                mcb[0,:] = [ 0.0, 1.0, 0.0 ]
+        mcb[0,:] /= numpy.linalg.norm( mcb[0,:] )
+        mcb[1,:] = numpy.cross( mcb[2,:], mcb[0,:] )
+        mcb[1,:] /= numpy.linalg.norm( mcb[1,:] )
+        rot = numpy.dot( mcb.T,
+                numpy.array( [ [ cos, sin, 0.0 ], [ - sin, cos, 0.0 ], [ 0.0, 0.0, 1.0 ] ] ) )
+        for i in numpy.argwhere( self.actv.ravel() ):
+            self.coor[i] = numpy.dot( rot, numpy.dot( mcb,
+                ( self.coor[i] - center ).reshape( ( 3, 1 ) ) ) ).ravel() + center
