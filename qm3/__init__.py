@@ -16,11 +16,11 @@ class molecule( object ):
     def __init__( self ):
         self.natm = 0
         self.boxl = numpy.array( [ qm3.data.MXLAT, qm3.data.MXLAT, qm3.data.MXLAT ] )
-        self.labl = None # dtype=numpy.unicode
+        self.labl = None # dtype=qm3.data.strsiz
         self.coor = None # dtype=numpy.float64
-        self.segn = None # dtype=numpy.unicode
+        self.segn = None # dtype=qm3.data.strsiz
         self.resi = None # dtype=numpy.int32
-        self.resn = None # dtype=numpy.unicode
+        self.resn = None # dtype=qm3.data.strsiz
         self.anum = None # dtype=numpy.int16
         self.chrg = None # dtype=numpy.float64
         self.mass = None # dtype=numpy.float64
@@ -189,11 +189,11 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
                         segn.append( "A" )
                 coor += [ float( l[30:38] ), float( l[38:46] ), float( l[46:54] ) ]
                 self.natm += 1
-        self.labl = numpy.array( labl, dtype=numpy.unicode )
+        self.labl = numpy.array( labl, dtype=qm3.data.strsiz )
         self.coor = numpy.array( coor, dtype=numpy.float64 ).reshape( ( self.natm, 3 ) )
-        self.segn = numpy.array( segn, dtype=numpy.unicode )
+        self.segn = numpy.array( segn, dtype=qm3.data.strsiz )
         self.resi = numpy.array( resi, dtype=numpy.int32 )
-        self.resn = numpy.array( resn, dtype=numpy.unicode )
+        self.resn = numpy.array( resn, dtype=qm3.data.strsiz )
         self.anum = numpy.zeros( self.natm, dtype=numpy.int16 )
         self.chrg = numpy.zeros( self.natm, dtype=numpy.float64 )
         self.mass = numpy.zeros( ( self.natm, 1 ), dtype=numpy.float64 )
@@ -239,12 +239,12 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
                 labl.append( temp[0] )
                 coor += [ float( temp[1] ), float( temp[2] ), float( temp[3] ) ]
                 self.natm += 1
-            self.labl = numpy.array( labl, dtype=numpy.unicode )
+            self.labl = numpy.array( labl, dtype=qm3.data.strsiz )
             self.coor = numpy.array( coor, dtype=numpy.float64 ).reshape( ( self.natm, 3 ) )
             temp = [ "X" ] * self.natm
-            self.segn = numpy.array( temp, dtype=numpy.unicode )
+            self.segn = numpy.array( temp, dtype=qm3.data.strsiz )
             self.resi = numpy.ones( self.natm, dtype=numpy.int16 )
-            self.resn = numpy.array( temp, dtype=numpy.unicode )
+            self.resn = numpy.array( temp, dtype=qm3.data.strsiz )
             self.anum = numpy.zeros( self.natm, dtype=numpy.int16 )
             self.chrg = numpy.zeros( self.natm, dtype=numpy.float64 )
             self.mass = numpy.zeros( ( self.natm, 1 ), dtype=numpy.float64 )
@@ -281,12 +281,12 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             temp = fdsc.readline().split()
             labl.append( temp[3] )
             coor += [ float( j ) for j in temp[0:3] ]
-        self.labl = numpy.array( labl, dtype=numpy.unicode )
+        self.labl = numpy.array( labl, dtype=qm3.data.strsiz )
         self.coor = numpy.array( coor, dtype=numpy.float64 ).reshape( ( self.natm, 3 ) )
         temp = [ "X" ] * self.natm
-        self.segn = numpy.array( temp, dtype=numpy.unicode )
+        self.segn = numpy.array( temp, dtype=qm3.data.strsiz )
         self.resi = numpy.ones( self.natm, dtype=numpy.int16 )
-        self.resn = numpy.array( temp, dtype=numpy.unicode )
+        self.resn = numpy.array( temp, dtype=qm3.data.strsiz )
         self.anum = numpy.zeros( self.natm, dtype=numpy.int16 )
         self.chrg = numpy.zeros( self.natm, dtype=numpy.float64 )
         self.mass = numpy.zeros( ( self.natm, 1 ), dtype=numpy.float64 )
@@ -318,11 +318,11 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
                     chrg.append( float( temp[8] ) )
                     segn.append( "X" )
             l = fdsc.readline()
-        self.labl = numpy.array( labl, dtype=numpy.unicode )
+        self.labl = numpy.array( labl, dtype=qm3.data.strsiz )
         self.coor = numpy.array( coor, dtype=numpy.float64 ).reshape( ( self.natm, 3 ) )
-        self.segn = numpy.array( segn, dtype=numpy.unicode )
+        self.segn = numpy.array( segn, dtype=qm3.data.strsiz )
         self.resi = numpy.array( resi, dtype=numpy.int32 )
-        self.resn = numpy.array( resn, dtype=numpy.unicode )
+        self.resn = numpy.array( resn, dtype=qm3.data.strsiz )
         self.anum = numpy.zeros( self.natm, dtype=numpy.int16 )
         self.chrg = numpy.array( chrg, dtype=numpy.float64 )
         self.mass = numpy.zeros( ( self.natm, 1 ), dtype=numpy.float64 )

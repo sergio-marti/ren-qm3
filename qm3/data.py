@@ -1,5 +1,9 @@
 import  numpy
 
+
+strsiz = '<U20'
+
+
 #
 #    http://physics.nist.gov/cuu/Constants/index.html
 #
