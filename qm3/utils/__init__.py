@@ -101,7 +101,7 @@ def dihedral( ci: numpy.array, cj: numpy.array, ck: numpy.array, cl: numpy.array
 
 def RT_modes( mol: object ) -> numpy.array:
     size = 3 * mol.actv.sum()
-    sele = numpy.argwhere( mol.actv.ravel() )
+    sele = numpy.argwhere( mol.actv.ravel() ).ravel()
     mode = numpy.zeros( ( 6, size ), dtype=numpy.float64 )
     cent = numpy.sum( mol.mass * mol.coor * mol.actv, axis = 0 ) / numpy.sum( mol.mass * mol.actv )
     k = 0

@@ -501,7 +501,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             mass = self.mass
         self.coor -= numpy.sum( mass * self.coor * self.actv, axis = 0 ) / numpy.sum( mass * self.actv )
         xx = 0.0; xy = 0.0; xz = 0.0; yy = 0.0; yz = 0.0; zz = 0.0
-        for i in numpy.argwhere( self.actv.ravel() ):
+        for i in numpy.argwhere( self.actv.ravel() ).ravel():
             xx += mass[i] * self.coor[i,0] * self.coor[i,0]
             xy += mass[i] * self.coor[i,0] * self.coor[i,1]
             xz += mass[i] * self.coor[i,0] * self.coor[i,2]
@@ -553,6 +553,6 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         mcb[1,:] /= numpy.linalg.norm( mcb[1,:] )
         rot = numpy.dot( mcb.T,
                 numpy.array( [ [ cos, sin, 0.0 ], [ - sin, cos, 0.0 ], [ 0.0, 0.0, 1.0 ] ] ) )
-        for i in numpy.argwhere( self.actv.ravel() ):
+        for i in numpy.argwhere( self.actv.ravel() ).ravel():
             self.coor[i] = numpy.dot( rot, numpy.dot( mcb,
                 ( self.coor[i] - center ).reshape( ( 3, 1 ) ) ) ).ravel() + center

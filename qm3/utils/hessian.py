@@ -10,7 +10,7 @@ import  qm3.utils
 def numerical( mol: object,
         dsp: typing.Optional[float] = 1.e-4, central: typing.Optional[bool] = True ) -> numpy.array:
     size = 3 * mol.actv.sum()
-    sele = numpy.argwhere( mol.actv.ravel() )
+    sele = numpy.argwhere( mol.actv.ravel() ).ravel()
     hess = numpy.zeros( ( size, size ), dtype=numpy.float64 )
     if( central ):
         k = 0
@@ -301,7 +301,7 @@ def manage( mol: object, hess: numpy.array,
         update_func: typing.Optional[typing.Callable] = update_bofill,
         dump_name: typing.Optional[str] = "update.dump" ):
     size = 3 * mol.actv.sum()
-    sele = numpy.argwhere( mol.actv ).ravel()
+    sele = numpy.argwhere( mol.actv.ravel() ).ravel()
     rr   = mol.coor[sele].ravel()
     gg   = mol.grad[sele].ravel()
     if( should_update and os.access( dump_name, os.R_OK ) and os.stat( dump_name )[stat.ST_SIZE] == size * ( size * 8 + 16 ) ):
