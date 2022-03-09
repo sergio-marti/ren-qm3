@@ -1,3 +1,4 @@
+import  math
 import  numpy
 import  typing
 
@@ -87,7 +88,7 @@ class hermite_spline( object ):
         if( method == "steffen" ):
             self.c1.append( m[0] )
             for i in range( self.n - 2 ):
-                self.c1.append( ( numpy.copysign( 1.0, m[i] ) + numpy.copysign( 1.0, m[i+1] ) ) * min( numpy.fabs( m[i] ), numpy.fabs( m[i+1] ), 0.5 * numpy.fabs( ( dx[i] * m[i+1] + dx[i+1] * m[i] ) / ( dx[i] + dx[i+1] ) ) ) )
+                self.c1.append( ( numpy.copysign( 1.0, m[i] ) + numpy.copysign( 1.0, m[i+1] ) ) * min( math.fabs( m[i] ), math.fabs( m[i+1] ), 0.5 * math.fabs( ( dx[i] * m[i+1] + dx[i+1] * m[i] ) / ( dx[i] + dx[i+1] ) ) ) )
             self.c1.append( m[-1] )
         # -------------------------------------------------------------------
         # Akima
@@ -95,8 +96,8 @@ class hermite_spline( object ):
             M  = [ 2.0 * m[0] - m[1], 2.0 * m[0] - m[1] ] + m.tolist()
             M += [ 2.0 * m[-1] - m[-2], 2.0 * ( 2.0 * m[-1] - m[-2] ) - m[-1] ]
             for i in range( self.n ):
-                a = numpy.fabs( M[i+3] - M[i+2] )
-                b = numpy.fabs( M[i+1] - M[i] )
+                a = math.fabs( M[i+3] - M[i+2] )
+                b = math.fabs( M[i+1] - M[i] )
                 if( a+b > 0.0 ):
                     self.c1.append( ( b * M[i+2] + a * M[i+1] ) / ( a + b ) )
                 else:

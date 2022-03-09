@@ -1,4 +1,5 @@
 import  sys
+import  math
 import  numpy
 import  typing
 import  qm3.data
@@ -22,7 +23,7 @@ def assign_velocities( mol: object, temperature: float, proj: numpy.array, ndeg:
     mol.velo = numpy.column_stack( ( vx, vy, vz ) ) * mol.actv.astype( numpy.float64 ) * 0.01
     mol.velo -= numpy.sum( mol.velo * proj, axis = 0 ) * proj
     cur, kin = current_temperature( mol, ndeg )
-    mol.velo *= numpy.sqrt( temperature / cur )
+    mol.velo *= math.sqrt( temperature / cur )
 
 
 
@@ -50,10 +51,10 @@ def langevin_verlet( mol: object,
     c0   = numpy.exp( - ff )
     c1   = ( 1.0 - c0 ) / ff
     c2   = ( 1.0 - c1 ) / ff
-    sr   = step_size * numpy.sqrt( ( 2.0 - ( 3.0 - 4.0 * c0 + c0 * c0 ) / ff ) / ff )
-    sv   = numpy.sqrt( 1.0 - c0 * c0 )
+    sr   = step_size * math.sqrt( ( 2.0 - ( 3.0 - 4.0 * c0 + c0 * c0 ) / ff ) / ff )
+    sv   = math.sqrt( 1.0 - c0 * c0 )
     cv1  = step_size * ( 1.0 - c0 ) * ( 1.0 - c0 ) / ( ff * sr * sv )
-    cv2  = numpy.sqrt( 1.0 - cv1 * cv1 )
+    cv2  = math.sqrt( 1.0 - cv1 * cv1 )
     fr1  = step_size * c1
     fv1  = step_size * ( c1 - c2 )
     fv2  = step_size * c2

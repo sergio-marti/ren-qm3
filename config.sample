@@ -17,16 +17,12 @@ SHD = -dynamiclib
 # ------------------------------------------------------------------
 # BLAS/LAPACK
 
-MTH = macos_Accelerate
 MLB = -framework Accelerate
 
-#MTH = Lapack
 #MLB = build/lapack_deps.o -lgfortran
 
-#MTH = Intel_MKL
 #MLB = -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_rt -lpthread -lm -ldl
 
-#MTH = OpenBLAS
 #MLB = libopenblas.a -lpthread
 
 # ------------------------------------------------------------------

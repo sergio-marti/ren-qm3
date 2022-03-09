@@ -1,3 +1,4 @@
+import  math
 import  numpy
 import  typing
 import  qm3.utils
@@ -40,7 +41,7 @@ class serial( object ):
         self.dime = len( self.sele )
         self.node = len( guess )
         self.natm = self.dime * self.node
-        self.actv = numpy.ones( ( self.natm, 1 ), dtype=numpy.bool )
+        self.actv = numpy.ones( ( self.natm, 1 ), dtype=numpy.bool_ )
         self.coor = numpy.zeros( ( self.natm, 3 ), dtype=numpy.float64 )
         for i in range( self.node ):
             ii = i * self.dime
@@ -62,8 +63,8 @@ class serial( object ):
         def __calc_tau( potm, poti, potp, crdm, crdi, crdp ):
             dcM = crdp - crdi
             dcm = crdi - crdm
-            dpM = max( numpy.fabs( potp - poti ), numpy.fabs( potm - poti ) )
-            dpm = min( numpy.fabs( potp - poti ), numpy.fabs( potm - poti ) )
+            dpM = max( math.fabs( potp - poti ), math.fabs( potm - poti ) )
+            dpm = min( math.fabs( potp - poti ), math.fabs( potm - poti ) )
             if( potp > poti and poti > potm ):
                 tau = dcM.copy()
             elif( potp < poti and poti < potm ):

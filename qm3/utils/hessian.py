@@ -1,3 +1,4 @@
+import  math
 import  numpy
 import  typing
 import  struct
@@ -86,9 +87,9 @@ def frequencies( mol: object, hess: numpy.array, project: typing.Optional[bool] 
     wns = 1.0e11 / ( 2. * numpy.pi * qm3.data.C )
     for i in range( size ):
         if( freq[i] < 0.0 ):
-            freq[i] = - numpy.sqrt( numpy.fabs( freq[i] ) ) * wns
+            freq[i] = - math.sqrt( math.fabs( freq[i] ) ) * wns
         else:
-            freq[i] =   numpy.sqrt( numpy.fabs( freq[i] ) ) * wns
+            freq[i] =   math.sqrt( math.fabs( freq[i] ) ) * wns
         for j in range( size ):
             mods[i,j] *= mass[j//3]
     # freq: cm^-1, mods: 1/sqrt[g/mol]
@@ -169,11 +170,11 @@ def normal_mode( mol: object, freq: numpy.array, mods: numpy.array, who: int,
         afac: typing.Optional[float] = 1.0 ):
     siz = mol.actv.sum()
     sel = numpy.argwhere( mol.actv.ravel() ).ravel()
-    ome = numpy.fabs( freq[who] )
+    ome = math.fabs( freq[who] )
     if( ome < 0.1 ): 
         return
     wns = 1.0e11 / ( 2. * numpy.pi * qm3.data.C )
-    amp = numpy.sqrt( 2. * 1.0e-3 * qm3.data.KB * qm3.data.NA * temp ) * ( wns / ome )
+    amp = math.sqrt( 2. * 1.0e-3 * qm3.data.KB * qm3.data.NA * temp ) * ( wns / ome )
     fd = open( "nmode.%d"%( who ), "wt" )
     for i in range( 10 ):
         for j in range( 10 ):
@@ -215,7 +216,7 @@ def rrho( mol: object, freq: numpy.array,
         zz += mass[i] * ( mol.coor[sele[i],2] - mc[2] ) * ( mol.coor[sele[i],2] - mc[2] )
     val, vec = numpy.linalg.eigh( numpy.array( [ yy+zz, -xy, -xz, -xy, xx+zz, -yz, -xz, -yz, xx+yy ] ).reshape( ( 3, 3 ) ) )
     t = ( 8.0 * numpy.pi * numpy.pi * qm3.data.KB * temp ) / ( qm3.data.H * qm3.data.H * qm3.data.NA ) * 1.0e-23
-    qr = numpy.sqrt( numpy.pi * t * t * t * val[0] * val[1] * val[2] ) / symm
+    qr = math.sqrt( numpy.pi * t * t * t * val[0] * val[1] * val[2] ) / symm
     qr = numpy.log( qr )
     # Vibrations
     t = 100.0 * qm3.data.C * qm3.data.H / ( qm3.data.KB * temp )

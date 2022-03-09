@@ -1,3 +1,4 @@
+import  math
 import  numpy
 import  typing
 import  re
@@ -16,7 +17,7 @@ except:
 
 def from_upper_diagonal( vec: list, by_rows: typing.Optional[bool] = True ) -> numpy.array:
     t = len( vec )
-    n = int( round( 0.5 * ( numpy.sqrt( 1.0 + 8.0 * t ) - 1.0 ), 0 ) )
+    n = int( round( 0.5 * ( math.sqrt( 1.0 + 8.0 * t ) - 1.0 ), 0 ) )
     if( n * ( n + 1 ) // 2 == t ):
         out = numpy.zeros( ( n, n ) )
         if( by_rows ):
@@ -36,7 +37,7 @@ def distanceSQ( ci: numpy.array, cj: numpy.array,
             [ qm3.data.MXLAT, qm3.data.MXLAT, qm3.data.MXLAT ] ) ) -> float:
     vv = ci - cj
     vv -= box * numpy.round( vv / box, 0 )
-    return( numpy.dot( vv, vv ) )
+    return( float( numpy.inner( vv, vv ) ) )
 
 
 def distance( ci: numpy.array, cj: numpy.array,
@@ -46,14 +47,14 @@ def distance( ci: numpy.array, cj: numpy.array,
     ci:       array( 3 )
     cj:       array( 3 )
     """
-    return( numpy.sqrt( distanceSQ( ci, cj, box ) ) )
+    return( math.sqrt( distanceSQ( ci, cj, box ) ) )
 
 
 def angleRAD( ci: numpy.array, cj: numpy.array, ck: numpy.array ) -> float:
     vij = ci - cj
     vkj = ck - cj
     try:
-        return( numpy.arccos( numpy.dot( vij, vkj ) / ( numpy.linalg.norm( vij ) * numpy.linalg.norm( vkj ) ) ) )
+        return( math.acos( numpy.dot( vij, vkj ) / ( numpy.linalg.norm( vij ) * numpy.linalg.norm( vkj ) ) ) )
     except:
         raise Exception( "utils.angleRAD: invalid angle" )
 
@@ -79,12 +80,12 @@ def dihedralRAD( ci: numpy.array, cj: numpy.array, ck: numpy.array, cl: numpy.ar
     o   = 0.0
     if( m2 != 0.0 and m3 != 0.0 ):
         o = m1 / ( m2 * m3 )
-        if( numpy.fabs( o ) > 1.0 ):
-            o = numpy.fabs( o ) / o
-        o = numpy.arccos( o ) 
+        if( math.fabs( o ) > 1.0 ):
+            o = math.fabs( o ) / o
+        o = math.acos( o ) 
         if( numpy.dot( vij, plk ) < 0.0 ):
             o = -o
-    return( o )
+    return( float( o ) )
 
 
 def dihedral( ci: numpy.array, cj: numpy.array, ck: numpy.array, cl: numpy.array ) -> float:
@@ -105,7 +106,7 @@ def RT_modes( mol: object ) -> numpy.array:
     cent = numpy.sum( mol.mass * mol.coor * mol.actv, axis = 0 ) / numpy.sum( mol.mass * mol.actv )
     k = 0
     for i in sele:
-        sqrm = numpy.sqrt( mol.mass[i] )
+        sqrm = math.sqrt( mol.mass[i] )
         mode[0,k:k+3] = [ sqrm, 0.0, 0.0 ]
         mode[1,k:k+3] = [ 0.0, sqrm, 0.0 ]
         mode[2,k:k+3] = [ 0.0, 0.0, sqrm ]
@@ -117,7 +118,7 @@ def RT_modes( mol: object ) -> numpy.array:
     for i in range( 6 ):
         for j in range( i ):
             mode[i] -= numpy.sum( mode[i] * mode[j] ) * mode[j]
-        tmp = numpy.sqrt( numpy.sum( mode[i] * mode[i] ) )
+        tmp = math.sqrt( numpy.sum( mode[i] * mode[i] ) )
         if( tmp > 0.0 ):
             mode[i] /= tmp
     return( mode )
@@ -228,13 +229,13 @@ class grid( object ):
             gauss: typing.Optional[tuple] = ( 0.1, 0.1 ),
             sele: typing.Optional[str] = "0:1:2" ):
         def __pythag( dx, dy ):
-            x = numpy.fabs( dx )
-            y = numpy.fabs( dy )
+            x = math.fabs( dx )
+            y = math.fabs( dy )
             if( x > y ):
-                return( x * numpy.sqrt( 1.0 + y * y / ( x * x ) ) )
+                return( x * math.sqrt( 1.0 + y * y / ( x * x ) ) )
             if( y == 0.0 ):
                 return( 0.0 )
-            return( y * numpy.sqrt( 1.0 + x * x / ( y * y ) ) )
+            return( y * math.sqrt( 1.0 + x * x / ( y * y ) ) )
         dat = []
         min_x = None
         min_y = None

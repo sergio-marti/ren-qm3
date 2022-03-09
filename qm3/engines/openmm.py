@@ -9,7 +9,7 @@ import  openmm.unit
 
 class run( object ):
     def __init__( self, omm_sys: object, omm_top: object,
-            sel_QM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool ),
+            sel_QM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
             platform = "CPU" ):
         nqm = sel_QM.sum()
         if( nqm > 0 ):

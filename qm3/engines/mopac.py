@@ -9,8 +9,8 @@ import  qm3.data
 class run( qm3.engines.template ):
     def __init__( self, mol: object, meth: str, chrg: int,
             mult: typing.Optional[int] = 1,
-            sel_QM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool ),
-            sel_MM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool ),
+            sel_QM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
+            sel_MM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
             link: typing.Optional[list] = [],
             con: typing.Optional[float] = -1,
             cof: typing.Optional[float] = -1 ):

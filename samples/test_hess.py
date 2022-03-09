@@ -108,4 +108,5 @@ for func, check in [ ( qm3.utils.hessian.update_bfgs, 13120.3661 ),
     print( val[0], tmp )
     assert( numpy.fabs( tmp - check ) < 0.001 ), "Hessian update error"
 
+mol.grad = grd.reshape( ( mol.natm, 3 ) )
 qm3.utils.hessian.manage( mol, bak )

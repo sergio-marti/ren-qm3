@@ -1,3 +1,4 @@
+import  math
 import  numpy
 import  typing
 import  qm3.data
@@ -42,12 +43,12 @@ def f_angle( mol: object, kumb: float, xref: float, a_i: int, a_j: int, a_k: int
     dkj /= rkj
     dot = numpy.dot( dij, dkj )
     dot = min( 1.0, max( -1.0, dot ) )
-    vv  = numpy.arccos( dot )
+    vv  = math.acos( dot )
     dv  = ( vv - xref )
     df  = kumb * dv
     mol.func += 0.5 * df * dv
     if( grad ):
-        dx  = - 1.0 / numpy.sqrt( 1.0 - dot * dot )
+        dx  = - 1.0 / math.sqrt( 1.0 - dot * dot )
         df *= dx
         dti = ( dkj - dot * dij ) / rij
         dtk = ( dij - dot * dkj ) / rkj
@@ -76,7 +77,7 @@ def f_dihedral( mol: object, data: list, a_i: int, a_j: int, a_k: int, a_l: int,
     vtu = numpy.cross( vt, vu )
     rt2 = numpy.dot( vt, vt )
     ru2 = numpy.dot( vu, vu )
-    rtu = numpy.sqrt( rt2 * ru2 )
+    rtu = math.sqrt( rt2 * ru2 )
     rkj = numpy.linalg.norm( dkj )
     cs1 = numpy.dot( vt, vu ) / rtu
     cs1 = min( 1.0, max( -1.0, cs1 ) )
@@ -131,7 +132,7 @@ def f_dihedral( mol: object, data: list, a_i: int, a_j: int, a_k: int, a_l: int,
         mol.grad[a_j] += dph * ( numpy.cross( dki, dvt ) - numpy.cross( dvu, dlk ) )
         mol.grad[a_k] += dph * ( numpy.cross( dvt, dji ) - numpy.cross( dlj, dvu ) )
         mol.grad[a_l] -= dph * numpy.cross( dvu, dkj )
-    ang = qm3.data.R2D * numpy.arccos( cs1 )
+    ang = qm3.data.R2D * math.acos( cs1 )
     if( sn1 <= 0.0 ):
         ang = -ang
     return( ang )
@@ -154,15 +155,15 @@ def f_improper( mol: object, kumb: float, xref: float, a_i: int, a_j: int, a_k: 
     vtu = numpy.cross( vt, vu )
     rt2 = numpy.sum( vt * vt )
     ru2 = numpy.sum( vu * vu )
-    rtu = numpy.sqrt( rt2 * ru2 )
+    rtu = math.sqrt( rt2 * ru2 )
     rkj = numpy.linalg.norm( dkj )
     cos = numpy.sum( vt * vu ) / rtu
     cos = min( 1.0, max( -1.0, cos ) )
     sin = numpy.sum( dkj * vtu ) / ( rkj * rtu )
-    ang = qm3.data.R2D * numpy.arccos( cos )
+    ang = qm3.data.R2D * math.acos( cos )
     if( sin <= 0.0 ):
         ang = -ang
-    if( numpy.fabs( ang + xref ) < numpy.fabs( ang - xref ) ):
+    if( math.fabs( ang + xref ) < math.fabs( ang - xref ) ):
         xref = -xref
     dt  = ang - xref
     while( dt >  180.0 ):
@@ -296,7 +297,7 @@ class multiple_distance( object ):
 
 class tether( object ):
     def __init__( self, mol: object, kumb: float,
-            sele: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool ) ):
+            sele: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ) ):
         """
     thether = force_constant / 2 * SUM ( cartesian - reference )^2
 

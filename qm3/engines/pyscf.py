@@ -14,8 +14,8 @@ class run( qm3.engines.template ):
     def __init__( self, mol: object, 
             opts: typing.Optional[dict] = { "basis": "def2-svp", "conv_tol": 1.e-9, "charge": 0, "spin": 0,
                 "method": "b3lypg", "memory": 4096, "grid": 3, "max_cyc": 50, "nproc": 2 },
-            sel_QM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool ),
-            sel_MM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool ),
+            sel_QM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
+            sel_MM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
             link: typing.Optional[list] = [] ):
         qm3.engines.template.__init__( self, mol, sel_QM, sel_MM, link )
         self.cx  = 1.0 / qm3.data.A0

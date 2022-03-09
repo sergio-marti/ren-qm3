@@ -1,4 +1,5 @@
 import  sys
+import  math
 import  numpy
 import  typing
 import  ctypes
@@ -21,7 +22,7 @@ def steepest_descent( mol: object,
     fdsc.write( "Step Size:          %20.10lg\n"%( step_size ) )
     fdsc.write( "Print Frequency:    %20d\n"%( print_frequency ) )
     fdsc.write( "Gradient Tolerance: %20.10lg\n\n"%( gradient_tolerance ) )
-    ndf = numpy.sqrt( ndf )
+    ndf = math.sqrt( ndf )
     mol.get_grad()
     norm = numpy.linalg.norm( mol.grad )
     if( norm > step_size ):
@@ -77,7 +78,7 @@ def fire( mol: object,
     fdsc.write( "Delay Step:         %20d\n\n"%( delay_step ) )
     fdsc.write( "%10s%20s%20s%20s\n"%( "Step", "Function", "Gradient", "Displacement" ) )
     fdsc.write( "-" * 70 + "\n" )
-    ndeg = numpy.sqrt( ndeg )
+    ndeg = math.sqrt( ndeg )
     nstp = 0
     ssiz = step_size
     alph = mixing_alpha
@@ -165,7 +166,7 @@ def cgplus( mol: object,
         ctypes.POINTER( ctypes.c_int ),
         ctypes.POINTER( ctypes.c_int ) ]
     dlib.cgp_cgfam_.restype = None
-    ndeg = numpy.sqrt( size )
+    ndeg = math.sqrt( size )
     sele = numpy.argwhere( mol.actv.ravel() ).ravel()
     mol.get_grad()
     grms = numpy.linalg.norm( mol.grad ) / ndeg
@@ -251,7 +252,7 @@ def baker( mol: object, get_hess: typing.Callable,
     emax = 1.0e5
     emin = 1.0e-3
     mxit = 999
-    ndeg = numpy.sqrt( size )
+    ndeg = math.sqrt( size )
     sele = numpy.argwhere( mol.actv.ravel() ).ravel()
     grms = gradient_tolerance * 2.0
     crd  = numpy.zeros( ( actv, 3 ), dtype=numpy.float64 )
@@ -269,17 +270,17 @@ def baker( mol: object, get_hess: typing.Callable,
         nneg = 0
         for i in range( size ):
             nneg += val[i] < 0.0
-            if( numpy.fabs( val[i] ) < emin ):
+            if( math.fabs( val[i] ) < emin ):
                 val[i] = numpy.sign( val[i] ) * emin
-            elif( numpy.fabs( val[i] ) > emax ):
+            elif( math.fabs( val[i] ) > emax ):
                 val[i] = numpy.sign( val[i] ) * emax
         grd = mol.grad[sele].ravel().reshape( ( size, 1 ) )
         grd = numpy.dot( vec.T, grd )
 
         if( follow_mode > -1 ):
             who = val[follow_mode]
-            if( numpy.fabs( grd[follow_mode] ) > tol1 ):
-                lmbd = 0.5 * ( who + numpy.sqrt( who * who + 4.0 * grd[follow_mode] * grd[follow_mode] ) ) 
+            if( math.fabs( grd[follow_mode] ) > tol1 ):
+                lmbd = 0.5 * ( who + math.sqrt( who * who + 4.0 * grd[follow_mode] * grd[follow_mode] ) ) 
                 lmbd = grd[follow_mode] / ( lmbd - val[follow_mode] )
             else:
                 if( nneg == 1 ):
@@ -303,7 +304,7 @@ def baker( mol: object, get_hess: typing.Callable,
             if( j != follow_mode ):
                 tmp += ( grd[j] * grd[j] ) / ( lmbd - val[j] )
         i = 0
-        while( i < mxit and numpy.fabs( lmbd - tmp ) >= tol2 ):
+        while( i < mxit and math.fabs( lmbd - tmp ) >= tol2 ):
             if( val[lowr] > 0.0 ):
                 lmbd = tmp;
             else:

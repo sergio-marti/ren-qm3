@@ -9,7 +9,7 @@ import  qm3.engines
 
 class run( object ):
     def __init__( self, mol: object, parm: dict,
-            sel_QM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool ),
+            sel_QM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
             link: typing.Optional[list] = [] ):
         if( sel_QM.sum() > 0 ):
             self.sel = numpy.argwhere( sel_QM ).ravel()
