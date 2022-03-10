@@ -12,7 +12,7 @@ class molecule( object ):
         selections are based on numpy.bool_ arrays
         use numpy.logical_[and/or/not] to perform complex selections
 
-        apply numpy.argwhere( ).ravel() to obtain the indices for the engines
+        apply numpy.argwhere( SELECTION.ravel() ).ravel() to obtain the indices for the engines
     """
     def __init__( self ):
         self.natm = 0
@@ -448,6 +448,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
                 rlim.append( self.natm )
             l = fdsc.readline()
         if( init ):
+            self.coor = numpy.zeros( ( self.natm, 3 ), dtype=numpy.float64 )
             self.segn = numpy.array( [ "A" ] * self.natm, dtype=qm3.data.strsiz )
             self.resi = numpy.zeros( self.natm, dtype=numpy.int32 )
             self.resn = numpy.array( [ " " ] * self.natm, dtype=qm3.data.strsiz )
