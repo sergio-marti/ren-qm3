@@ -3,11 +3,11 @@ from distutils.core import setup, Extension
 import	numpy
 
 setup( 
-	name = "(fast) DCD support", 
-	ext_modules = [ 
-		Extension( "_dcd",
-			sources = [ "qm3/utils/dcd.c" ],
-			include_dirs = [ numpy.get_include() ]
-		)
-	]
+    name = "(fast) DCD support", 
+    ext_modules = [ 
+        Extension( "_dcd",
+            sources = [ "qm3/utils/dcd.c" ],
+            include_dirs = [ numpy.get_include() ]
+        )
+    ]
 )

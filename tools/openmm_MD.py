@@ -20,7 +20,8 @@ for i in range( 55 ):
 _int = openmm.LangevinIntegrator( 300.0, 50.0, 0.001 )
 _sim = openmm.app.Simulation( _top.topology, _sys, _int, openmm.Platform.getPlatformByName( "OpenCL" ) )
 _sim.context.setPositions( openmm.app.pdbfile.PDBFile( "start.pdb" ).getPositions() )
-_sim.reporters.append( openmm.app.pdbreporter.PDBReporter( "last.pdb", 1000, enforcePeriodicBox = False ) )
+#_sim.reporters.append( openmm.app.pdbreporter.PDBReporter( "last.pdb", 1000, enforcePeriodicBox = False ) )
+_sim.reporters.append( openmm.app.dcdreporter.DCDReporter( "last.dcd", 1000, enforcePeriodicBox = False ) )
 _sim.reporters.append( openmm.app.statedatareporter.StateDataReporter( sys.stdout, 1000,
     time = True, potentialEnergy = True, temperature = True ) )
 _sim.step( 10000 )
