@@ -94,7 +94,6 @@ class serial( object ):
         for who in range( 1, self.node - 1 ):
             ii = who * self.dime
             jj = ii + self.dime
-            self.MIERDA = ( who == 1 )
             tau, gum = __calc_tau( vpot[who-1], vpot[who], vpot[who+1],
                     self.coor[ii-self.dime:ii],
                     self.coor[ii:jj],
