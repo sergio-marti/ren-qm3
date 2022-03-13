@@ -1,7 +1,7 @@
 include config
 
 
-all: dcd grids _cgplus.so lapack_deps.o _mopac.so
+all: dcd grids ml_info _cgplus.so lapack_deps.o _mopac.so
 
 
 dcd:
@@ -12,8 +12,8 @@ grids:
 	$(PYX) setup/grids build_ext --build-lib qm3/utils
 
 
-#mpi:
-#	$(MPI) $(PYX) setup/mpi build_ext --build-lib qm3/utils
+mpi:
+	$(MPI) $(PYX) setup/mpi build_ext --build-lib qm3/utils
 
 
 ml_info:
