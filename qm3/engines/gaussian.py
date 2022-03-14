@@ -61,15 +61,15 @@ class run( qm3.engines.template ):
         l = fd.readline()
         while( l != "" ):
             if( l[0:12] == "Total Energy" ):
-                mol.func += float( l.split()[3] ) * self.ce
+                mol.func += float( l.strip().split()[3] ) * self.ce
             if( run in [ "grad", "hess" ] and l[0:18] == "Cartesian Gradient" ):
-                i = int( l.split()[-1] )
+                i = int( l.strip().split()[-1] )
                 j = int( i // 5 ) + ( i%5 != 0 )
                 i = 0
                 g = []
                 while( i < j ):
                     l = fd.readline()
-                    for itm in l.split():
+                    for itm in l.strip().split():
                         g.append( float( itm ) * self.cg )
                     i += 1
                 qm3.engines.Link_grad( self.vla, g )
@@ -82,13 +82,13 @@ class run( qm3.engines.template ):
 #                # read hessian (columns)
 #                if( run == "hess" ):
 #                    l = fd.readline()
-#                    i = int( l.split()[-1] )
+#                    i = int( l.strip().split()[-1] )
 #                    j = int( i // 5 ) + ( i % 5 != 0 )
 #                    i = 0
 #                    h = []
 #                    while( i < j ):
 #                        l = fd.readline()
-#                        for itm in l.split():
+#                        for itm in l.strip().split():
 #                            h.append( float( itm ) * self.ch )
 #                        i += 1
 #                    # truncate LAs and swap hessian (cols>>rows)
@@ -99,13 +99,13 @@ class run( qm3.engines.template ):
 #                        mol.hess[j] += t[j]
 # --------------------------------------------------------------------------------
             if( l[0:11] == "ESP Charges" ):
-                i = int( l.split()[-1] )
+                i = int( l.strip().split()[-1] )
                 j = int( i // 5 ) + ( i % 5 != 0 )
                 i = 0
                 k = 0
                 while( i < j ):
                     l = fd.readline()
-                    for itm in l.split():
+                    for itm in l.strip().split():
                         if( k < len( self.sel ) ):
                             mol.chrg[self.sel[k]] = float( itm )
                             k += 1
@@ -119,7 +119,7 @@ class run( qm3.engines.template ):
             while( l != "" and fl ):
                 if( l[0:29] == " Self energy of the charges =" ):
                     fl = False
-                    mol.func -= float( l.split()[-2] ) * self.ce
+                    mol.func -= float( l.strip().split()[-2] ) * self.ce
                 l = fd.readline()
             if( run in [ "grad", "hess" ] and self.gmm ):
                 fl = True
@@ -129,7 +129,7 @@ class run( qm3.engines.template ):
                         for i in range( 1 + len( self.sel ) + len( self.lnk ) ):
                             fd.readline()
                         for i in self.nbn:
-                            t = fd.readline().split()[2:]
+                            t = fd.readline().strip().split()[2:]
                             for j in [0, 1, 2]:
                                 mol.grad[i,j] += - self.cg * mol.chrg[i] * float( t[j] )
                     l = fd.readline()

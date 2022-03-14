@@ -197,7 +197,7 @@ class grid( object ):
         s = [ int( i ) for i in sele.split( ":" ) ]
         d = []
         for l in fdsc:
-            t = l.strip().split()
+            t = l.split()
             if( len( t ) >= 3 and self.__number.match( t[s[0]] ) and self.__number.match( t[s[1]] ) and self.__number.match( t[s[2]] ) ):
                 d.append( [ float( t[s[0]] ), float( t[s[1]] ), float( t[s[2]] ) ] )
         d.sort()

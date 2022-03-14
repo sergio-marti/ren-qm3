@@ -202,7 +202,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             resn = []
             for l in fdsc:
                 if( l[0:4] == "ATOM" or l[0:4] == "HETA" ):
-                    tmp = l.split()
+                    tmp = l.strip().split()
                     labl.append( tmp[2] )
                     resn.append( tmp[3] )
                     if( tmp[4].isalpha() ):
@@ -255,7 +255,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         fdsc.readline()
         if( replace and self.natm == n ):
             for i in range( n ):
-                temp = fdsc.readline().split()
+                temp = fdsc.readline().strip().split()
                 for j in [0, 1, 2]:
                     self.coor[i,j] = float( temp[j+1] )
         else:
@@ -263,7 +263,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             labl = []
             coor = []
             for i in range( n ):
-                temp = fdsc.readline().split()
+                temp = fdsc.readline().strip().split()
                 labl.append( temp[0] )
                 coor += [ float( temp[1] ), float( temp[2] ), float( temp[3] ) ]
                 self.natm += 1
@@ -306,7 +306,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         labl = []
         coor = []
         for i in range( self.natm ):
-            temp = fdsc.readline().split()
+            temp = fdsc.readline().strip().split()
             labl.append( temp[3] )
             coor += [ float( j ) for j in temp[0:3] ]
         self.labl = numpy.array( labl, dtype=qm3.data.strsiz )
@@ -362,11 +362,11 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
 
     def psf_read( self, fdsc: typing.IO ):
         init = ( self.natm == 0 )
-        if( fdsc.readline().split()[0] == "PSF" ):
+        if( fdsc.readline().strip().split()[0] == "PSF" ):
             fdsc.readline()
-            for i in range( int( fdsc.readline().split()[0] ) + 1 ):
+            for i in range( int( fdsc.readline().strip().split()[0] ) + 1 ):
                 fdsc.readline()
-            self.natm = int( fdsc.readline().split()[0] )
+            self.natm = int( fdsc.readline().strip().split()[0] )
             chrg = []
             mass = []
             segn = []
@@ -374,7 +374,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             resn = []
             labl = []
             for i in range( self.natm ):
-                temp = fdsc.readline().split()
+                temp = fdsc.readline().strip().split()
                 segn.append( temp[1] )
                 resi.append( int( temp[2] ) )
                 resn.append( temp[3] )

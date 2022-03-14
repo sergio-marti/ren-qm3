@@ -319,3 +319,122 @@ class tether( object ):
         dr = ( mol.coor - self.cref ) * self.sele
         mol.func += 0.5 * self.kumb * numpy.sum( dr * dr )
         mol.grad += self.kumb * dr
+
+
+
+# --------------------------------------------------------------------
+# J. Comput. Chem. v35, p1672 (2014) [10.1002/jcc.23673]
+# J. Phys. Chem. A v121, p9764 (2017) [10.1021/acs.jpca.7b10842]
+# WIREs Comput. Mol. Sci. v8 (2018) [10.1002/wcms.1329]
+# --------------------------------------------------------------------
+# x( %zeta  ) approx {sum from{i=0} to{N-1} {i %delta_z e^{-{{lline %zeta - z rline}over %delta_z}}}} over
+# {sum from{i=0} to{N-1} { e^{-{{lline %zeta - z rline}over %delta_z}}}}
+# ~~~~
+# %delta_z = langle lline x_{i+1} - x_{i} rline rangle = L over{N - 1}
+# newline
+# lline %zeta - z rline = left[ (%zeta - z)^T M^{-1} (%zeta - z) right]^{1 over 2}
+# ~~~~
+# M_{i,j}=sum from{k=1} to{3n} {{partial %zeta_i}over{partial x_k} 1 over m_k {partial %zeta_j}over{partial x_k}}
+# --------------------------------------------------------------------
+class colvar_s( object ):
+    def __init__( self, kumb: float, xref: float,
+            str_cnf: typing.IO,
+            str_crd: typing.IO,
+            str_met: typing.IO ):
+        """
+kumb: kJ / ( mol Angs^2 amu )
+xref: Ang amu^0.5
+-------------------------------------
+ncrd        nwin
+atom_1,i    atom_1,j
+...         ...
+atom_n,i    atom_n,j
+-------------------------------------
+        """
+        self.xref = xref
+        self.kumb = kumb
+        # parse config
+        tmp = str_cnf.readline().strip().split()
+        self.ncrd = int( tmp[0] )
+        self.ncr2 = self.ncrd * self.ncrd
+        self.nwin = int( tmp[1] )
+        self.atom = []
+        self.jidx = {}
+        for i in range( self.ncrd ):
+            tmp = [ int( j ) for j in str_cnf.readline().strip().split() ]
+            self.atom.append( ( tmp[0], tmp[1] ) )
+            self.jidx[tmp[0]] = True
+            self.jidx[tmp[1]] = True
+        self.jidx = { jj: ii for ii,jj in zip( range( len( self.jidx ) ), sorted( self.jidx ) ) }
+        self.xdij = { self.jidx[ii]: ii for ii in self.jidx }
+        self.jcol = 3 * len( self.jidx )
+        # load previous equi-distributed string
+        self.rcrd = numpy.array( [ float( i ) for i in str_crd.read().strip().split() ] )
+        self.rcrd.shape = ( self.nwin, self.ncrd )
+        # load previous string metrics
+        self.rmet = numpy.array( [ float( i ) for i in str_met.read().strip().split() ] )
+        self.rmet.shape = ( self.nwin, self.ncr2 )
+        # get the arc of the current string
+        self.arcl = numpy.zeros( self.nwin - 1 )
+        for i in range( 1, self.nwin ):
+            vec = ( self.rcrd[i] - self.rcrd[i-1] ).reshape( ( self.ncrd, 1 ) )
+            mat = numpy.linalg.inv( 0.5 * ( self.rmet[i] + self.rmet[i-1] ).reshape( ( self.ncrd, self.ncrd ) ) )
+            self.arcl[i-1] = math.sqrt( numpy.dot( vec.T, numpy.dot( mat, vec ) ) )
+        self.delz = self.arcl.sum() / float( self.nwin - 1.0 )
+        print( "Colective variable s range: [%.3lf - %.3lf: %.6lf] _Ang"%( 0.0, self.arcl.sum(), self.delz ) )
+        # store inverse metrics
+        for i in range( self.nwin ):
+            self.rmet[i] = numpy.linalg.inv( self.rmet[i].reshape( ( self.ncrd, self.ncrd ) ) ).ravel()
+
+
+    def get_jaco( self, molec: object ) -> tuple:
+        ccrd = numpy.zeros( self.ncrd )
+        jaco = numpy.zeros( ( self.ncrd, self.jcol ) )
+        for i in range( self.ncrd ):
+            ai = self.atom[i][0]
+            aj = self.atom[i][1]
+            rr = molec.coor[aj] - molec.coor[ai]
+            ccrd[i] = numpy.linalg.norm( rr )
+            for j in [0, 1, 2]:
+                jaco[i,3*self.jidx[ai]+j] -= rr[j] / ccrd[i]
+                jaco[i,3*self.jidx[aj]+j] += rr[j] / ccrd[i]
+        return( ccrd, jaco )
+
+
+    def get_func( self, molec: object ) -> tuple:
+        ccrd, jaco = self.get_jaco( molec )
+        cdst = numpy.zeros( self.nwin )
+        for i in range( self.nwin ):
+            vec = ( ccrd - self.rcrd[i] ).reshape( ( self.ncrd, 1 ) )
+            cdst[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( self.rmet[i].reshape( ( self.ncrd, self.ncrd ) ), vec ) ) )
+        cexp = numpy.exp( - cdst / self.delz )
+        cval = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp ) / cexp.sum()
+        molec.func += 0.5 * self.kumb * math.pow( cval - self.xref, 2.0 )
+        return( cval, ccrd )
+
+
+    def get_grad( self, molec: object ) -> tuple:
+        ccrd, jaco = self.get_jaco( molec )
+        cdst = numpy.zeros( self.nwin )
+        jder = numpy.zeros( ( self.nwin, self.jcol ) )
+        for i in range( self.nwin ):
+            vec = ( ccrd - self.rcrd[i] ).reshape( ( self.ncrd, 1 ) )
+            mat = numpy.dot( self.rmet[i].reshape( ( self.ncrd, self.ncrd ) ), vec )
+            cdst[i] = math.sqrt( numpy.dot( vec.T, mat ) )
+            tmp = numpy.dot( vec.T, numpy.dot( self.rmet[i].reshape( ( self.ncrd, self.ncrd ) ), jaco ) )
+            jder[i] = 0.5 * ( numpy.dot( mat.T, jaco ) + tmp ).ravel() / cdst[i]
+        cexp = numpy.exp( - cdst / self.delz )
+        sumn = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp )
+        sumd = cexp.sum()
+        cval = sumn / sumd
+        diff = self.kumb * ( cval - self.xref )
+        molec.func += 0.5 * diff * ( cval - self.xref )
+        sder = numpy.zeros( self.jcol )
+        for i in range( self.jcol ):
+            for j in range( self.nwin ):
+                sder[i] += diff * jder[j,i] * ( cval / self.delz - j ) * cexp[j] / sumd
+        tmp = self.jcol // 3
+        sder.shape = ( tmp, 3 )
+        for i in range( tmp ):
+            molec.grad[self.xdij[i]] += sder[i]
+        return( cval, ccrd )
