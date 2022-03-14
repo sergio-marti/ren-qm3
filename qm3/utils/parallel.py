@@ -1,4 +1,3 @@
-# Message Socket interface
 import sys
 import socket
 import struct
@@ -6,7 +5,7 @@ import time
 import threading
 
 
-class server( object ):
+class server_msi( object ):
     def __recv( self, sckt ):
         msg = sckt.recv( self.slen )
         try:
@@ -114,7 +113,7 @@ class server( object ):
 
 
 
-class client( object ):
+class client_msi( object ):
     def __send( self, sckt, msg ):
         s = len( msg )
         j = 0
@@ -164,7 +163,7 @@ class client( object ):
             sckt.close()
 
 
-    def send( self, dst, lst ):
+    def send_r8( self, dst, lst ):
         msg = b"W%03d%03d%010d"%( self.node, dst, len( lst ) * 8 )
         for r in lst:
             msg += struct.pack( "d", float( r ) )
@@ -182,7 +181,7 @@ class client( object ):
             sckt.close()
 
 
-    def recv( self, src, siz ):
+    def recv_r8( self, src, siz ):
         sckt = socket.socket( self.kind, socket.SOCK_STREAM )
         sckt.connect( self.addr )
         self.__send( sckt, b"R%03d%03d00"%( self.node, src ) )
@@ -197,3 +196,70 @@ class client( object ):
             sckt.close()
         return( list( struct.unpack( "%dd"%( siz ), msg ) ) )
 
+
+
+    def send_i4( self, dst, lst ):
+        msg = b"W%03d%03d%010d"%( self.node, dst, len( lst ) * 4 )
+        for r in lst:
+            msg += struct.pack( "i", int( r ) )
+        sckt = socket.socket( self.kind, socket.SOCK_STREAM )
+        sckt.connect( self.addr )
+        self.__send( sckt, msg )
+        flg, tmp = self.__recv( sckt, 1 )
+        sckt.close()
+        while( not flg ):
+            time.sleep( 0.1 )
+            sckt = socket.socket( self.kind, socket.SOCK_STREAM )
+            sckt.connect( self.addr )
+            self.__send( sckt, msg )
+            flg, tmp = self.__recv( sckt, 1 )
+            sckt.close()
+
+
+    def recv_i4( self, src, siz ):
+        sckt = socket.socket( self.kind, socket.SOCK_STREAM )
+        sckt.connect( self.addr )
+        self.__send( sckt, b"R%03d%03d00"%( self.node, src ) )
+        flg, msg = self.__recv( sckt, siz * 4 )
+        sckt.close()
+        while( not flg ):
+            time.sleep( 0.1 )
+            sckt = socket.socket( self.kind, socket.SOCK_STREAM )
+            sckt.connect( self.addr )
+            self.__send( sckt, b"R%03d%03d00"%( self.node, src ) )
+            flg, msg = self.__recv( sckt, siz * 4 )
+            sckt.close()
+        return( list( struct.unpack( "%di"%( siz ), msg ) ) )
+
+
+    def stop( self ):
+        pass
+
+
+
+try:
+    import  qm3.utils._mpi
+    class client_mpi( object ):
+        def __init__( self ):
+            self.node, self.ncpu = qm3.utils._mpi.init()
+
+        def barrier( self ):
+            qm3.utils._mpi.barrier()
+
+        def stop( self ):
+            qm3.utils._mpi.stop()
+
+        def send_r8( self, dst, lst ):
+            qm3.utils._mpi.send_r8( dst, lst )
+
+        def recv_r8( self, src, siz ):
+            return( qm3.utils._mpi.recv_r8( src, siz ) )
+
+        def send_i4( self, dst, lst ):
+            qm3.utils._mpi.send_i4( dst, lst )
+
+        def recv_i4( self, src, siz ):
+            return( qm3.utils._mpi.recv_i4( src, siz ) )
+
+except:
+    pass

@@ -1,9 +1,11 @@
 import  numpy
 import  qm3
+import	qm3.utils.parallel
 import  qm3.engines.mopac
 import  qm3.actions.minimize
 import  qm3.actions.neb
 import  io
+import  sys
 
 
 mol = qm3.molecule()
@@ -107,20 +109,60 @@ prod = mol.coor.copy()
 
 gues = qm3.actions.neb.distribute( 20, [ reac, tran, prod ] )
 
-with open( "chain", "wt" ) as f:
-    for g in gues:
-        mol.coor = g
-        mol.xyz_write( f )
+ncpu = 4
 
+# mpirun -n 4 python3 test_pneb.py
+#opar = qm3.utils.parallel.client_mpi()
 
-obj = qm3.actions.neb.serial( mol, gues, 100 )
+# python3 -c "import qm3.utils.parallel; qm3.utils.parallel.server_msi( 4, unix = '/tmp/qm3_socket' )"
+# for i in {0..3}; do python3 test_pneb.py $i &; done
+opar = qm3.utils.parallel.client_msi( int( sys.argv[1] ), unix = "/tmp/qm3_socket" )
 
-qm3.actions.minimize.fire( obj, print_frequency = 1, gradient_tolerance = len( gues ) * 0.1 )
+chnk = [ [] for i in range( ncpu ) ]
+for i in range( len( gues ) ):
+    chnk[i%ncpu].append( i )
 
-#mol.engines["res"] = 
-#mol.engines["res"] = 
-#qm3.actions.minimize.fire( mol, step_number = 1000 )
-#mol.engines.pop( "res" )
-#print( mol.engines )
-#qm3.actions.minimize.fire( mol, step_number = 1000 )
-#mol.xyz_write( open( "last", "wt" ) )
+if( opar.node == 0 ):
+    print( chnk )
+    sys.stdout.flush()
+    obj = qm3.actions.neb.parall( mol, gues, 200, chnk, opar )
+    obj.current_step = lambda i: sys.stdout.flush()
+    qm3.actions.minimize.fire( obj, print_frequency = 1, gradient_tolerance = len( gues ) * 0.1 )
+    opar.barrier()
+    for who in range( 1, ncpu ):
+        opar.send_i4( who, [ 0 ] )
+else:
+    del gues
+    sele = numpy.argwhere( mol.actv.ravel() ).ravel()
+    dime = len( sele )
+    nchk = len( chnk[opar.node] )
+    size = dime * nchk
+    grad = numpy.zeros( ( size, 3 ) )
+    opar.barrier()
+    flag = opar.recv_i4( 0, 1 )[0]
+    while( flag == 1 ):
+        # get current coordinates for my chunks
+        coor = numpy.array( opar.recv_r8( 0, 3 * size ) )
+        coor.shape = ( size, 3 )
+        # calculate gradients
+        vpot = []
+        for who in range( nchk ):
+            ii = who * dime
+            mol.coor[sele] = coor[ii:ii+dime]
+            mol.get_grad()
+            mol.project_gRT()
+            vpot.append( mol.func )
+            grad[ii:ii+dime] = mol.grad[sele]
+            # "neb_data" equivalent
+            with open( "node.%02d"%( chnk[opar.node][who] ), "wt" ) as f:
+                f.write( "REMARK func = %20.3lf\n"%( mol.func ) )
+                mol.pdb_write( f )
+        # send my functions and gradients to master
+        opar.barrier()
+        opar.send_r8( 0, vpot )
+        opar.send_r8( 0, grad.ravel().tolist() )
+        # wait for more..
+        opar.barrier()
+        flag = opar.recv_i4( 0, 1 )[0]
+
+opar.stop()
