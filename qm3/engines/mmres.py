@@ -377,12 +377,15 @@ atom_n,i    atom_n,j
         # get the arc of the current string
         self.arcl = numpy.zeros( self.nwin - 1 )
         for i in range( 1, self.nwin ):
-            vec = ( self.rcrd[i] - self.rcrd[i-1] ).reshape( ( self.ncrd, 1 ) )
-            mat = numpy.linalg.inv( 0.5 * ( self.rmet[i] + self.rmet[i-1] ).reshape( ( self.ncrd, self.ncrd ) ) )
+            vec = self.rcrd[i] - self.rcrd[i-1]
+            vec.shape = ( self.ncrd, 1 )
+            mat = 0.5 * ( self.rmet[i] + self.rmet[i-1] )
+            mat.shape = ( self.ncrd, self.ncrd )
+            mat = numpy.linalg.inv( mat )
             self.arcl[i-1] = math.sqrt( numpy.dot( vec.T, numpy.dot( mat, vec ) ) )
         self.delz = self.arcl.sum() / float( self.nwin - 1.0 )
         print( "Colective variable s range: [%.3lf - %.3lf: %.6lf] _Ang"%( 0.0, self.arcl.sum(), self.delz ) )
-        # store inverse metrics
+        # store inverse (constant) metrics
         for i in range( self.nwin ):
             self.rmet[i] = numpy.linalg.inv( self.rmet[i].reshape( ( self.ncrd, self.ncrd ) ) ).ravel()
 
@@ -401,12 +404,27 @@ atom_n,i    atom_n,j
         return( ccrd, jaco )
 
 
+    def metrics( self, molec: object ) -> numpy.array:
+        ccrd, jaco = self.get_jaco( molec )
+        mass = molec.mass[list( self.jidx.keys() )]
+        mass = numpy.column_stack( ( mass, mass, mass ) ).reshape( self.jcol )
+        cmet = numpy.zeros( ( self.ncrd, self.ncrd ) )
+        for i in range( self.ncrd ):
+            for j in range( i, self.ncrd ):
+                cmet[i,j] = numpy.sum( jaco[i,:] * jaco[j,:] / mass )
+                cmet[j,i] = cmet[i,j]
+        return( cmet )
+
+
     def get_func( self, molec: object ) -> tuple:
         ccrd, jaco = self.get_jaco( molec )
         cdst = numpy.zeros( self.nwin )
         for i in range( self.nwin ):
-            vec = ( ccrd - self.rcrd[i] ).reshape( ( self.ncrd, 1 ) )
-            cdst[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( self.rmet[i].reshape( ( self.ncrd, self.ncrd ) ), vec ) ) )
+            vec = ccrd - self.rcrd[i]
+            vec.shape = ( self.ncrd, 1 )
+            mat = self.rmet[i]
+            mat.shape = ( self.ncrd, self.ncrd )
+            cdst[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( mat, vec ) ) )
         cexp = numpy.exp( - cdst / self.delz )
         cval = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp ) / cexp.sum()
         molec.func += 0.5 * self.kumb * math.pow( cval - self.xref, 2.0 )
@@ -418,8 +436,11 @@ atom_n,i    atom_n,j
         cdst = numpy.zeros( self.nwin )
         jder = numpy.zeros( ( self.nwin, self.jcol ) )
         for i in range( self.nwin ):
-            vec = ( ccrd - self.rcrd[i] ).reshape( ( self.ncrd, 1 ) )
-            mat = numpy.dot( self.rmet[i].reshape( ( self.ncrd, self.ncrd ) ), vec )
+            vec = ccrd - self.rcrd[i]
+            vec.shape = ( self.ncrd, 1 )
+            mat = self.rmet[i]
+            mat.shape = ( self.ncrd, self.ncrd )
+            mat = numpy.dot( mat, vec )
             cdst[i] = math.sqrt( numpy.dot( vec.T, mat ) )
             tmp = numpy.dot( vec.T, numpy.dot( self.rmet[i].reshape( ( self.ncrd, self.ncrd ) ), jaco ) )
             jder[i] = 0.5 * ( numpy.dot( mat.T, jaco ) + tmp ).ravel() / cdst[i]
@@ -431,6 +452,7 @@ atom_n,i    atom_n,j
         molec.func += 0.5 * diff * ( cval - self.xref )
         sder = numpy.zeros( self.jcol )
         for i in range( self.jcol ):
+#            sder[i] = diff * numpy.sum( jder[:,i] * cexp * ( cval / self.delz - numpy.arange( self.nwin, dtype=numpy.float64 ) ) ) / sumd
             for j in range( self.nwin ):
                 sder[i] += diff * jder[j,i] * ( cval / self.delz - j ) * cexp[j] / sumd
         tmp = self.jcol // 3
