@@ -371,9 +371,13 @@ atom_n,i    atom_n,j
         # load previous equi-distributed string
         self.rcrd = numpy.array( [ float( i ) for i in str_crd.read().strip().split() ] )
         self.rcrd.shape = ( self.nwin, self.ncrd )
-        # load previous string metrics
-        self.rmet = numpy.array( [ float( i ) for i in str_met.read().strip().split() ] )
-        self.rmet.shape = ( self.nwin, self.ncr2 )
+        # load previous string metrics (default to identity...)
+        try:
+            self.rmet = numpy.array( [ float( i ) for i in str_met.read().strip().split() ] )
+            self.rmet.shape = ( self.nwin, self.ncr2 )
+        except:
+            self.rmet = numpy.zeros( ( self.nwin, self.ncr2 ) )
+            self.rmet[0:self.nwin,:] = numpy.eye( self.ncrd ).ravel()
         # get the arc of the current string
         self.arcl = numpy.zeros( self.nwin - 1 )
         for i in range( 1, self.nwin ):
@@ -384,7 +388,7 @@ atom_n,i    atom_n,j
             mat = numpy.linalg.inv( mat )
             self.arcl[i-1] = math.sqrt( numpy.dot( vec.T, numpy.dot( mat, vec ) ) )
         self.delz = self.arcl.sum() / float( self.nwin - 1.0 )
-        print( "Colective variable s range: [%.3lf - %.3lf: %.6lf] _Ang"%( 0.0, self.arcl.sum(), self.delz ) )
+        print( "Colective variable s range: [%.3lf - %.3lf: %.6lf] _Ang amu^0.5"%( 0.0, self.arcl.sum(), self.delz ) )
         # store inverse (constant) metrics
         for i in range( self.nwin ):
             self.rmet[i] = numpy.linalg.inv( self.rmet[i].reshape( ( self.ncrd, self.ncrd ) ) ).ravel()
