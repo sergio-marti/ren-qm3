@@ -74,6 +74,9 @@ class serial( object ):
                 else:
                     tau = dpm * dcM + dpM * dcm
             tau /= numpy.linalg.norm( tau )
+#            fum = self.kumb * numpy.sum( ( dcm - dcM ) * tau )
+#            gum = fum * tau
+#            return( tau, fum * numpy.sum( ( dcm - dcM ) * tau ), gum )
             gum = self.kumb * numpy.sum( ( dcm - dcM ) * tau ) * tau
             return( tau, gum )
         # ----------------------------------------------------------------------
@@ -93,10 +96,12 @@ class serial( object ):
         for who in range( 1, self.node - 1 ):
             ii = who * self.dime
             jj = ii + self.dime
+#            tau, fum, gum = __calc_tau( vpot[who-1], vpot[who], vpot[who+1],
             tau, gum = __calc_tau( vpot[who-1], vpot[who], vpot[who+1],
                     self.coor[ii-self.dime:ii],
                     self.coor[ii:jj],
                     self.coor[jj:jj+self.dime] )
+#            self.func += fum * 0.5
             self.grad[ii:jj] += gum - numpy.sum( tau * self.grad[ii:jj] ) * tau
 
 
@@ -151,6 +156,9 @@ class parall( object ):
                 else:
                     tau = dpm * dcM + dpM * dcm
             tau /= numpy.linalg.norm( tau )
+#            fum = self.kumb * numpy.sum( ( dcm - dcM ) * tau )
+#            gum = fum * tau
+#            return( tau, fum * numpy.sum( ( dcm - dcM ) * tau ), gum )
             gum = self.kumb * numpy.sum( ( dcm - dcM ) * tau ) * tau
             return( tau, gum )
         # ----------------------------------------------------------------------
@@ -192,8 +200,10 @@ class parall( object ):
         for who in range( 1, self.node - 1 ):
             ii = who * self.dime
             jj = ii + self.dime
+#            tau, fum, gum = __calc_tau( vpot[who-1], vpot[who], vpot[who+1],
             tau, gum = __calc_tau( vpot[who-1], vpot[who], vpot[who+1],
                     self.coor[ii-self.dime:ii],
                     self.coor[ii:jj],
                     self.coor[jj:jj+self.dime] )
+#            self.func += fum * 0.5
             self.grad[ii:jj] += gum - numpy.sum( tau * self.grad[ii:jj] ) * tau

@@ -1,6 +1,7 @@
 import  numpy
 import  qm3
 import  qm3.engines.mopac
+import  qm3.utils
 import  qm3.utils.hessian
 import  qm3.actions.minimize
 import  io
@@ -44,6 +45,6 @@ mol.engines["qm"] = qm3.engines.mopac.run( mol, "AM1", 0 )
 def get_hess( mol, step ):
     hes = qm3.utils.hessian.numerical( mol )
     mol.get_grad()
-    return( qm3.utils.hessian.raise_RT( hes, qm3.utils.hessian.RT_modes( mol ) ) )
+    return( qm3.utils.hessian.raise_RT( hes, qm3.utils.RT_modes( mol ) ) )
 
 qm3.actions.minimize.baker( mol, get_hess, step_number = 10, print_frequency = 1, follow_mode = 0 )
