@@ -73,4 +73,4 @@ H           7.2054065864       -5.1951553158       -1.9398695949
 
 
 obj = my_problem()
-qm3.actions.minimize.baker( obj, step_number = 10, print_frequency = 1, follow_mode = 0 )
+qm3.actions.minimize.baker( obj, step_number = 10, print_frequency = 1, follow_mode = 0, gradient_tolerance = 1.0 )

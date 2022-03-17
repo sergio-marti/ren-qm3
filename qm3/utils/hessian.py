@@ -2,13 +2,14 @@ import  math
 import  numpy
 import  typing
 import  struct
-import  os
+import  os, stat
 import  qm3.data
 import  qm3.utils
 
 
 def numerical( mol: object,
-        dsp: typing.Optional[float] = 1.e-4, central: typing.Optional[bool] = True ) -> numpy.array:
+        dsp: typing.Optional[float] = 1.e-4,
+        central: typing.Optional[bool] = True ) -> numpy.array:
     size = 3 * mol.actv.sum()
     sele = numpy.argwhere( mol.actv.ravel() ).ravel()
     hess = numpy.zeros( ( size, size ), dtype=numpy.float64 )
@@ -33,7 +34,7 @@ def numerical( mol: object,
             for j in [0, 1, 2]:
                 mol.coor[i,j] += dsp
                 mol.get_grad()
-                hess[k,:] = ( mol.grad[sele].ravel() - ref ) / ( 2.0 * dsp )
+                hess[k,:] = ( mol.grad[sele].ravel() - ref ) / dsp
                 mol.coor[i,j] -= dsp
                 k += 1
     # symmetrize
@@ -71,7 +72,8 @@ def raise_RT( hess: numpy.array, rtmd: numpy.array,
 
 
 
-def frequencies( mol: object, hess: numpy.array, project: typing.Optional[bool] = True ) -> tuple:
+def frequencies( mol: object, hess: numpy.array,
+        project: typing.Optional[bool] = True ) -> tuple:
     size = 3 * mol.actv.sum()
     mass = 1.0 / numpy.sqrt( mol.mass[mol.actv] )
     temp = hess.copy()
@@ -185,8 +187,8 @@ def normal_mode( mol: object, freq: numpy.array, mods: numpy.array, who: int,
                 fd.write( "%-4s%20.12lf%20.12lf%20.12lf\n"%(
                     qm3.data.symbol[mol.anum[sel[k]]],
                     mol.coor[sel[k],0] + fac * mods[k3,who],
-                    mol.coor[sel[k],1] + fac * mods[k3,who],
-                    mol.coor[sel[k],2] + fac * mods[k3,who] ) )
+                    mol.coor[sel[k],1] + fac * mods[k3+1,who],
+                    mol.coor[sel[k],2] + fac * mods[k3+2,who] ) )
     fd.close()
 
 
@@ -309,6 +311,7 @@ def manage( mol: object, hess: numpy.array,
         dx = rr - numpy.array( struct.unpack( "%dd"%( size ), f.read( size * 8 ) )[:] )
         dg = gg - numpy.array( struct.unpack( "%dd"%( size ), f.read( size * 8 ) )[:] )
         hh = numpy.array( struct.unpack( "%dd"%( size * size ), f.read( size * size * 8 ) )[:] )
+        hh.shape = ( size, size )
         f.close()
         if( numpy.linalg.norm( dx ) > 1.0e-4 ):
             update_func( dx, dg, hh )

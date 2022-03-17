@@ -55,7 +55,7 @@ def get_hess( mol, step ):
         qm3.utils.hessian.manage( mol, hes, should_update = True )
     return( qm3.utils.hessian.raise_RT( hes, qm3.utils.RT_modes( mol ) ) )
 
-qm3.actions.minimize.baker( mol, get_hess, step_number = 10, print_frequency = 1, follow_mode = 0, gradient_tolerance = 1.0 )
+qm3.actions.minimize.rfo( mol, get_hess, step_number = 10, print_frequency = 1, follow_mode = 0, gradient_tolerance = 1.0 )
 
 val, vec = qm3.utils.hessian.frequencies( mol, get_hess( mol, 0 ) )
 print( val[0:10] )

@@ -220,7 +220,7 @@ def baker( mol: object, get_hess: typing.Callable,
         follow_mode: typing.Optional[int] = -1,
         fdsc: typing.Optional[typing.IO] = sys.stdout ):
     """
-    import  qm3.utils
+    import  qm3.utils.hessian
 
     def get_hess( mol: object, step: int ):
         hes = qm3.utils.hessian.numerical( mol )
@@ -344,17 +344,81 @@ def baker( mol: object, get_hess: typing.Callable,
         grms = numpy.linalg.norm( mol.grad ) / ndeg
         if( itr % print_frequency == 0 ):
             if( follow_mode < 0 ):
-                fdsc.write( "%10ld%20.5lf%20.10lf%5ld\n"%( itr, mol.func, grms, nneg ) )
+                fdsc.write( "%10ld%20.5lf%20.10lf%5ld%10.2le\n"%( itr, mol.func, grms, nneg, tmp ) )
             else:
-                fdsc.write( "%10ld%20.5lf%20.10lf%5ld%5ld%10.2lf\n"%( itr, mol.func, grms, nneg, follow_mode, who ) )
+                fdsc.write( "%10ld%20.5lf%20.10lf%5ld%5ld%10.2lf%10.2le\n"%( itr, mol.func, grms, nneg, follow_mode, who, tmp ) )
         mol.current_step( itr )
 
     if( itr % print_frequency != 0 ):
         if( follow_mode < 0 ):
-            fdsc.write( "%10ld%20.5lf%20.10lf%5ld\n"%( itr, mol.func, grms, nneg ) )
+            fdsc.write( "%10ld%20.5lf%20.10lf%5ld%10.2le\n"%( itr, mol.func, grms, nneg, tmp ) )
         else:
-            fdsc.write( "%10ld%20.5lf%20.10lf%5ld%5ld%10.2lf\n"%( itr, mol.func, grms, nneg, follow_mode, who ) )
+            fdsc.write( "%10ld%20.5lf%20.10lf%5ld%5ld%10.2lf%10.2le\n"%( itr, mol.func, grms, nneg, follow_mode, who, tmp ) )
     if( follow_mode > -1 ):
         fdsc.write( "-" * 70 + "\n" )
     else:
         fdsc.write( "-" * 55 + "\n" )
+
+# =================================================================================================
+
+def rfo( mol: object, get_hess: typing.Callable,
+        step_number: typing.Optional[int] = 100,
+        step_size: typing.Optional[float] = 0.1,
+        print_frequency: typing.Optional[int] = 10,
+        gradient_tolerance: typing.Optional[float] = 1.5,
+        follow_mode: typing.Optional[int] = -1,
+        fdsc: typing.Optional[typing.IO] = sys.stdout ):
+    """
+    import  qm3.utils.hessian
+
+    def get_hess( mol: object, step: int ):
+        hes = qm3.utils.hessian.numerical( mol )
+        mol.get_grad()
+        return( hes )
+    """
+    actv = mol.actv.sum()
+    size = 3 * actv
+    if( follow_mode >= size or follow_mode < -1 ):
+        follow_mode = -1
+    fdsc.write( "---------------------------------------- Minimization (RFO)\n\n" )
+    fdsc.write( "Degrees of Freedom: %20ld\n"%( size ) )
+    fdsc.write( "Following Mode:     %20d\n"%( follow_mode ) )
+    fdsc.write( "Step Number:        %20d\n"%( step_number ) )
+    fdsc.write( "Step Size:          %20.10lg\n"%( step_size ) )
+    fdsc.write( "Print Frequency:    %20d\n"%( print_frequency ) )
+    fdsc.write( "Gradient Tolerance: %20.10lg\n\n"%( gradient_tolerance ) )
+    fdsc.write( "%10s%20s%20s\n"%( "Step", "Function", "Gradient" ) )
+    fdsc.write( "-" * 50 + "\n" )
+    tol2 = 1.0e-8
+    ndeg = math.sqrt( size )
+    sele = numpy.argwhere( mol.actv.ravel() ).ravel()
+    grms = gradient_tolerance * 2.0
+    crd  = numpy.zeros( ( actv, 3 ), dtype=numpy.float64 )
+    new  = 0.5 * numpy.ones( size, dtype=numpy.float64 )
+    if( follow_mode > -1 ):
+        new[follow_mode] *= -1.0
+    flg  = True
+    itr  = 0
+    while( itr < step_number and grms > gradient_tolerance and flg ):
+        mol.coor[sele] -= crd
+        hes = get_hess( mol, itr )
+        val, vec = numpy.linalg.eigh( hes )
+        idx = numpy.argsort( val )
+        val = val[idx]
+        vec = vec[:,idx]
+        grd = mol.grad[sele].ravel()
+        grd = numpy.dot( vec.T, grd )
+        val = new * ( numpy.fabs( val ) + numpy.sqrt( val * val + 4.0 * grd * grd ) )
+        crd = numpy.dot( vec, grd * ( 1.0 / val ) ).reshape( ( actv, 3 ) )
+        tmp = numpy.linalg.norm( crd )
+        if( tmp > step_size ):
+            crd *= step_size / tmp
+        itr += 1
+        grms = numpy.linalg.norm( mol.grad ) / ndeg
+        if( itr % print_frequency == 0 ):
+                fdsc.write( "%10ld%20.5lf%20.10lf%10.2le\n"%( itr, mol.func, grms, tmp ) )
+        mol.current_step( itr )
+    if( itr % print_frequency != 0 ):
+        fdsc.write( "%10ld%20.5lf%20.10lf%10.2le\n"%( itr, mol.func, grms, tmp ) )
+    fdsc.write( "-" * 50 + "\n" )
+
