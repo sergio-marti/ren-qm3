@@ -420,7 +420,7 @@ atom_n,i    atom_n,j
         return( cmet )
 
 
-    def get_func( self, molec: object ) -> tuple:
+    def get_func( self, molec: object ) -> numpy.array:
         ccrd, jaco = self.get_jaco( molec )
         cdst = numpy.zeros( self.nwin )
         for i in range( self.nwin ):
@@ -432,10 +432,11 @@ atom_n,i    atom_n,j
         cexp = numpy.exp( - cdst / self.delz )
         cval = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp ) / cexp.sum()
         molec.func += 0.5 * self.kumb * math.pow( cval - self.xref, 2.0 )
-        return( cval, ccrd )
+        molec.rval.append( cval )
+        return( ccrd )
 
 
-    def get_grad( self, molec: object ) -> tuple:
+    def get_grad( self, molec: object ) -> numpy.array:
         ccrd, jaco = self.get_jaco( molec )
         cdst = numpy.zeros( self.nwin )
         jder = numpy.zeros( ( self.nwin, self.jcol ) )
@@ -463,4 +464,5 @@ atom_n,i    atom_n,j
         sder.shape = ( tmp, 3 )
         for i in range( tmp ):
             molec.grad[self.xdij[i]] += sder[i]
-        return( cval, ccrd )
+        molec.rval.append( cval )
+        return( ccrd )
