@@ -9,11 +9,6 @@ import  qm3.utils.hessian
 __vcut = 0.00035481432270250985 # 1 _cm^-1
 
 
-# mass weighted:  xyz * sqrt(m)  ;  grd / sqrt(m)  ;  hes / sqrt(mi * mj)
-def __project_mwRT():
-    pass
-
-
 def initial_step( mol: object, get_hess: typing.Callable, step_size: float ) -> tuple:
     """
     returns: the number of 'negative' eigen-values (see __vcut) and the mass-weighted transition mode
