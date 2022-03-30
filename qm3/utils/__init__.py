@@ -175,7 +175,7 @@ class PCA( object ):
 
 # =================================================================================================
 
-def Simpson( x, y ):
+def integ_Simpson( x, y ):
     n = len( x )
     o = 0.0
     for i in range( 0, n - 2, 2 ):
@@ -191,7 +191,7 @@ def Simpson( x, y ):
     return( o )
 
 
-def Gauss_Legendre( f, a, b, n = 80 ):
+def integ_GL( f, a, b, n = 80 ):
     x, w = numpy.polynomial.legendre.leggauss( n )
     m = 0.5 * ( b - a )
     p = 0.5 * ( b + a )
