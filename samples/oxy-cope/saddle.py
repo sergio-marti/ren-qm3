@@ -45,33 +45,31 @@ mol.engines["qm"] = eqm
 mol.set_active( sqm )
 
 log = open( "borra_log.mm", "wt" )
-hes = None
 
-def get_hess( mol, step ):
-    global  hes
 
-    eqm.get_func( mol )
-    mol.set_active( smm )
-    mol.engines["mm"].update_chrg( mol )
-    mol.engines.pop( "qm" )
-    qm3.actions.minimize.fire( mol, gradient_tolerance = 0.5, fdsc = log )
+def calc_hess( self: object, step: int ):
+    eqm.get_func( self )
+    self.set_active( smm )
+    self.engines["mm"].update_chrg( self )
+    self.engines.pop( "qm" )
+    qm3.actions.minimize.fire( self, gradient_tolerance = 0.5, fdsc = log )
     log.flush()
-    mol.chrg[sqm] = 0.0
-    mol.engines["mm"].update_chrg( mol )
-    mol.engines["qm"] = eqm
-    mol.set_active( sqm )
-
+    self.chrg[sqm] = 0.0
+    self.engines["mm"].update_chrg( self )
+    self.engines["qm"] = eqm
+    self.set_active( sqm )
     if( step % 10 == 0 ):
-        hes = qm3.utils.hessian.numerical( mol )
-        qm3.utils.hessian.manage( mol, hes )
-        mol.get_grad()
+        self.hess = qm3.utils.hessian.numerical( self )
+        qm3.utils.hessian.manage( self, self.hess )
+        self.get_grad()
     else:
-        mol.get_grad()
-        qm3.utils.hessian.manage( mol, hes, should_update = True )
-    return( qm3.utils.hessian.raise_RT( hes, qm3.utils.RT_modes( mol ) ) )
+        self.get_grad()
+        qm3.utils.hessian.manage( self, self.hess, should_update = True )
+    return( qm3.utils.hessian.raise_RT( self.hess, qm3.utils.RT_modes( self ) ) )
 
 
-qm3.actions.minimize.baker( mol, get_hess,
+qm3.actions.minimize.baker( mol,
+        calc_hess,
         gradient_tolerance = 2.0,
         step_number = 100,
         print_frequency = 1,
@@ -80,6 +78,6 @@ qm3.actions.minimize.baker( mol, get_hess,
 with open( "saddle.pdb", "wt" ) as f:
     mol.pdb_write( f )
 
-val, vec = qm3.utils.hessian.frequencies( mol, hes )
+val, vec = qm3.utils.hessian.frequencies( mol, mol.hess )
 print( val[0:10] )
 qm3.utils.hessian.normal_mode( mol, val, vec, 0, afac = 8.0 )

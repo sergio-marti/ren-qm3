@@ -1,7 +1,6 @@
 import  numpy
 import  qm3
 import  qm3.engines.mopac
-import  qm3.utils
 import  qm3.utils.hessian
 import  qm3.actions.minimize
 import  io
@@ -42,21 +41,19 @@ mol.xyz_read( f )
 mol.guess_atomic_numbers()
 mol.engines["qm"] = qm3.engines.mopac.run( mol, "AM1", 0 )
 
-hes = None
-
-def get_hess( mol, step ):
-    global  hes
+def calc_hess( self: object, step: int ):
     if( step == 0 or True ):
-        hes = qm3.utils.hessian.numerical( mol )
-        mol.get_grad()
-        qm3.utils.hessian.manage( mol, hes )
+        self.hess = qm3.utils.hessian.numerical( self )
+        self.get_grad()
+        qm3.utils.hessian.manage( self, self.hess )
     else:
-        mol.get_grad()
-        qm3.utils.hessian.manage( mol, hes, should_update = True )
-    return( qm3.utils.hessian.raise_RT( hes, qm3.utils.RT_modes( mol ) ) )
+        self.get_grad()
+        qm3.utils.hessian.manage( self, self.hess, should_update = True )
+    return( qm3.utils.hessian.raise_RT( self.hess, qm3.utils.RT_modes( self ) ) )
 
-qm3.actions.minimize.baker( mol, get_hess, step_number = 10, print_frequency = 1, follow_mode = 0, gradient_tolerance = 1.0 )
+qm3.actions.minimize.baker( mol, calc_hess,
+        step_number = 10, print_frequency = 1, follow_mode = 0, gradient_tolerance = 1.0 )
 
-val, vec = qm3.utils.hessian.frequencies( mol, get_hess( mol, 0 ) )
+val, vec = qm3.utils.hessian.frequencies( mol, calc_hess( mol, 0 ) )
 print( val[0:10] )
 qm3.utils.hessian.normal_mode( mol, val, vec, 0, afac = 8.0 )

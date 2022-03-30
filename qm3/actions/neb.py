@@ -24,16 +24,15 @@ def distribute( nodes: int, guess: list ) -> list:
 
 
 
-#
-# J. Chem. Phys. v113, p9978 (2000) [10.1063/1.1323224]
-#
 class serial( object ):
-    def __init__( self, mol: object, guess: list, kumb: float ):
-        """
-        the value of 'kumb' should be approx the same of the potential energy barrier
+    """
+    the value of 'kumb' should be approx the same of the potential energy barrier
 
-        when optimizing the whole band, set the 'gradient_tolerance' equal to [0.1:0.5] * nodes (_kJ/mol.A)
-        """
+    when optimizing the whole band, set the 'gradient_tolerance' equal to [0.1:0.5] * nodes (_kJ/mol.A)
+
+    J. Chem. Phys. v113, p9978 (2000) [10.1063/1.1323224]
+    """
+    def __init__( self, mol: object, guess: list, kumb: float ):
         self.mole = mol
         self.kumb = kumb
         self.sele = numpy.argwhere( mol.actv.ravel() ).ravel()
@@ -107,12 +106,14 @@ class serial( object ):
 
 
 class parall( object ):
-    def __init__( self, mol: object, guess: list, kumb: float, chunks: list, opar: object ):
-        """
-        the value of 'kumb' should be approx the same of the potential energy barrier
+    """
+    the value of 'kumb' should be approx the same of the potential energy barrier
 
-        when optimizing the whole band, set the 'gradient_tolerance' equal to [0.1:0.5] * nodes (_kJ/mol.A)
-        """
+    when optimizing the whole band, set the 'gradient_tolerance' equal to [0.1:0.5] * nodes (_kJ/mol.A)
+
+    J. Chem. Phys. v113, p9978 (2000) [10.1063/1.1323224]
+    """
+    def __init__( self, mol: object, guess: list, kumb: float, chunks: list, opar: object ):
         self.mole = mol
         self.kumb = kumb
         self.sele = numpy.argwhere( mol.actv.ravel() ).ravel()

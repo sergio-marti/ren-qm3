@@ -9,10 +9,10 @@ import  qm3.utils
 
 class molecule( object ):
     """
-        selections are based on numpy.bool_ arrays
-        use numpy.logical_[and/or/not] to perform complex selections
+    selections are based on numpy.bool_ arrays
+    use numpy.logical_[and/or/not] to perform complex selections
 
-        apply numpy.argwhere( SELECTION.ravel() ).ravel() to obtain the indices for the engines
+    apply numpy.argwhere( SELECTION.ravel() ).ravel() to obtain the indices for the engines
     """
     def __init__( self ):
         self.natm = 0
@@ -477,6 +477,31 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             self.engines[itm].get_grad( self )
         self.grad *= self.actv.astype( numpy.float64 )
 
+# =================================================================================================
+
+#    def RT_modes( self ) -> numpy.array:
+#        size = 3 * self.actv.sum()
+#        mode = numpy.zeros( ( 6, size ), dtype=numpy.float64 )
+#        cent = numpy.sum( self.mass * self.coor * self.actv, axis = 0 ) / numpy.sum( self.mass * self.actv )
+#        k = 0
+#        for i in numpy.argwhere( self.actv.ravel() ).ravel():
+#            sqrm = math.sqrt( self.mass[i] )
+#            mode[0,k:k+3] = [ sqrm, 0.0, 0.0 ]
+#            mode[1,k:k+3] = [ 0.0, sqrm, 0.0 ]
+#            mode[2,k:k+3] = [ 0.0, 0.0, sqrm ]
+#            mode[3,k:k+3] = [ 0.0, - ( self.coor[i,2] - cent[2] ) * sqrm, ( self.coor[i,1] - cent[1] ) * sqrm ]
+#            mode[4,k:k+3] = [ ( self.coor[i,2] - cent[2] ) * sqrm, 0.0, - ( self.coor[i,0] - cent[0] ) * sqrm ]
+#            mode[5,k:k+3] = [ - ( self.coor[i,1] - cent[1] ) * sqrm, ( self.coor[i,0] - cent[0] ) * sqrm, 0.0 ]
+#            k += 3
+#        # orthogonalize modes
+#        for i in range( 6 ):
+#            for j in range( i ):
+#                mode[i] -= numpy.sum( mode[i] * mode[j] ) * mode[j]
+#            tmp = math.sqrt( numpy.sum( mode[i] * mode[i] ) )
+#            if( tmp > 0.0 ):
+#                mode[i] /= tmp
+#        return( mode )
+
 
     def project_gRT( self ):
         """
@@ -490,7 +515,6 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             grad -= numpy.sum( grad * rtmd[i] ) * rtmd[i]
         self.grad[sele] = grad
 
-# =================================================================================================
 
     def to_principal_axes( self, geometrical: typing.Optional[bool] = False ):
         """

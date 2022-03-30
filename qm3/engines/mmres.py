@@ -296,14 +296,14 @@ class multiple_distance( object ):
 
 
 class tether( object ):
-    def __init__( self, mol: object, kumb: float,
-            sele: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ) ):
-        """
+    """
     thether = force_constant / 2 * SUM ( cartesian - reference )^2
 
     force_constant [kJ/mol.A^2]
     reference [A]
-        """
+    """
+    def __init__( self, mol: object, kumb: float,
+            sele: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ) ):
         self.kumb = kumb
         if( sele.sum() > 0 ):
             self.sele = sele.reshape( ( mol.natm, 1 ) ) * 1.0
@@ -322,35 +322,34 @@ class tether( object ):
 
 
 
-# --------------------------------------------------------------------
-# J. Comput. Chem. v35, p1672 (2014) [10.1002/jcc.23673]
-# J. Phys. Chem. A v121, p9764 (2017) [10.1021/acs.jpca.7b10842]
-# WIREs Comput. Mol. Sci. v8 (2018) [10.1002/wcms.1329]
-# --------------------------------------------------------------------
-# x( %zeta  ) approx {sum from{i=0} to{N-1} {i %delta_z e^{-{{lline %zeta - z rline}over %delta_z}}}} over
-# {sum from{i=0} to{N-1} { e^{-{{lline %zeta - z rline}over %delta_z}}}}
-# ~~~~
-# %delta_z = langle lline x_{i+1} - x_{i} rline rangle = L over{N - 1}
-# newline
-# lline %zeta - z rline = left[ (%zeta - z)^T M^{-1} (%zeta - z) right]^{1 over 2}
-# ~~~~
-# M_{i,j}=sum from{k=1} to{3n} {{partial %zeta_i}over{partial x_k} 1 over m_k {partial %zeta_j}over{partial x_k}}
-# --------------------------------------------------------------------
 class colvar_s( object ):
+    """
+    kumb: kJ / ( mol Angs^2 amu )
+    xref: Ang amu^0.5
+    -------------------------------------
+    ncrd        nwin
+    atom_1,i    atom_1,j
+    ...         ...
+    atom_n,i    atom_n,j
+    -------------------------------------
+
+    x( %zeta  ) approx {sum from{i=0} to{N-1} {i %delta_z e^{-{{lline %zeta - z rline}over %delta_z}}}} over
+    {sum from{i=0} to{N-1} { e^{-{{lline %zeta - z rline}over %delta_z}}}}
+    ~~~~
+    %delta_z = langle lline x_{i+1} - x_{i} rline rangle = L over{N - 1}
+    newline
+    lline %zeta - z rline = left[ (%zeta - z)^T M^{-1} (%zeta - z) right]^{1 over 2}
+    ~~~~
+    M_{i,j}=sum from{k=1} to{3n} {{partial %zeta_i}over{partial x_k} 1 over m_k {partial %zeta_j}over{partial x_k}}
+
+    J. Comput. Chem. v35, p1672 (2014) [10.1002/jcc.23673]
+    J. Phys. Chem. A v121, p9764 (2017) [10.1021/acs.jpca.7b10842]
+    WIREs Comput. Mol. Sci. v8 (2018) [10.1002/wcms.1329]
+    """
     def __init__( self, kumb: float, xref: float,
             str_cnf: typing.IO,
             str_crd: typing.IO,
             str_met: typing.IO ):
-        """
-kumb: kJ / ( mol Angs^2 amu )
-xref: Ang amu^0.5
--------------------------------------
-ncrd        nwin
-atom_1,i    atom_1,j
-...         ...
-atom_n,i    atom_n,j
--------------------------------------
-        """
         self.xref = xref
         self.kumb = kumb
         # parse config

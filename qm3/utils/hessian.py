@@ -86,7 +86,7 @@ def frequencies( mol: object, hess: numpy.array,
     sidx = numpy.argsort( freq )
     freq = freq[sidx]
     mods = mods[:,sidx]
-    wns = 1.0e11 / ( 2. * numpy.pi * qm3.data.C )
+    wns = 1.0e11 / ( 2. * math.pi * qm3.data.C )
     for i in range( size ):
         if( freq[i] < 0.0 ):
             freq[i] = - math.sqrt( math.fabs( freq[i] ) ) * wns
@@ -153,7 +153,7 @@ def IR_spectrum( freq: numpy.array, inte: numpy.array,
 def force_constants( mol: object, freq: numpy.array, mods: numpy.array ) -> tuple:
     siz = 3 * mol.actv.sum()
     # eigenvalues: cm^-1 >> kJ/g.A^2
-    val = numpy.square( freq * 2.0 * numpy.pi * qm3.data.C / 1.0e11 )
+    val = numpy.square( freq * 2.0 * math.pi * qm3.data.C / 1.0e11 )
     # eigenvectors: dimensionless
     mas = mol.mass[mol.actv]
     mas = numpy.column_stack( ( mas, mas, mas ) ).reshape( siz )
@@ -175,13 +175,13 @@ def normal_mode( mol: object, freq: numpy.array, mods: numpy.array, who: int,
     ome = math.fabs( freq[who] )
     if( ome < 0.1 ): 
         return
-    wns = 1.0e11 / ( 2. * numpy.pi * qm3.data.C )
+    wns = 1.0e11 / ( 2. * math.pi * qm3.data.C )
     amp = math.sqrt( 2. * 1.0e-3 * qm3.data.KB * qm3.data.NA * temp ) * ( wns / ome )
     fd = open( "nmode.%d"%( who ), "wt" )
     for i in range( 10 ):
         for j in range( 10 ):
             fd.write( "%d\n%10.3lf cm^-1\n"%( siz, freq[who] ) )
-            fac = afac * amp * numpy.sin( 2. * numpy.pi * float(j) / 10. )
+            fac = afac * amp * numpy.sin( 2. * math.pi * float(j) / 10. )
             for k in range( siz ):
                 k3 = 3 * k
                 fd.write( "%-4s%20.12lf%20.12lf%20.12lf\n"%(
@@ -203,7 +203,7 @@ def rrho( mol: object, freq: numpy.array,
     mass = mol.mass[mol.actv].ravel()
     # Translation (divided by N_Avogadro)
     mt = numpy.sum( mol.mass * mol.actv )
-    qt = numpy.power( 2.0 * numpy.pi * mt / qm3.data.NA * 1.0e-3 * qm3.data.KB * temp / ( qm3.data.H * qm3.data.H ), 1.5 ) * qm3.data.KB * temp / ( pres * 1.013250E+5 )
+    qt = numpy.power( 2.0 * math.pi * mt / qm3.data.NA * 1.0e-3 * qm3.data.KB * temp / ( qm3.data.H * qm3.data.H ), 1.5 ) * qm3.data.KB * temp / ( pres * 1.013250E+5 )
     qt = numpy.log( qt )
     # Rotations
     xx = 0.0; xy = 0.0; xz = 0.0; yy = 0.0; yz = 0.0; zz = 0.0
@@ -217,8 +217,8 @@ def rrho( mol: object, freq: numpy.array,
         yz += mass[i] * ( mol.coor[sele[i],1] - mc[1] ) * ( mol.coor[sele[i],2] - mc[2] )
         zz += mass[i] * ( mol.coor[sele[i],2] - mc[2] ) * ( mol.coor[sele[i],2] - mc[2] )
     val, vec = numpy.linalg.eigh( numpy.array( [ yy+zz, -xy, -xz, -xy, xx+zz, -yz, -xz, -yz, xx+yy ] ).reshape( ( 3, 3 ) ) )
-    t = ( 8.0 * numpy.pi * numpy.pi * qm3.data.KB * temp ) / ( qm3.data.H * qm3.data.H * qm3.data.NA ) * 1.0e-23
-    qr = math.sqrt( numpy.pi * t * t * t * val[0] * val[1] * val[2] ) / symm
+    t = ( 8.0 * math.pi * math.pi * qm3.data.KB * temp ) / ( qm3.data.H * qm3.data.H * qm3.data.NA ) * 1.0e-23
+    qr = math.sqrt( math.pi * t * t * t * val[0] * val[1] * val[2] ) / symm
     qr = numpy.log( qr )
     # Vibrations
     t = 100.0 * qm3.data.C * qm3.data.H / ( qm3.data.KB * temp )

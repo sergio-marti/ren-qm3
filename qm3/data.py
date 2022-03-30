@@ -1,3 +1,4 @@
+import  math
 import  numpy
 
 
@@ -22,7 +23,7 @@ K2J = 4.184            # kcal >> kJ
 J2K = 0.239005736138   # kJ >> kcal
 H2K = 627.509474062034 # Ha >> kcal.mol-1
 H2J = 2625.49963947555 # Ha >> kJ.mol-1
-R2D = 180.0/numpy.pi   # Radians to dregrees
+R2D = 180.0/math.pi    # Radians to dregrees
 
 
 MXLAT = 1.0e300

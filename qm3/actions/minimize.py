@@ -212,7 +212,8 @@ def cgplus( mol: object,
 
 # =================================================================================================
 
-def baker( mol: object, get_hess: typing.Callable,
+def baker( mol: object,
+        get_hess: typing.Callable,
         step_number: typing.Optional[int] = 100,
         step_size: typing.Optional[float] = 0.1,
         print_frequency: typing.Optional[int] = 10,
@@ -220,12 +221,18 @@ def baker( mol: object, get_hess: typing.Callable,
         follow_mode: typing.Optional[int] = -1,
         fdsc: typing.Optional[typing.IO] = sys.stdout ):
     """
+    import  qm3.utils
     import  qm3.utils.hessian
 
-    def get_hess( mol: object, step: int ):
-        hes = qm3.utils.hessian.numerical( mol )
-        mol.get_grad()
-        return( hes )
+    def calc_hess( self: object, step: int ):
+        if( step % 10 == 0 ):
+            self.hess = qm3.utils.hessian.numerical( self )
+            qm3.utils.hessian.manage( self, self.hess )
+            self.get_grad()
+        else:
+            self.get_grad()
+            qm3.utils.hessian.manage( self, self.hess, should_update = True )
+        return( return( qm3.utils.hessian.raise_RT( self.hess, qm3.utils.RT_modes( self ) ) ) )
     """
     actv = mol.actv.sum()
     size = 3 * actv
@@ -361,7 +368,8 @@ def baker( mol: object, get_hess: typing.Callable,
 
 # =================================================================================================
 
-def rfo( mol: object, get_hess: typing.Callable,
+def rfo( mol: object,
+        get_hess: typing.Callable,
         step_number: typing.Optional[int] = 100,
         step_size: typing.Optional[float] = 0.1,
         print_frequency: typing.Optional[int] = 10,
@@ -369,12 +377,18 @@ def rfo( mol: object, get_hess: typing.Callable,
         follow_mode: typing.Optional[int] = -1,
         fdsc: typing.Optional[typing.IO] = sys.stdout ):
     """
+    import  qm3.utils
     import  qm3.utils.hessian
 
-    def get_hess( mol: object, step: int ):
-        hes = qm3.utils.hessian.numerical( mol )
-        mol.get_grad()
-        return( hes )
+    def calc_hess( self: object, step: int ):
+        if( step % 10 == 0 ):
+            self.hess = qm3.utils.hessian.numerical( self )
+            qm3.utils.hessian.manage( self, self.hess )
+            self.get_grad()
+        else:
+            self.get_grad()
+            qm3.utils.hessian.manage( self, self.hess, should_update = True )
+        return( return( qm3.utils.hessian.raise_RT( self.hess, qm3.utils.RT_modes( self ) ) ) )
     """
     actv = mol.actv.sum()
     size = 3 * actv
