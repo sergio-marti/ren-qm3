@@ -85,8 +85,11 @@ obj.calc_TST( r_coor, r_func, r_hess, t_coor, t_func, t_hess, 1.0, 2.0 )
 obj.setup()
 
 if( not os.path.isfile( "rpi.pk" ) ):
-    qm3.actions.minimize.baker( obj, lambda obj,stp: obj.get_hess( obj, 0 ),
-            step_size = 0.1, step_number = 100, print_frequency = 1, follow_mode = 0, gradient_tolerance = 1.0 )
+    qm3.actions.minimize.baker( obj,
+            lambda obj,stp: obj.get_hess( obj, 0 ),
+            step_size = 0.1, step_number = 100, print_frequency = 1,
+            follow_mode = 0, gradient_tolerance = 1.0,
+            current_step = qm3.actions.ring_polymer.current_step )
     with open( "rpi.pk", "wb" ) as f:
         pickle.dump( obj.func, f )
         pickle.dump( obj.coor, f )

@@ -34,10 +34,6 @@ class molecule( object ):
         self.rval = None
 
 
-    def current_step( self, step: int ):
-        pass
-
-
     def rebuild( self ):
         # -- resiude boundaries
         rlim = []
@@ -60,7 +56,6 @@ class molecule( object ):
             self.indx[self.segn[self.rlim[i]]][self.resi[self.rlim[i]]] = collections.OrderedDict()
             for j in range( self.rlim[i], self.rlim[i+1] ):
                 self.indx[self.segn[self.rlim[i]]][self.resi[self.rlim[i]]][self.labl[j]] = j
-
 
 
     def sph_sel( self, sele: numpy.array, radius: float ) -> numpy.array:

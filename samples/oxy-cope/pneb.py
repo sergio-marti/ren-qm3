@@ -104,7 +104,7 @@ else:
             eqm.get_func( mol )
             mol.engines["mm"].update_chrg( mol )
             mol.engines.pop( "qm" )
-            qm3.actions.minimize.fire( mol, gradient_tolerance = 2.0, fdsc = flog )
+            qm3.actions.minimize.fire( mol, gradient_tolerance = 2.0, log_file = flog )
             flog.flush()
             mol.chrg[sqm] = 0.0
             mol.engines["mm"].update_chrg( mol )

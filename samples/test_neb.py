@@ -116,11 +116,3 @@ with open( "chain", "wt" ) as f:
 obj = qm3.actions.neb.serial( mol, gues, 100 )
 
 qm3.actions.minimize.fire( obj, print_frequency = 1, gradient_tolerance = len( gues ) * 0.1 )
-
-#mol.engines["res"] = 
-#mol.engines["res"] = 
-#qm3.actions.minimize.fire( mol, step_number = 1000 )
-#mol.engines.pop( "res" )
-#print( mol.engines )
-#qm3.actions.minimize.fire( mol, step_number = 1000 )
-#mol.xyz_write( open( "last", "wt" ) )

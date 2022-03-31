@@ -9,6 +9,10 @@ import  qm3.utils.hessian
 __vcut = 0.00035481432270250985 # 1 _cm^-1
 
 
+def fake_cs( self: object, step: int ):
+    pass
+
+
 def initial_step( mol: object, get_hess: typing.Callable, step_size: float ) -> tuple:
     """
     returns: the number of 'negative' eigen-values (see __vcut) and the mass-weighted transition mode
@@ -34,7 +38,8 @@ def page_mciver( mol: object,
         print_frequency: typing.Optional[int] = 10,
         gradient_tolerance: typing.Optional[float] = 1.5,
         from_saddle: typing.Optional[bool] = True,
-        fdsc: typing.Optional[typing.IO] = sys.stdout ):
+        log_file: typing.Optional[typing.IO] = sys.stdout,
+        current_step: typing.Optional[typing.Callable] = fake_cs ):
     """
     import  qm3.utils
     import  qm3.utils.hessian
@@ -51,15 +56,15 @@ def page_mciver( mol: object,
     """
     actv = mol.actv.sum()
     size = 3 * actv
-    fdsc.write( "---------------------------------------- Minimum Path (Page-McIver:LQA)\n\n" )
-    fdsc.write( "Degrees of Freedom: %20ld\n"%( size ) )
-    fdsc.write( "Step Number:        %20d\n"%( step_number ) )
-    fdsc.write( "Step Size:          %20.10lg\n"%( step_size ) )
-    fdsc.write( "Print Frequency:    %20d\n"%( print_frequency ) )
-    fdsc.write( "Gradient Tolerance: %20.10lg\n"%( gradient_tolerance ) )
-    fdsc.write( "From Saddle:        %20s\n\n"%( from_saddle ) )
-    fdsc.write( "%10s%20s%20s%10s\n"%( "Step", "Function", "Gradient", "Nneg" ) )
-    fdsc.write( "-" * 60 + "\n" )
+    log_file.write( "---------------------------------------- Minimum Path (Page-McIver:LQA)\n\n" )
+    log_file.write( "Degrees of Freedom: %20ld\n"%( size ) )
+    log_file.write( "Step Number:        %20d\n"%( step_number ) )
+    log_file.write( "Step Size:          %20.10lg\n"%( step_size ) )
+    log_file.write( "Print Frequency:    %20d\n"%( print_frequency ) )
+    log_file.write( "Gradient Tolerance: %20.10lg\n"%( gradient_tolerance ) )
+    log_file.write( "From Saddle:        %20s\n\n"%( from_saddle ) )
+    log_file.write( "%10s%20s%20s%10s\n"%( "Step", "Function", "Gradient", "Nneg" ) )
+    log_file.write( "-" * 60 + "\n" )
     it2m = 1000
     it3m = 100000
     ndeg = math.sqrt( size )
@@ -68,7 +73,7 @@ def page_mciver( mol: object,
     mass = numpy.sqrt( mol.mass[sele] )
     if( from_saddle ):
         nskp, dsp = initial_step( mol, get_hess, step_size )
-        fdsc.write( "%10s%20.5lf%20.10lf%10ld\n"%( "", mol.func, numpy.linalg.norm( mol.grad ) / ndeg, nskp ) )
+        log_file.write( "%10s%20.5lf%20.10lf%10ld\n"%( "", mol.func, numpy.linalg.norm( mol.grad ) / ndeg, nskp ) )
     else:
         nskp = 7
         dsp  = numpy.zeros( ( actv, 3 ), dtype=numpy.float64 )
@@ -119,7 +124,7 @@ def page_mciver( mol: object,
             if( pm_os != pm_s ):
                 pm_t -= ( ssiz - pm_s ) * pm_dt / ( pm_os - pm_s )
             else:
-                fdsc.write( "\n -- The current step-size did not converge...\n" )
+                log_file.write( "\n -- The current step-size did not converge...\n" )
                 flg = False
         if( math.fabs( 1.0 - pm_t / pm_ot ) <= 1.0e-6 and flg ):
             for i in range( size ):
@@ -135,8 +140,8 @@ def page_mciver( mol: object,
         it1 += 1
         grms = numpy.linalg.norm( mol.grad ) / ndeg
         if( it1 % print_frequency == 0 ):
-            fdsc.write( "%10ld%20.5lf%20.10lf%10ld\n"%( it1, mol.func, grms, nskp ) )
-        mol.current_step( it1 )
+            log_file.write( "%10ld%20.5lf%20.10lf%10ld\n"%( it1, mol.func, grms, nskp ) )
+        current_step( mol, it1 )
     if( it1 % print_frequency != 0 ):
-        fdsc.write( "%10ld%20.5lf%20.10lf%10ld\n"%( it1, mol.func, grms, nskp ) )
-    fdsc.write( "-" * 60 + "\n" )
+        log_file.write( "%10ld%20.5lf%20.10lf%10ld\n"%( it1, mol.func, grms, nskp ) )
+    log_file.write( "-" * 60 + "\n" )

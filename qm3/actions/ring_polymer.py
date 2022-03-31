@@ -6,6 +6,18 @@ import  qm3.utils.hessian
 import  os
 
 
+def current_step( self: object, step: int ):
+    with open( "rpi.xyz", "wt" ) as f:
+        f.write( "%d\n\n"%( self.size ) )
+        for i in range( self.half + 1 ):
+            i_cc = i * self.dime
+            for j in range( self.dime ):
+                f.write( "%-2s%20.10lf%20.10lf%20.10lf\n"%(
+                    qm3.data.symbol[self.mole.anum[self.sele[j]]],
+                    self.coor[i_cc+j,0], self.coor[i_cc+j,1], self.coor[i_cc+j,2] ) )
+
+
+
 class instanton( object ):
     """
     U = 1 over P sum from{ i=1 } to { P }{ V_i left( x_{i,1}, dotslow ,x_{i,3N} right)}+
@@ -121,17 +133,6 @@ class instanton( object ):
                 self.coor[i*self.dime+j] = self.mole.coor[self.sele[j]] + ( i * dsp - step_size ) * self.tst_mode[j]
 
 
-    def current_step( self, step: int ):
-        with open( "rpi.xyz", "wt" ) as f:
-            f.write( "%d\n\n"%( self.size ) )
-            for i in range( self.half + 1 ):
-                i_cc = i * self.dime
-                for j in range( self.dime ):
-                    f.write( "%-2s%20.10lf%20.10lf%20.10lf\n"%(
-                        qm3.data.symbol[self.mole.anum[self.sele[j]]],
-                        self.coor[i_cc+j,0], self.coor[i_cc+j,1], self.coor[i_cc+j,2] ) )
-
-
     def get_grad( self ):
         self.ener = numpy.zeros( self.half + 1, dtype=numpy.float64 )
         self.func = 0.0
@@ -162,11 +163,11 @@ class instanton( object ):
 
 
     @staticmethod
-    def get_hess( self: object, step: int ):
+    def get_hess( self: object, step: int, fresh: typing.Optional[int] = 1 ):
         size = self.size * 3
         dime = self.dime * 3
         self.hess = numpy.zeros( ( size, size ), dtype=numpy.float64 )
-        if( step == 0 ):
+        if( step % fresh == 0 ):
             for i in range( self.half + 1 ):
                 i_cc = i * self.dime
                 self.mole.coor[self.sele] = self.coor[i_cc:i_cc+self.dime]
@@ -362,4 +363,23 @@ size 10 { B= sum from{ i=1 } to { P }{ sum from{j=1} to{3N} { m_{j/3} left( x_{i
         for i in range( self.dime ):
             print( "%-8d%-8s%8.3lf"%( i+1, self.mole.labl[self.sele[i]], arc[i] ) )
         print( 24 * "-" )
+        with open( "rpi_arc.xyz", "wt" ) as f:
+            f.write( "%d\n\n"%( self.dime ) )
+            i_cc = 0
+            for j in range( self.dime ):
+                f.write( "%-2s%20.10lf%20.10lf%20.10lf\n"%(
+                    qm3.data.symbol[self.mole.anum[self.sele[j]]],
+                    self.coor[i_cc+j,0], self.coor[i_cc+j,1], self.coor[i_cc+j,2] ) )
+            f.write( "%d\n\n"%( self.dime ) )
+            i_cc = self.half * self.dime
+            for j in range( self.dime ):
+                f.write( "%-2s%20.10lf%20.10lf%20.10lf\n"%(
+                    qm3.data.symbol[self.mole.anum[self.sele[j]]],
+                    self.coor[i_cc+j,0], self.coor[i_cc+j,1], self.coor[i_cc+j,2] ) )
+            for i in range( 1, self.half ):
+                f.write( "%d\n\n"%( self.dime ) )
+                i_cc = i * self.dime
+                for j in range( self.dime ):
+                    f.write( "%-2s%20.10lf%20.10lf%20.10lf\n"%( "X",
+                        self.coor[i_cc+j,0], self.coor[i_cc+j,1], self.coor[i_cc+j,2] ) )
 

@@ -46,10 +46,6 @@ class serial( object ):
             self.coor[ii:ii+self.dime] = guess[i]
 
 
-    def current_step( self, step: int ):
-        pass
-
-
     def neb_data( self, node: int ):
         with open( "node.%02d"%( node ), "wt" ) as f:
             f.write( "REMARK func = %20.3lf\n"%( self.mole.func ) )
@@ -128,10 +124,6 @@ class parall( object ):
         for i in range( self.node ):
             ii = i * self.dime
             self.coor[ii:ii+self.dime] = guess[i]
-
-
-    def current_step( self, step: int ):
-        pass
 
 
     def neb_data( self, node: int ):

@@ -41,15 +41,12 @@ mol.get_grad()
 print( mol.func )
 print( mol.grad )
 
-#ff = open( "borra.xyz", "wt" )
-dcd = qm3.utils._dcd.dcd()
-dcd.open_write( "borra.dcd", mol.natm )
-def current_step( step ):
-    if( step % 10 == 0 ):
-#        mol.xyz_write( ff )
-#        ff.flush()
-        dcd.append( mol )
-mol.current_step = current_step
+mol.dcd = qm3.utils._dcd.dcd()
+mol.dcd.open_write( "borra.dcd", mol.natm )
 
-qm3.actions.dynamics.langevin_verlet( mol, print_frequency = 1 )
-dcd.close()
+def cstep( self, step ):
+    if( step % 10 == 0 ):
+        self.dcd.append( self )
+
+qm3.actions.dynamics.langevin_verlet( mol, print_frequency = 1, current_step = cstep )
+mol.dcd.close()

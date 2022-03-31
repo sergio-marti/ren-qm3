@@ -52,7 +52,7 @@ def calc_hess( self: object, step: int ):
     self.set_active( smm )
     self.engines["mm"].update_chrg( self )
     self.engines.pop( "qm" )
-    qm3.actions.minimize.fire( self, gradient_tolerance = 0.5, fdsc = log )
+    qm3.actions.minimize.fire( self, gradient_tolerance = 0.5, log_file = log )
     log.flush()
     self.chrg[sqm] = 0.0
     self.engines["mm"].update_chrg( self )

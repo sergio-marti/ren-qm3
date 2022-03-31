@@ -8,6 +8,10 @@ import  qm3.data
 numpy.random.seed()
 
 
+def fake_cs( self: object, step: int ):
+    pass
+
+
 def current_temperature( mol: object, ndeg: int ) -> ( float, float ):
     kine = numpy.sum( mol.mass * numpy.square( mol.velo ) )
     temp = kine * 10.0 / ( ndeg * qm3.data.KB * qm3.data.NA )
@@ -33,21 +37,22 @@ def langevin_verlet( mol: object,
         gamma_factor: typing.Optional[float] = 50.0, 
         print_frequency: typing.Optional[int] = 100,
         step_number: typing.Optional[int] = 1000,
-        fdsc: typing.Optional[typing.IO] = sys.stdout ):
-    fdsc.write( "---------------------------------------- Dynamics: Langevin-Verlet (NVT)\n\n" )
+        log_file: typing.Optional[typing.IO] = sys.stdout,
+        current_step: typing.Optional[typing.Callable] = fake_cs ):
+    log_file.write( "---------------------------------------- Dynamics: Langevin-Verlet (NVT)\n\n" )
     ndeg = 3 * mol.actv.sum()
-    fdsc.write( "Degrees of Freedom: %20ld\n"%( ndeg ) )
-    fdsc.write( "Step Size:          %20.10lg (ps)\n"%( step_size ) )
-    fdsc.write( "Temperature:        %20.10lg (K)\n"%( temperature ) )
-    fdsc.write( "Gamma Factor:       %20.10lg (ps^-1)\n"%( gamma_factor ) )
-    fdsc.write( "Step Number:        %20d\n"%( step_number ) )
-    fdsc.write( "Print Frequency:    %20d\n"%( print_frequency ) )
+    log_file.write( "Degrees of Freedom: %20ld\n"%( ndeg ) )
+    log_file.write( "Step Size:          %20.10lg (ps)\n"%( step_size ) )
+    log_file.write( "Temperature:        %20.10lg (K)\n"%( temperature ) )
+    log_file.write( "Gamma Factor:       %20.10lg (ps^-1)\n"%( gamma_factor ) )
+    log_file.write( "Step Number:        %20d\n"%( step_number ) )
+    log_file.write( "Print Frequency:    %20d\n"%( print_frequency ) )
     ff  = step_size * gamma_factor
     if( ff < 0.01 ):
         ff = 0.01
-        fdsc.write( "\n>> Gamma factor:    %20.10lg (ps^-1)"%( 0.01 / step_size ) )
-    fdsc.write( "\n%20s%20s%20s%20s%20s\n"%( "Time (ps)", "Potential (kJ/mol)", "Kinetic (kJ/mol)", "Total (kJ/mol)", "Temperature (K)" ) )
-    fdsc.write( 100 * "-" + "\n" )
+        log_file.write( "\n>> Gamma factor:    %20.10lg (ps^-1)"%( 0.01 / step_size ) )
+    log_file.write( "\n%20s%20s%20s%20s%20s\n"%( "Time (ps)", "Potential (kJ/mol)", "Kinetic (kJ/mol)", "Total (kJ/mol)", "Temperature (K)" ) )
+    log_file.write( 100 * "-" + "\n" )
     c0   = numpy.exp( - ff )
     c1   = ( 1.0 - c0 ) / ff
     c2   = ( 1.0 - c1 ) / ff
@@ -72,7 +77,7 @@ def langevin_verlet( mol: object,
     xavr = xtmp.copy()
     xrms = numpy.square( xtmp )
     time = 0.0
-    fdsc.write( "%20.5lf%20.5lf%20.5lf%20.5lf%20.5lf\n"%( time, xtmp[0], xtmp[1], xtmp[2], xtmp[3] ) )
+    log_file.write( "%20.5lf%20.5lf%20.5lf%20.5lf%20.5lf\n"%( time, xtmp[0], xtmp[1], xtmp[2], xtmp[3] ) )
     for istp in range( 1, step_number + 1 ):
         time += step_size
         mol.coor += fr1 * mol.velo + fr2 * cacc
@@ -90,12 +95,12 @@ def langevin_verlet( mol: object,
         xavr += xtmp
         xrms += numpy.square( xtmp )
         if( istp % print_frequency == 0 ):
-            fdsc.write( "%20.5lf%20.5lf%20.5lf%20.5lf%20.5lf\n"%( time, xtmp[0], xtmp[1], xtmp[2], xtmp[3] ) )
-        mol.current_step( istp )
+            log_file.write( "%20.5lf%20.5lf%20.5lf%20.5lf%20.5lf\n"%( time, xtmp[0], xtmp[1], xtmp[2], xtmp[3] ) )
+        current_step( mol, istp )
     xavr /= step_number + 1
     xrms /= step_number + 1
     xrms = numpy.sqrt( numpy.fabs( xrms - xavr * xavr ) )
-    fdsc.write( 100 * "-" + "\n" )
-    fdsc.write( "%-20s"%( "Averages:" ) + "".join( [ "%20.5lf"%( i ) for i in xavr ] ) + "\n" )
-    fdsc.write( "%-20s"%( "RMS Deviations:" ) + "".join( [ "%20.5lf"%( i ) for i in xrms ] ) + "\n" )
-    fdsc.write( 100 * "-" + "\n" )
+    log_file.write( 100 * "-" + "\n" )
+    log_file.write( "%-20s"%( "Averages:" ) + "".join( [ "%20.5lf"%( i ) for i in xavr ] ) + "\n" )
+    log_file.write( "%-20s"%( "RMS Deviations:" ) + "".join( [ "%20.5lf"%( i ) for i in xrms ] ) + "\n" )
+    log_file.write( 100 * "-" + "\n" )
