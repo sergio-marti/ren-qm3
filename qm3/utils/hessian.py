@@ -108,7 +108,7 @@ def IR_intensities( mol: object, mode: numpy.array ) -> numpy.array:
     for i in range( 6, size ):
         temp = chrg * mode[:,i]
         temp.shape = ( actv, 3 )
-        temp = numpy.sum( temp, axis=0 )
+        temp = numpy.sum( temp, axis = 0 )
         inte[i] = numpy.dot( temp, temp )
     # inte: km/mol [Na^2 * qe^2 / ( 12 * eps0 * c^2 )]
     return( inte * 974.8802240597 )

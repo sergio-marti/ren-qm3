@@ -62,7 +62,7 @@ class molecule( object ):
         out = numpy.zeros( self.natm, dtype=numpy.bool_ )
         siz = sele.sum()
         idx = numpy.argwhere( sele ).ravel()
-        cen = numpy.sum( self.coor[sele], axis=0 ) / siz
+        cen = numpy.sum( self.coor[sele], axis = 0 ) / siz
         dsp = max( map( lambda c: qm3.utils.distanceSQ( cen, c ), self.coor[sele] ) )
         cut = numpy.power( radius + math.sqrt( dsp ) + 0.1, 2.0 )
         rad = radius * radius
