@@ -2,6 +2,7 @@ import  numpy
 import  typing
 import  os
 import  qm3.data
+import  qm3.utils
 import  qm3.engines
 
 
@@ -16,6 +17,7 @@ class run( qm3.engines.template ):
         self.gmm = ( self.inp.lower().find( "prop=(field,read)" ) > -1 )
         self.ce  = qm3.data.H2J
         self.cg  = self.ce / qm3.data.A0
+        self.ch  = self.cg / qm3.data.A0
 
 
     def mk_input( self, mol, run ):
@@ -40,8 +42,8 @@ class run( qm3.engines.template ):
         s_rn = ""
         if( run == "grad" ):
             s_rn = "force"
-#        elif( run == "hess" ):
-#            s_rn = "freq=noraman cphf(maxinv=10000)"
+        elif( run == "hess" ):
+            s_rn = "freq=noraman cphf(maxinv=10000)"
         s_wf = ""
         if( os.access( "gauss.chk", os.R_OK ) ):
             s_wf = "guess=(read)"
@@ -59,6 +61,7 @@ class run( qm3.engines.template ):
     def parse_log( self, mol, run ):
         fd = open( "Test.FChk", "rt" )
         l = fd.readline()
+        h = numpy.array( [] )
         while( l != "" ):
             if( l[0:12] == "Total Energy" ):
                 mol.func += float( l.strip().split()[3] ) * self.ce
@@ -78,26 +81,21 @@ class run( qm3.engines.template ):
                     for j in [0, 1, 2]:
                         mol.grad[i,j] += g[k]
                         k += 1
-# --------------------------------------------------------------------------------
-#                # read hessian (columns)
-#                if( run == "hess" ):
-#                    l = fd.readline()
-#                    i = int( l.strip().split()[-1] )
-#                    j = int( i // 5 ) + ( i % 5 != 0 )
-#                    i = 0
-#                    h = []
-#                    while( i < j ):
-#                        l = fd.readline()
-#                        for itm in l.strip().split():
-#                            h.append( float( itm ) * self.ch )
-#                        i += 1
-#                    # truncate LAs and swap hessian (cols>>rows)
-#                    i = 3 * len( self.sel )
-#                    j = i * ( i + 1 ) // 2
-#                    t = qm3.maths.matrix.from_upper_diagonal_columns( h[0:j], i )
-#                    for j in range( i * i ):
-#                        mol.hess[j] += t[j]
-# --------------------------------------------------------------------------------
+                # read hessian (columns)
+                if( run == "hess" ):
+                    l = fd.readline()
+                    i = int( l.strip().split()[-1] )
+                    j = int( i // 5 ) + ( i % 5 != 0 )
+                    i = 0
+                    h = []
+                    while( i < j ):
+                        l = fd.readline()
+                        for itm in l.strip().split():
+                            h.append( float( itm ) * self.ch )
+                        i += 1
+                    h = qm3.utils.from_upper_diagonal( h, False )
+                    i = 3 * len( self.sel )
+                    h = h[0:i,0:i]
             if( l[0:11] == "ESP Charges" ):
                 i = int( l.strip().split()[-1] )
                 j = int( i // 5 ) + ( i % 5 != 0 )
@@ -135,6 +133,7 @@ class run( qm3.engines.template ):
                     l = fd.readline()
             fd.close()
         os.unlink( "Test.FChk" )
+        return( h )
 
 
     def get_func( self, mol ):
@@ -147,3 +146,9 @@ class run( qm3.engines.template ):
         self.mk_input( mol, "grad" )
         os.system( self.exe )
         self.parse_log( mol, "grad" )
+
+
+    def get_hess( self, mol ):
+        self.mk_input( mol, "hess" )
+        os.system( self.exe )
+        return( self.parse_log( mol, "hess" ) )
