@@ -91,11 +91,11 @@ class run( qm3.engines.template ):
                     while( i < j ):
                         l = fd.readline()
                         for itm in l.strip().split():
-                            h.append( float( itm ) * self.ch )
+                            h.append( float( itm ) )
                         i += 1
                     h = qm3.utils.from_upper_diagonal( h, False )
                     i = 3 * len( self.sel )
-                    h = h[0:i,0:i]
+                    h = h[0:i,0:i] * self.ch
             if( l[0:11] == "ESP Charges" ):
                 i = int( l.strip().split()[-1] )
                 j = int( i // 5 ) + ( i % 5 != 0 )

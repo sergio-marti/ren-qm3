@@ -17,6 +17,7 @@ class run( qm3.engines.template ):
         self.inp = fdsc.read()
         self.ce  = qm3.data.H2J
         self.cg  = self.ce / qm3.data.A0
+        self.ch  = self.cg / qm3.data.A0
 
 
     def mk_input( self, mol, run ):
@@ -44,6 +45,8 @@ class run( qm3.engines.template ):
         s_rn = ""
         if( run == "grad" ):
             s_rn = "engrad"
+        elif( run == "hess" ):
+            s_rn = "numfreq"
         f = open( "orca.inp", "wt" )
         buf = self.inp.replace( "qm3_atoms", s_qm[:-1] )
         buf = buf.replace( "qm3_job", s_rn )
@@ -53,7 +56,8 @@ class run( qm3.engines.template ):
 
 
     def parse_log( self, mol, run ):
-        if( run == "grad" ):
+        h = numpy.array( [] )
+        if( run in [ "grad", "hess" ] ):
             f = open( "orca.engrad", "rt" )
             t = re.compile( "[0-9\.\-]+" ).findall( f.read() )
             f.close()
@@ -77,6 +81,22 @@ class run( qm3.engines.template ):
                     for j in [0, 1, 2]:
                         mol.grad[i,j] += g[k]
                         k += 1
+            if( run == "hess" ):
+                f = open( "orca.hess", "rt" )
+                l = f.readline()
+                while( l.strip() != "$hessian" ):
+                    l = f.readline()
+                d = int( f.readline().strip() )
+                h = numpy.zeros( ( d, d ), dtype=numpy.float64 )
+                n = 0
+                while( n < d ):
+                    a = len( f.readline().split() )
+                    for i in range( d ):
+                        h[i,n:n+a] = [ float( j ) for j in f.readline().split()[1:] ]
+                    n += a
+                f.close()
+                i = 3 * len( self.sel )
+                h = h[0:i,0:i] * self.ch
         else:
             f = open( "orca.out", "rt" )
             mol.func += self.ce * float( re.compile( "FINAL SINGLE POINT ENERGY[\ ]*([0-9\.\-]+)" ).findall( f.read() )[0] )
@@ -85,6 +105,7 @@ class run( qm3.engines.template ):
         for ff in glob.glob( "orca.*" ):
             if( ff != "orca.gbw" and ff != "orca.ges" ):
                 os.unlink( ff )
+        return( h )
 
 
     def get_func( self, mol ):
@@ -97,3 +118,9 @@ class run( qm3.engines.template ):
         self.mk_input( mol, "grad" )
         os.system( self.exe )
         self.parse_log( mol, "grad" )
+
+
+    def get_hess( self, mol ):
+        self.mk_input( mol, "hess" )
+        os.system( self.exe )
+        return( self.parse_log( mol, "hess" ) )
