@@ -72,6 +72,9 @@ def fire( mol: object,
         exit_uphill: typing.Optional[bool] = False,
         log_file: typing.Optional[typing.IO] = sys.stdout,
         current_step: typing.Optional[typing.Callable] = fake_cs ):
+    """
+    Phys. Rev. Lett. v97, p170201 (2006) [10.1103/PhysRevLett.97.170201]
+    """
     log_file.write( "---------------------------------------- Minimization (FIRE)\n\n" )
     ndeg = 3 * mol.actv.sum()
     log_file.write( "Degrees of Freedom: %20ld\n"%( ndeg ) )
@@ -229,6 +232,10 @@ def baker( mol: object,
         log_file: typing.Optional[typing.IO] = sys.stdout,
         current_step: typing.Optional[typing.Callable] = fake_cs ):
     """
+    baker_optimization.F90 fDynamo module
+    J. Chem. Phys. v75, p2800 (1981) [10.1063/1.442352]
+    J. Phys. Chem. V87, p2745 (1983) [10.1021/j100238a013]
+
     import  qm3.utils
     import  qm3.utils.hessian
 
@@ -386,6 +393,8 @@ def rfo( mol: object,
         log_file: typing.Optional[typing.IO] = sys.stdout,
         current_step: typing.Optional[typing.Callable] = fake_cs ):
     """
+    J. Phys. chem. v89, p52 (1985) [10.1021/j100247a015]
+
     import  qm3.utils
     import  qm3.utils.hessian
 

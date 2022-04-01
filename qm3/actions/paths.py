@@ -41,6 +41,10 @@ def page_mciver( mol: object,
         log_file: typing.Optional[typing.IO] = sys.stdout,
         current_step: typing.Optional[typing.Callable] = fake_cs ):
     """
+    nwchem/src/drdy/pmlqa.F
+    J. Chem. Phys. v88, p922 (1988) [10.1063/1.454172]
+    J. Chem. Phys. v96, p5758 (1992) [10.1063/1.462674]
+
     import  qm3.utils
     import  qm3.utils.hessian
 
