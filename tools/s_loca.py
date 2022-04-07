@@ -2,7 +2,7 @@
 import  sys
 import  numpy
 import  typing
-import  qm3.utils
+import  qm3.utils.grids
 import  qm3.utils.interpolation
 
 
@@ -77,7 +77,7 @@ def rfo( igrd: object, iniX: float, iniY: float,
 
 
 
-grd = qm3.utils.grid()
+grd = qm3.utils.grids.grid()
 grd.parse( open( sys.argv[1], "rt" ) )
 rfo( qm3.utils.interpolation.interpolate_2d( grd.x, grd.y, grd.z ),
         float( sys.argv[2] ),

@@ -38,27 +38,26 @@ print( sqm.sum(), smm.sum(), end = " " )
 smm = numpy.logical_and( smm, numpy.logical_not( sqm ) )
 print( smm.sum() )
 
-mol.engines["mm"] = qm3.engines.openmm.run( _sys, _psf.topology, sel_QM = sqm, platform = "CUDA" )
+mol.engines["mm"] = qm3.engines.openmm.run( _sys, _psf.topology, sel_QM = sqm, platform = "OpenCL" )
 mol.engines["qm"] = qm3.engines.xtb.run( mol, 0, 0, sel_QM = sqm, sel_MM = smm )
 kmb = 1400.
 ref = who * 0.137036
 mol.engines["cv"] = qm3.engines.mmres.colvar_s( kmb, ref,
         open( "pmf_s.cnf" ), open( "pmf_s.str" ), open( "pmf_s.met" ) )
 
-dat = open( "dat.%02d"%( who ), "wt" )
-dat.write( "%20.10lf%20.10lf\n"%( kmb, ref ) )
+mol.dat = open( "dat.%02d"%( who ), "wt" )
+mol.dat.write( "%20.10lf%20.10lf\n"%( kmb, ref ) )
 
-dcd = qm3.utils._dcd.dcd()
-dcd.open_write( "dcd.%02d"%( who ), mol.natm )
+mol.dcd = qm3.utils._dcd.dcd()
+mol.dcd.open_write( "dcd.%02d"%( who ), mol.natm )
 
-def current_step( stp ):
-    dat.write( "%20.10lf\n"%( mol.rval[0] ) )
+def cstep( obj, stp ):
+    obj.dat.write( "%20.10lf\n"%( obj.rval[0] ) )
     if( stp % 100 == 0 ):
-        dat.flush()
-        dcd.append( mol )
-mol.current_step = current_step
+        obj.dat.flush()
+        obj.dcd.append( obj )
 
-qm3.actions.dynamics.langevin_verlet( mol, step_number = 4000 )
+qm3.actions.dynamics.langevin_verlet( mol, step_number = 4000, current_step = cstep )
 
 dat.close()
 dcd.close()

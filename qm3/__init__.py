@@ -540,13 +540,11 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         """
         Transforms the whole molecule, by using the active selection on the reference coordinates (cref)
         """
-        rcrd = cref.copy()
-        rcen = numpy.average( rcrd, axis = 0 )
-        rcrd -= rcen
+        rcen = numpy.average( cref, axis = 0 )
         lcrd = self.coor[self.actv.ravel()]
         lcen = numpy.average( lcrd, axis = 0 )
         lcrd -= lcen
-        covm = numpy.dot( lcrd.T, rcrd )
+        covm = numpy.dot( lcrd.T, cref - rcen )
         r1, ss, r2 = numpy.linalg.svd( covm )
         if( numpy.linalg.det( covm ) < 0 ):
             r2[2,:] *= -1.0
