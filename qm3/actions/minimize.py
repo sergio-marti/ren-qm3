@@ -222,6 +222,106 @@ def cgplus( mol: object,
 
 # =================================================================================================
 
+def lbfgsb( mol: object,
+        step_number: typing.Optional[int] = 1000,
+        print_frequency: typing.Optional[int] = 10,
+        gradient_tolerance: typing.Optional[float] = 1.5,
+        method: typing.Optional[str] = "Polak-Ribiere", 
+        restart: typing.Optional[bool] = True,
+        log_file: typing.Optional[typing.IO] = sys.stdout,
+        current_step: typing.Optional[typing.Callable] = fake_cs ):
+    global  cwd
+    nsel = mol.actv.sum()
+    size = 3 * nsel
+    log_file.write( "------------------------------------------ Minimization (L-BFGS-B)\n\n" )
+    log_file.write( "Degrees of Freedom:   %20ld\n"%( size ) )
+    log_file.write( "Step Number:          %20d\n"%( step_number ) )
+    log_file.write( "Print Frequency:      %20d\n"%( print_frequency ) )
+    log_file.write( "Gradient Tolerance:   %20.10lg\n"%( gradient_tolerance ) )
+    log_file.write( "Method:             %22s\n\n"%( method ) )
+    log_file.write( "%10s%20s%20s\n"%( "Step", "Function", "Gradient" ) )
+    log_file.write( "-" * 50 + "\n" )
+    dlib = ctypes.CDLL( cwd + "_lbfgsb.so" )
+    dlib.lbfgsb_setulb_.argtypes = [ 
+        ctypes.POINTER( ctypes.c_int ),
+        ctypes.POINTER( ctypes.c_int ),
+        ctypes.POINTER( ctypes.c_double ),
+        ctypes.POINTER( ctypes.c_double ),
+        ctypes.POINTER( ctypes.c_double ),
+        ctypes.POINTER( ctypes.c_int ),
+        ctypes.POINTER( ctypes.c_double ),
+        ctypes.POINTER( ctypes.c_double ),
+        ctypes.POINTER( ctypes.c_double ),
+        ctypes.POINTER( ctypes.c_double ),
+        ctypes.POINTER( ctypes.c_double ),
+        ctypes.POINTER( ctypes.c_int ),
+        ctypes.POINTER( ctypes.c_char ),
+        ctypes.POINTER( ctypes.c_int ),
+        ctypes.POINTER( ctypes.c_char ),
+        ctypes.POINTER( ctypes.c_bool ),
+        ctypes.POINTER( ctypes.c_int ),
+        ctypes.POINTER( ctypes.c_double ) ]
+    dlib.lbfgsb_setulb_.restype = None
+    nmx = size
+    mmx = 9
+    crd = ( ctypes.c_double * nmx )()
+    low = ( ctypes.c_double * nmx )()
+    upp = ( ctypes.c_double * nmx )()
+    nbd = ( ctypes.c_int * nmx )()
+    grd = ( ctypes.c_double * nmx )()
+    wrk = ( ctypes.c_double * ( ( 2 * mmx + 4 ) * nmx + 12 * mmx * ( 1 + mmx ) ) )()
+    iwa = ( ctypes.c_int * ( 3 * nmx ) )()
+    tsk = ( ctypes.c_char * 60 )()
+    tsk.raw = b"START"
+    csv = ( ctypes.c_char * 60 )()
+    lsv = ( ctypes.c_bool * 4 )()
+    isv = ( ctypes.c_int * 44 )()
+    dsv = ( ctypes.c_double * 29 )()
+    ndeg = math.sqrt( size )
+    sele = numpy.argwhere( mol.actv.ravel() ).ravel()
+    mol.get_grad()
+    grms = numpy.linalg.norm( mol.grad ) / ndeg
+    k = 0
+    for i in sele:
+        for j in [0, 1, 2]:
+            low[k] = 0.0
+            upp[k] = 0.0
+            nbd[k] = 0
+            crd[k] = mol.coor[i,j]
+            grd[k] = mol.grad[i,j]
+            k += 1
+    log_file.write( "%30.5lf%20.10lf\n"%( mol.func, grms ) )
+    itr = 0
+    while( itr < step_number and grms > gradient_tolerance ):
+        dlib.lbfgsb_setulb_( ctypes.c_int( nmx ), ctypes.c_int( mmx ),
+            crd, low, upp, nbd, ctypes.c_double( mol.func ), grd,
+            ctypes.c_double( 1.e3 ), ctypes.c_double( gradient_tolerance ),
+            wrk, iwa, tsk, ctypes.c_int( -1 ), csv, lsv, isv, dsv )
+        if( tsk.raw[0:4] in [ b"CONV", b"STOP", b"ERRO", b"ABNO" ] ):
+            it = mx + 1
+        elif( tsk.raw[0:2] == b"FG" ):
+            k = 0
+            for i in sele:
+                for j in [0, 1, 2]:
+                    mol.coor[i,j] = crd[k]
+                    k += 1
+            mol.get_grad()
+            k = 0
+            for i in sele:
+                for j in [0, 1, 2]:
+                    grd[k] = mol.grad[i,j]
+                    k += 1
+            grms = numpy.linalg.norm( mol.grad ) / ndeg
+            itr += 1
+            if( itr % print_frequency == 0 ):
+                log_file.write( "%10d%20.5lf%20.10lf\n"%( itr, mol.func, grms ) )
+            current_step( mol, itr )
+    if( itr % print_frequency != 0 ):
+        log_file.write( "%10d%20.5lf%20.10lf\n"%( itr + 1, mol.func, grms ) )
+    log_file.write( "-" * 50 + "\n\n" )
+
+# =================================================================================================
+
 def baker( mol: object,
         get_hess: typing.Callable,
         step_number: typing.Optional[int] = 100,

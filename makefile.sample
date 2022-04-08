@@ -1,7 +1,7 @@
 include config
 
 
-all: dcd grids ml_info _cgplus.so lapack_deps.o _mopac.so
+all: dcd grids ml_info _cgplus.so _lbfgsb.so lapack_deps.o _mopac.so
 
 
 dcd:
@@ -22,6 +22,10 @@ ml_info:
 
 _cgplus.so:
 	gfortran $(SHD) -o qm3/actions/_cgplus.so -O1 -fPIC qm3/actions/cgplus.f
+
+
+_lbfgsb.so:
+	gfortran $(SHD) -o qm3/actions/_lbfgsb.so -O1 -fPIC qm3/actions/lbfgsb.f
 
 
 lapack_deps.o:
