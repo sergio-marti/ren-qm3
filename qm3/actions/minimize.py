@@ -226,8 +226,6 @@ def lbfgsb( mol: object,
         step_number: typing.Optional[int] = 1000,
         print_frequency: typing.Optional[int] = 10,
         gradient_tolerance: typing.Optional[float] = 1.5,
-        method: typing.Optional[str] = "Polak-Ribiere", 
-        restart: typing.Optional[bool] = True,
         log_file: typing.Optional[typing.IO] = sys.stdout,
         current_step: typing.Optional[typing.Callable] = fake_cs ):
     global  cwd
@@ -238,7 +236,6 @@ def lbfgsb( mol: object,
     log_file.write( "Step Number:          %20d\n"%( step_number ) )
     log_file.write( "Print Frequency:      %20d\n"%( print_frequency ) )
     log_file.write( "Gradient Tolerance:   %20.10lg\n"%( gradient_tolerance ) )
-    log_file.write( "Method:             %22s\n\n"%( method ) )
     log_file.write( "%10s%20s%20s\n"%( "Step", "Function", "Gradient" ) )
     log_file.write( "-" * 50 + "\n" )
     dlib = ctypes.CDLL( cwd + "_lbfgsb.so" )
