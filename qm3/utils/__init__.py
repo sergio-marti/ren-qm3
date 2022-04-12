@@ -105,13 +105,24 @@ def RT_modes( mol: object ) -> numpy.array:
         mode[4,k:k+3] = [ ( mol.coor[i,2] - cent[2] ) * sqrm, 0.0, - ( mol.coor[i,0] - cent[0] ) * sqrm ]
         mode[5,k:k+3] = [ - ( mol.coor[i,1] - cent[1] ) * sqrm, ( mol.coor[i,0] - cent[0] ) * sqrm, 0.0 ]
         k += 3
+    # select non-zero modes
+    #n = 6
+    #l = [ 0, 1, 2, 3, 4, 5 ]
+    n = 3
+    l = [ 0, 1, 2 ]
+    for i in [ 3, 4, 5 ]:
+        if( numpy.linalg.norm( mode[i] ) > 1.e-10 ):
+            n += 1
+            l.append( i )
+        else:
+            mode[i,:] = 0.0
     # orthogonalize modes
-    for i in range( 6 ):
+    for i in range( n ):
         for j in range( i ):
-            mode[i] -= numpy.sum( mode[i] * mode[j] ) * mode[j]
-        tmp = math.sqrt( numpy.sum( mode[i] * mode[i] ) )
+            mode[l[i]] -= numpy.sum( mode[l[i]] * mode[l[j]] ) * mode[l[j]]
+        tmp = math.sqrt( numpy.sum( mode[l[i]] * mode[l[i]] ) )
         if( tmp > 0.0 ):
-            mode[i] /= tmp
+            mode[l[i]] /= tmp
     return( mode )
 
 # =================================================================================================

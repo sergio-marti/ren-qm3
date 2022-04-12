@@ -218,7 +218,10 @@ def rrho( mol: object, freq: numpy.array,
         zz += mass[i] * ( mol.coor[sele[i],2] - mc[2] ) * ( mol.coor[sele[i],2] - mc[2] )
     val, vec = numpy.linalg.eigh( numpy.array( [ yy+zz, -xy, -xz, -xy, xx+zz, -yz, -xz, -yz, xx+yy ] ).reshape( ( 3, 3 ) ) )
     t = ( 8.0 * math.pi * math.pi * qm3.data.KB * temp ) / ( qm3.data.H * qm3.data.H * qm3.data.NA ) * 1.0e-23
-    qr = math.sqrt( math.pi * t * t * t * val[0] * val[1] * val[2] ) / symm
+    if( math.fabs( val[0] ) < 1.e-10 ):
+        qr = t * 0.5 * ( val[1] + val[2] ) / symm
+    else:
+        qr = math.sqrt( math.pi * t * t * t * val[0] * val[1] * val[2] ) / symm
     qr = numpy.log( qr )
     # Vibrations
     t = 100.0 * qm3.data.C * qm3.data.H / ( qm3.data.KB * temp )
