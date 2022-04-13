@@ -461,7 +461,7 @@ def baker( mol: object,
 
         itr += 1
         grms = numpy.linalg.norm( mol.grad ) / ndeg
-        if( itr % print_frequency == 0 ):
+        if( itr % print_frequency == 0 or itr == 1 ):
             if( follow_mode < 0 ):
                 log_file.write( "%10ld%20.5lf%20.10lf%5ld%10.2le\n"%( itr, mol.func, grms, nneg, tmp ) )
             else:
@@ -544,7 +544,7 @@ def rfo( mol: object,
             crd *= step_size / tmp
         itr += 1
         grms = numpy.linalg.norm( mol.grad ) / ndeg
-        if( itr % print_frequency == 0 ):
+        if( itr % print_frequency == 0 or itr == 1 ):
                 log_file.write( "%10ld%20.5lf%20.10lf%10.2le\n"%( itr, mol.func, grms, tmp ) )
         current_step( mol, itr )
     if( itr % print_frequency != 0 ):

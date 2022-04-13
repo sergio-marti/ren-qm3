@@ -30,13 +30,14 @@ def numerical( mol: object,
         mol.get_grad()
         ref = mol.grad[sele].ravel()
         k = 0
-        for i in range( mol.size ):
+        for i in sele:
             for j in [0, 1, 2]:
                 mol.coor[i,j] += dsp
                 mol.get_grad()
                 hess[k,:] = ( mol.grad[sele].ravel() - ref ) / dsp
                 mol.coor[i,j] -= dsp
                 k += 1
+    mol.get_grad()
     # symmetrize
     hess = 0.5 * ( hess + hess.T )
     return( hess )
