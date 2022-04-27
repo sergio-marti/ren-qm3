@@ -344,7 +344,7 @@ def baker( mol: object,
         else:
             self.get_grad()
             qm3.utils.hessian.manage( self, self.hess, should_update = True )
-        return( return( qm3.utils.hessian.raise_RT( self.hess, qm3.utils.RT_modes( self ) ) ) )
+        return( qm3.utils.hessian.raise_RT( self.hess, qm3.utils.RT_modes( self ) ) )
     """
     actv = mol.actv.sum()
     size = 3 * actv
