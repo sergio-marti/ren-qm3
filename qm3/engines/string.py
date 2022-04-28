@@ -73,8 +73,6 @@ class string( object ):
         # store the masses (and their square root)
         self.mass = mol.mass[list( self.jidx.keys() )]
         self.mass = numpy.column_stack( ( self.mass, self.mass, self.mass ) ).reshape( self.jcol )
-        self.sqms = numpy.sqrt( self.mass ).reshape( ( self.jcol // 3, 3 ) ) 
-        print( self.sqms )
         # initialize metrics
         self.cmet = numpy.zeros( ( self.ncrd, self.ncrd ), dtype=numpy.float64 )
 
