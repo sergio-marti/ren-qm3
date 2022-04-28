@@ -8,8 +8,8 @@ import  qm3.utils.interpolation
 def distribute( rcrd: numpy.array, rmet: list,
         interpolant: object = qm3.utils.interpolation.hermite_spline ) -> numpy.array:
     nwin, ncrd = rcrd.shape
-    arcl = numpy.zeros( self.nwin, dtype=numpy.float64 )
-    for i in range( 1, self.nwin ):
+    arcl = numpy.zeros( nwin, dtype=numpy.float64 )
+    for i in range( 1, nwin ):
         vec = rcrd[i] - rcrd[i-1]
         vec.shape = ( ncrd, 1 )
         mat = 0.5 * ( rmet[i] + rmet[i-1] )
@@ -99,6 +99,6 @@ class string( object ):
             for j in range( i, self.ncrd ):
                 self.cmet[i,j] = numpy.sum( jaco[i,:] * jaco[j,:] / self.mass )
                 self.cmet[j,i] = self.cmet[i,j]
-        # perform dynamics on the reference CVs (eq. 17 @ 10.1016/j.cplett.2007.08.017)
+        # perform (damped) dynamics on the reference CVs (eq. 17 @ 10.1016/j.cplett.2007.08.017)
         grad = numpy.dot( diff, self.cmet )
         self.rcrd += grad * self.tstp * 100.0
