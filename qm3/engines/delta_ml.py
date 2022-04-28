@@ -91,67 +91,67 @@ except:
 # =================================================================================================
 
 class template( object ):
-    def __init__( self, network: object, molec: object, sele: numpy.array ):
+    def __init__( self, network: object, mol: object, sele: numpy.array ):
         self.netw = network
         self.sele = numpy.argwhere( sele.ravel() ).ravel()
 
 
-    def get_info( self, molec: object ) -> numpy.array:
+    def get_info( self, mol: object ) -> numpy.array:
         raise( NotImplementedError )
 
 
-    def get_jaco( self, molec: object ) -> numpy.array:
+    def get_jaco( self, mol: object ) -> numpy.array:
         raise( NotImplementedError )
 
 
-    def get_func( self, molec: object ):
-        molec.func += self.netw.get_func( self.get_info( molec ) )
+    def get_func( self, mol: object ):
+        mol.func += self.netw.get_func( self.get_info( mol ) )
 
 
-    def get_grad( self, molec: object ):
-         etmp, gtmp = self.netw.get_grad( self.get_info( molec ) )
-         grd = numpy.dot( gtmp.T, self.get_jaco( molec ) )
+    def get_grad( self, mol: object ):
+         etmp, gtmp = self.netw.get_grad( self.get_info( mol ) )
+         grd = numpy.dot( gtmp.T, self.get_jaco( mol ) )
          grd.shape = ( len( self.sele ), 3 )
-         molec.grad[self.sele] += grd
+         mol.grad[self.sele] += grd
 
 
-    def num_grad( self, molec: object, disp: typing.Optional[float] = 1.e-3 ):
-        molec.func += self.netw.get_func( self.get_info( molec ) )
+    def num_grad( self, mol: object, disp: typing.Optional[float] = 1.e-3 ):
+        mol.func += self.netw.get_func( self.get_info( mol ) )
         for i in self.sele:
             for j in [0, 1, 2]:
-                bak = molec.coor[i,j]
-                molec.coor[i,j] = bak + disp
-                ffw = self.netw.get_func( self.get_info( molec ) )
-                molec.coor[i,j] = bak - disp
-                bbw = self.netw.get_func( self.get_info( molec ) )
-                molec.grad[i,j] += ( ffw - bbw ) / ( 2.0 * disp )
-                molec.coor[i,j] = bak
+                bak = mol.coor[i,j]
+                mol.coor[i,j] = bak + disp
+                ffw = self.netw.get_func( self.get_info( mol ) )
+                mol.coor[i,j] = bak - disp
+                bbw = self.netw.get_func( self.get_info( mol ) )
+                mol.grad[i,j] += ( ffw - bbw ) / ( 2.0 * disp )
+                mol.coor[i,j] = bak
 
 # =================================================================================================
 
 class coulomb( template ):
-    def __init__( self, network: object, molec: object, sele: numpy.array, anum: typing.Optional[bool] = False ):
-        template.__init__( self, network, molec, sele )
+    def __init__( self, network: object, mol: object, sele: numpy.array, anum: typing.Optional[bool] = False ):
+        template.__init__( self, network, mol, sele )
         self.anum = []
         if( anum ):
-            self.anum = molec.anum[self.sele]
+            self.anum = mol.anum[self.sele]
         else:
             self.anum = numpy.ones( len( self.sele ) )
 
 
-    def get_info( self, molec ) -> numpy.array:
-        return( qm3.engines._ml_info.coul_info( self.anum, molec.coor[self.sele] ) )
+    def get_info( self, mol ) -> numpy.array:
+        return( qm3.engines._ml_info.coul_info( self.anum, mol.coor[self.sele] ) )
 
 
-    def get_jaco( self, molec ) -> numpy.array:
-        return( qm3.engines._ml_info.coul_jaco( self.anum, molec.coor[self.sele] ) )
+    def get_jaco( self, mol ) -> numpy.array:
+        return( qm3.engines._ml_info.coul_jaco( self.anum, mol.coor[self.sele] ) )
 
 # =================================================================================================
 
 # [10.1063/1.3553717]
 class acsf( template ):
-    def __init__( self, network: object, molec: object, sele: numpy.array ):
-        template.__init__( self, network, molec, sele )
+    def __init__( self, network: object, mol: object, sele: numpy.array ):
+        template.__init__( self, network, mol, sele )
 
 
     def setup( self,
@@ -165,5 +165,5 @@ class acsf( template ):
         self.eta5 = eta5
 
 
-    def get_info( self, molec ) -> numpy.array:
-        return( qm3.engines._ml_info.acsf_info( self.cutx, self.eta2, self.dse5, self.eta5, molec.coor[self.sele] ) )
+    def get_info( self, mol ) -> numpy.array:
+        return( qm3.engines._ml_info.acsf_info( self.cutx, self.eta2, self.dse5, self.eta5, mol.coor[self.sele] ) )

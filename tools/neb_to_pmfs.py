@@ -44,7 +44,7 @@ for i in range( nwin ):
     f_str.write( "\n" )
 
 f_str.seek( 0 )
-obj = qm3.engines.mmres.colvar_s( .0, .0, open( "pmf_s.cnf" ), f_str, None )
+obj = qm3.engines.mmres.colvar_s( mol, .0, .0, open( "pmf_s.cnf" ), f_str, None )
 
 with open( "pmf_s.met", "wt" ) as f_met:
     for i in range( nwin ):
@@ -53,15 +53,15 @@ with open( "pmf_s.met", "wt" ) as f_met:
         f_met.write( "".join( [ "%8.3lf"%( i ) for i in obj.metrics( tmp ).ravel().tolist() ] ) + "\n" )
 
 f_str.seek( 0 )
-obj = qm3.engines.mmres.colvar_s( .0, .0, open( "pmf_s.cnf" ), f_str, open( "pmf_s.met" ) )
+obj = qm3.engines.mmres.colvar_s( mol, .0, .0, open( "pmf_s.cnf" ), f_str, open( "pmf_s.met" ) )
 
 plt.clf()
 plt.grid( True )
-plt.plot( obj.arcl, '-o' )
+plt.plot( obj.arcl[1:], '-o' )
 plt.show()
 
-arcl = numpy.array( [ 0 ] + numpy.cumsum( obj.arcl ).tolist() )
-equi = [ arcl[-1] / ( nwin - 1.0 ) * i for i in range( nwin ) ]
+arcl = numpy.cumsum( obj.arcl )
+equi = numpy.array( [ arcl[-1] / ( nwin - 1.0 ) * i for i in range( nwin ) ] )
 fcrd = numpy.zeros( ( nwin, ncrd ) )
 plt.clf()
 plt.grid( True )
@@ -78,10 +78,10 @@ with open( "pmf_s.str", "wt" ) as f_str:
             f_str.write( "%12.4lf"%( fcrd[i,j] ) )
         f_str.write( "\n" )
 
-obj = qm3.engines.mmres.colvar_s( .0, .0,
+obj = qm3.engines.mmres.colvar_s( mol, .0, .0,
         open( "pmf_s.cnf" ), open( "pmf_s.str" ), open( "pmf_s.met" ) )
 
 plt.clf()
 plt.grid( True )
-plt.plot( obj.arcl, '-o' )
+plt.plot( obj.arcl[1:], '-o' )
 plt.show()

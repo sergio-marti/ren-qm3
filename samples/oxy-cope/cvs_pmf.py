@@ -42,7 +42,7 @@ mol.engines["mm"] = qm3.engines.openmm.run( _sys, _psf.topology, sel_QM = sqm, p
 mol.engines["qm"] = qm3.engines.xtb.run( mol, 0, 0, sel_QM = sqm, sel_MM = smm )
 kmb = 1400.
 ref = who * 0.137036
-mol.engines["cv"] = qm3.engines.mmres.colvar_s( kmb, ref,
+mol.engines["cv"] = qm3.engines.mmres.colvar_s( mol, kmb, ref,
         open( "pmf_s.cnf" ), open( "pmf_s.str" ), open( "pmf_s.met" ) )
 
 mol.dat = open( "dat.%02d"%( who ), "wt" )

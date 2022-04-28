@@ -2,6 +2,7 @@ import  math
 import  numpy
 import  typing
 import  qm3.data
+#import  collections
 
 
 def f_distance( mol: object, kumb: float, xref: float, a_i: int, a_j: int,
@@ -332,6 +333,14 @@ class colvar_s( object ):
     ...         ...
     atom_n,i    atom_n,j
     -------------------------------------
+    ref_1,1     ref_1,nc
+    ...         ...
+    ref_nw,1    ref_nw,nc
+    -------------------------------------
+    met_1,(1,1)   met_1,(nc,nc) [by rows]
+    ...           ...
+    met_nw,(1,1)  met_nw,(nc,nc)
+    -------------------------------------
 
     x( %zeta  ) approx {sum from{i=0} to{N-1} {i %delta_z e^{-{{lline %zeta - z rline}over %delta_z}}}} over
     {sum from{i=0} to{N-1} { e^{-{{lline %zeta - z rline}over %delta_z}}}}
@@ -346,10 +355,8 @@ class colvar_s( object ):
     J. Phys. Chem. A v121, p9764 (2017) [10.1021/acs.jpca.7b10842]
     WIREs Comput. Mol. Sci. v8 (2018) [10.1002/wcms.1329]
     """
-    def __init__( self, kumb: float, xref: float,
-            str_cnf: typing.IO,
-            str_crd: typing.IO,
-            str_met: typing.IO ):
+    def __init__( self, mol: object, kumb: float, xref: float,
+            str_cnf: typing.IO, str_crd: typing.IO, str_met: typing.IO ):
         self.xref = xref
         self.kumb = kumb
         # parse config
@@ -364,42 +371,47 @@ class colvar_s( object ):
             self.atom.append( ( tmp[0], tmp[1] ) )
             self.jidx[tmp[0]] = True
             self.jidx[tmp[1]] = True
-        self.jidx = { jj: ii for ii,jj in zip( range( len( self.jidx ) ), sorted( self.jidx ) ) }
+#        self.jidx = collections.OrderedDict( { jj: ii for ii,jj in enumerate( sorted( self.jidx ) ) } )
+#        self.xdij = collections.OrderedDict( { self.jidx[ii]: ii for ii in self.jidx } )
+        self.jidx = { jj: ii for ii,jj in enumerate( sorted( self.jidx ) ) }
         self.xdij = { self.jidx[ii]: ii for ii in self.jidx }
         self.jcol = 3 * len( self.jidx )
         # load previous equi-distributed string
-        self.rcrd = numpy.array( [ float( i ) for i in str_crd.read().strip().split() ] )
+        self.rcrd = numpy.array( [ float( i ) for i in str_crd.read().strip().split() ], dtype=numpy.float64 )
         self.rcrd.shape = ( self.nwin, self.ncrd )
         # load previous string metrics (default to identity...)
         try:
-            self.rmet = numpy.array( [ float( i ) for i in str_met.read().strip().split() ] )
+            self.rmet = numpy.array( [ float( i ) for i in str_met.read().strip().split() ], dtype=numpy.float64 )
             self.rmet.shape = ( self.nwin, self.ncr2 )
         except:
-            self.rmet = numpy.zeros( ( self.nwin, self.ncr2 ) )
+            self.rmet = numpy.zeros( ( self.nwin, self.ncr2 ), dtype=numpy.float64 )
             self.rmet[0:self.nwin,:] = numpy.eye( self.ncrd ).ravel()
         # get the arc of the current string
-        self.arcl = numpy.zeros( self.nwin - 1 )
+        self.arcl = numpy.zeros( self.nwin, dtype=numpy.float64 )
         for i in range( 1, self.nwin ):
             vec = self.rcrd[i] - self.rcrd[i-1]
             vec.shape = ( self.ncrd, 1 )
             mat = 0.5 * ( self.rmet[i] + self.rmet[i-1] )
             mat.shape = ( self.ncrd, self.ncrd )
             mat = numpy.linalg.inv( mat )
-            self.arcl[i-1] = math.sqrt( numpy.dot( vec.T, numpy.dot( mat, vec ) ) )
+            self.arcl[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( mat, vec ) ) )
         self.delz = self.arcl.sum() / float( self.nwin - 1.0 )
         print( "Colective variable s range: [%.3lf - %.3lf: %.6lf] _Ang amu^0.5"%( 0.0, self.arcl.sum(), self.delz ) )
         # store inverse (constant) metrics
         for i in range( self.nwin ):
             self.rmet[i] = numpy.linalg.inv( self.rmet[i].reshape( ( self.ncrd, self.ncrd ) ) ).ravel()
+        # store the square root of the masses
+        self.sqms = numpy.sqrt( mol.mass[list( self.jidx.keys() )] )
+        self.sqms = numpy.column_stack( ( self.sqms, self.sqms, self.sqms ) ).reshape( ( self.jcol // 3, 3 ) )
 
 
-    def get_jaco( self, molec: object ) -> tuple:
-        ccrd = numpy.zeros( self.ncrd )
-        jaco = numpy.zeros( ( self.ncrd, self.jcol ) )
+    def get_jaco( self, mol: object ) -> tuple:
+        ccrd = numpy.zeros( self.ncrd, dtype=numpy.float64 )
+        jaco = numpy.zeros( ( self.ncrd, self.jcol ), dtype=numpy.float64 )
         for i in range( self.ncrd ):
             ai = self.atom[i][0]
             aj = self.atom[i][1]
-            rr = molec.coor[aj] - molec.coor[ai]
+            rr = mol.coor[aj] - mol.coor[ai]
             ccrd[i] = numpy.linalg.norm( rr )
             for j in [0, 1, 2]:
                 jaco[i,3*self.jidx[ai]+j] -= rr[j] / ccrd[i]
@@ -407,11 +419,11 @@ class colvar_s( object ):
         return( ccrd, jaco )
 
 
-    def metrics( self, molec: object ) -> numpy.array:
-        ccrd, jaco = self.get_jaco( molec )
-        mass = molec.mass[list( self.jidx.keys() )]
+    def metrics( self, mol: object ) -> numpy.array:
+        ccrd, jaco = self.get_jaco( mol )
+        mass = mol.mass[list( self.jidx.keys() )]
         mass = numpy.column_stack( ( mass, mass, mass ) ).reshape( self.jcol )
-        cmet = numpy.zeros( ( self.ncrd, self.ncrd ) )
+        cmet = numpy.zeros( ( self.ncrd, self.ncrd ), dtype=numpy.float64 )
         for i in range( self.ncrd ):
             for j in range( i, self.ncrd ):
                 cmet[i,j] = numpy.sum( jaco[i,:] * jaco[j,:] / mass )
@@ -419,9 +431,9 @@ class colvar_s( object ):
         return( cmet )
 
 
-    def get_func( self, molec: object ) -> numpy.array:
-        ccrd, jaco = self.get_jaco( molec )
-        cdst = numpy.zeros( self.nwin )
+    def get_func( self, mol: object ) -> numpy.array:
+        ccrd, jaco = self.get_jaco( mol )
+        cdst = numpy.zeros( self.nwin, dtype=numpy.float64 )
         for i in range( self.nwin ):
             vec = ccrd - self.rcrd[i]
             vec.shape = ( self.ncrd, 1 )
@@ -430,15 +442,15 @@ class colvar_s( object ):
             cdst[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( mat, vec ) ) )
         cexp = numpy.exp( - cdst / self.delz )
         cval = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp ) / cexp.sum()
-        molec.func += 0.5 * self.kumb * math.pow( cval - self.xref, 2.0 )
-        molec.rval.append( cval )
+        mol.func += 0.5 * self.kumb * math.pow( cval - self.xref, 2.0 )
+        mol.rval.append( cval )
         return( ccrd )
 
 
-    def get_grad( self, molec: object ) -> numpy.array:
-        ccrd, jaco = self.get_jaco( molec )
-        cdst = numpy.zeros( self.nwin )
-        jder = numpy.zeros( ( self.nwin, self.jcol ) )
+    def get_grad( self, mol: object ) -> numpy.array:
+        ccrd, jaco = self.get_jaco( mol )
+        cdst = numpy.zeros( self.nwin, dtype=numpy.float64 )
+        jder = numpy.zeros( ( self.nwin, self.jcol ), dtype=numpy.float64 )
         for i in range( self.nwin ):
             vec = ccrd - self.rcrd[i]
             vec.shape = ( self.ncrd, 1 )
@@ -453,15 +465,17 @@ class colvar_s( object ):
         sumd = cexp.sum()
         cval = sumn / sumd
         diff = self.kumb * ( cval - self.xref )
-        molec.func += 0.5 * diff * ( cval - self.xref )
-        sder = numpy.zeros( self.jcol )
+        mol.func += 0.5 * diff * ( cval - self.xref )
+        sder = numpy.zeros( self.jcol, dtype=numpy.float64 )
         for i in range( self.jcol ):
 #            sder[i] = diff * numpy.sum( jder[:,i] * cexp * ( cval / self.delz - numpy.arange( self.nwin, dtype=numpy.float64 ) ) ) / sumd
             for j in range( self.nwin ):
                 sder[i] += diff * jder[j,i] * ( cval / self.delz - j ) * cexp[j] / sumd
-        tmp = self.jcol // 3
-        sder.shape = ( tmp, 3 )
-        for i in range( tmp ):
-            molec.grad[self.xdij[i]] += sder[i]
-        molec.rval.append( cval )
+#        tmp = self.jcol // 3
+#        sder.shape = ( tmp, 3 )
+#        for i in range( tmp ):
+#            mol.grad[self.xdij[i]] += sder[i]
+        sder.shape = ( self.jcol // 3, 3 )
+        mol.grad[list( self.jidx.keys() ),:] += sder * self.sqms
+        mol.rval.append( cval )
         return( ccrd )
