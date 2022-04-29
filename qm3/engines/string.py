@@ -101,4 +101,4 @@ class string( object ):
                 self.cmet[j,i] = self.cmet[i,j]
         # perform (damped) dynamics on the reference CVs (eq. 17 @ 10.1016/j.cplett.2007.08.017)
         grad = numpy.dot( diff, self.cmet )
-        self.rcrd -= grad * self.tstp * 100.0
+        self.rcrd += grad * self.tstp * 100.0
