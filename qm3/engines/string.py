@@ -6,7 +6,7 @@ import  qm3.utils.interpolation
 
 
 def distribute( rcrd: numpy.array, rmet: list,
-        interpolant: object = qm3.utils.interpolation.hermite_spline ) -> numpy.array:
+        interpolant: object = qm3.utils.interpolation.cubic_spline ) -> numpy.array:
     nwin, ncrd = rcrd.shape
     arcl = numpy.zeros( nwin, dtype=numpy.float64 )
     for i in range( 1, nwin ):
@@ -28,7 +28,9 @@ def distribute( rcrd: numpy.array, rmet: list,
 
 class string( object ):
     """
-    tstp: dt / gamma [ps^2]  ~ 2.e-7
+    tstp: dt / gamma [ps^2]  ~ 1e-7
+
+    distribute string each 10 - 100 MD steps
 
     -------------------------------------
     ncrd        nwin

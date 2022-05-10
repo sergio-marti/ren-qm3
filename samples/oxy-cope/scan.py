@@ -116,10 +116,13 @@ else:
     f.close()
 
 
+tmp = qm3.molecule()
 for i,j,s in tsk[con.node]:
     while( not os.path.isfile( s ) ):
         time.sleep( 1 )
     time.sleep( 2 )
+    tmp.pdb_read( open( s, "rt" ) )
+    mol.coor = tmp.coor
     mol.engines["r1"] = qm3.engines.mmres.distance( 5000, rx1[0] + dx1 * i, [ a1, a2 ] )
     mol.engines["r2"] = qm3.engines.mmres.distance( 5000, rx2[0] + dx2 * j, [ a3, a4 ] )
     qm3.actions.minimize.fire( mol, print_frequency = 100, gradient_tolerance = 0.1, step_number = 1000,
