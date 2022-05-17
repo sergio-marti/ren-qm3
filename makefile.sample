@@ -12,6 +12,10 @@ grids:
 	$(PYX) setup/grids build_ext --build-lib qm3/utils
 
 
+conn:
+	$(PYX) setup/conn build_ext --build-lib qm3/utils
+
+
 mpi:
 	$(MPI) $(PYX) setup/mpi build_ext --build-lib qm3/utils
 

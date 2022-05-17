@@ -1,0 +1,13 @@
+from distutils.core import setup, Extension
+
+import	numpy
+
+setup( 
+	name = "C FULL Connectivity", 
+	ext_modules = [ 
+		Extension( "_conn",
+			sources = [ "qm3/utils/conn.c" ],
+            include_dirs = [ numpy.get_include() ]
+		 )
+	]
+)
