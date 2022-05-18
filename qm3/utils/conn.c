@@ -22,7 +22,7 @@ double r_cov[110] = { 0.31, 0.31, 0.28, 1.28, 0.96, 0.84, 0.76, 0.71, 0.66, 0.57
 
 typedef struct one_lst_node { long   i; struct one_lst_node *n; } one_lst;
 typedef struct two_lst_node { long i,j; struct two_lst_node *n; } two_lst;
-typedef struct { one_lst *idx; long siz; long *num; double *xyz; two_lst *bnd; } con_arg;
+typedef struct { one_lst *idx; long siz; double thr; long *num; double *xyz; two_lst *bnd; } con_arg;
 
 
 
@@ -40,7 +40,7 @@ void* __connectivity( void *args ) {
     		if( arg->num[i] == 1 && arg->num[j] == 1 ) { continue; }
 	    	i3  = 3 * i;
 	    	j3  = 3 * j;
-	    	r2  = ( r_cov[arg->num[i]] + r_cov[arg->num[j]] + 0.1 ) * ( r_cov[arg->num[i]] + r_cov[arg->num[j]] + 0.1 );
+	    	r2  = ( r_cov[arg->num[i]] + r_cov[arg->num[j]] + arg->thr ) * ( r_cov[arg->num[i]] + r_cov[arg->num[j]] + arg->thr );
 	    	dr  = ( arg->xyz[i3] - arg->xyz[j3] ) * ( arg->xyz[i3] - arg->xyz[j3] ) +
 	    			( arg->xyz[i3+1] - arg->xyz[j3+1] ) * ( arg->xyz[i3+1] - arg->xyz[j3+1] ) +
 	    			( arg->xyz[i3+2] - arg->xyz[j3+2] ) * ( arg->xyz[i3+2] - arg->xyz[j3+2] );
@@ -59,7 +59,7 @@ void* __connectivity( void *args ) {
 
 static PyObject* w_connectivity( PyObject *self, PyObject *args ) {
     PyObject		*out, *ocrd, *onum, *otmp;
-    double			*xyz, dr, r2, *p_double;
+    double			*xyz, dr, r2, *p_double, bthr = 0.2;
 	PyArrayObject	*mcrd, *mnum;
     long			*siz, *num, *p_long, i, j, k, cpu, i3, j3;
     pthread_t		*pid;
@@ -67,7 +67,7 @@ static PyObject* w_connectivity( PyObject *self, PyObject *args ) {
     one_lst     	*lst, *pt1;
     two_lst			*pt2;
 
-    if( PyArg_ParseTuple( args, "lOO", &cpu, &onum, &ocrd ) ) {
+    if( PyArg_ParseTuple( args, "lOO|d", &cpu, &onum, &ocrd, &bthr ) ) {
 
 		mnum = (PyArrayObject*) PyArray_FROM_OT( onum, NPY_LONG );
 		mcrd = (PyArrayObject*) PyArray_FROM_OT( ocrd, NPY_DOUBLE );
@@ -116,6 +116,7 @@ static PyObject* w_connectivity( PyObject *self, PyObject *args ) {
             for( i = 0; i < cpu; i++ ) {
                 arg[i].siz    = siz[0];
                 arg[i].idx    = lst[i].n;
+				arg[i].thr    = bthr;
 	    		arg[i].num    = num;
 	    		arg[i].xyz    = xyz;
 	    		arg[i].bnd    = (two_lst*) malloc( sizeof( two_lst ) ); 
@@ -164,7 +165,7 @@ static PyObject* w_connectivity( PyObject *self, PyObject *args ) {
                     if( num[i] == 1 && num[j] == 1 ) { continue; }
 	    			i3  = 3 * i;
 			    	j3  = 3 * j;
-			    	r2  = ( r_cov[num[i]] + r_cov[num[j]] + 0.1 ) * ( r_cov[num[i]] + r_cov[num[j]] + 0.1 );
+			    	r2  = ( r_cov[num[i]] + r_cov[num[j]] + bthr ) * ( r_cov[num[i]] + r_cov[num[j]] + bthr );
 			    	dr  = ( xyz[i3] - xyz[j3] ) * ( xyz[i3] - xyz[j3] ) +
 			    			( xyz[i3+1] - xyz[j3+1] ) * ( xyz[i3+1] - xyz[j3+1] ) +
 			    			( xyz[i3+2] - xyz[j3+2] ) * ( xyz[i3+2] - xyz[j3+2] );
