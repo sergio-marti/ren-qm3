@@ -59,7 +59,7 @@ void* __connectivity( void *args ) {
 
 static PyObject* w_connectivity( PyObject *self, PyObject *args ) {
     PyObject		*out, *ocrd, *onum, *otmp;
-    double			*xyz, dr, r2, *p_double, bthr = 0.2;
+    double			*xyz, dr, r2, *p_double, bthr = 0.1;
 	PyArrayObject	*mcrd, *mnum;
     long			*siz, *num, *p_long, i, j, k, cpu, i3, j3;
     pthread_t		*pid;
