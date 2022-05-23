@@ -1,0 +1,11 @@
+from distutils.core import setup, Extension
+import numpy
+setup( 
+	name = "Truncated Non-Bonded (Lennard-Jones+Electrostatic)", 
+	ext_modules = [ 
+		Extension( "_mmdec",
+			sources = [ "mmdec.c" ],
+			include_dirs = [ numpy.get_include() ]
+		 )
+	]
+)
