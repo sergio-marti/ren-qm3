@@ -108,7 +108,7 @@ def deco( mol, res, eqm, emm, fds ):
 
 
 
-fds = [ open( w, "wt" ) for w in [ "__.vac", "__.ele", "__.vdw" ] ]
+fds = [ open( sys.argv[1] + w, "wt" ) for w in [ ".vac", ".ele", ".vdw" ] ]
 deco( mol, res, eqm, emm, fds )
 if( len( sys.argv ) == 3 ):
     dcd = qm3.utils._dcd.dcd()
