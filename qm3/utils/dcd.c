@@ -217,6 +217,7 @@ static PyObject* __next( PyObject *self, PyObject *args ) {
     		fread( obj->buff, 1, 8, obj->fdes );
     		fread( obj->buff, 1, k, obj->fdes );
     		for( i = 0, j = 0; i < obj->natm; i++, j += 4 ) {
+				__swap( obj->swap, &(obj->buff[j]) ); memcpy( &blk, &(obj->buff[j]), 4 );
 				ptr = (double*) PyArray_GETPTR2( n_crd, i, 2 );
 				*ptr = (double) blk;
     		}
