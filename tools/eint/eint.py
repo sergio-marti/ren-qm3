@@ -114,7 +114,7 @@ if( len( sys.argv ) == 3 ):
     dcd = qm3.utils._dcd.dcd()
     dcd.open_read( sys.argv[2] )
     i = 0
-    while( dcd.next( mol ) and i < trm ):
+    while( dcd.next( mol ) ):
         print( "-- frame: ", i )
         deco( mol, res, eqm, emm, fds )
         i += 1
