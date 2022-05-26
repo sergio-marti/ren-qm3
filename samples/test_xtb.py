@@ -27,6 +27,7 @@ mol.engines["qm"] = qm3.engines.xtb.run( mol, 1, 0, sqm, smm, sla )
 
 mol.get_grad()
 print( mol.func )
+print( mol.grad[sqm] )
 assert( numpy.fabs( mol.func - -46091.9431 ) < 0.001 ), "function error"
 print( numpy.linalg.norm( mol.grad ) )
 assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 589.1370 ) < 0.001 ), "gradient error"
