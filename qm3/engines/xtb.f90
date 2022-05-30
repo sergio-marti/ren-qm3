@@ -65,7 +65,7 @@ subroutine qm3_xtb_calc( nQM, nMM, siz, dat )
     end do
     if( nMM > 0 ) then
         if( .not. restart ) call pcem%allocate( nMM )
-        pcem%gam = 999.0d0
+        pcem%gam = 99.0d0 ! orca
         do i = 1, nMM
             pcem%q(i) = dat(2+5*nQM+i)
             j = 3 + 5 * nQM + nMM + 3 * ( i - 1 )
