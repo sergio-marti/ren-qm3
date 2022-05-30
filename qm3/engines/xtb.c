@@ -51,7 +51,7 @@ void qm3_xtb_calc_( int *p_nQM, int *p_nMM, int *siz, double *dat ) {
 		for( i = 0; i < nMM; i++ ) {
 			// https://xtb-docs.readthedocs.io/en/latest/pcem.html
 			// xtb%pcem%gam(ii) = xtb%xtbData%coulomb%chemicalHardness(numbers(ii))
-			pc_num[i] = 84; // == 1.023267, far from 999.0 in xtb.f90
+			pc_num[i] = 7; // pcem_dummyatom = 7
 			pc_chg[i] = dat[3+5*nQM+i];
 			i3 = i * 3;
             j  = 3 + 5 * nQM + nMM + 3 * i;
