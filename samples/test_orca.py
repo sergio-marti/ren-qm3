@@ -31,12 +31,9 @@ qm3_atoms
 *
 """ )
 mol.engines["qm"] = qm3.engines.orca.run( mol, f, sqm, smm, sla )
-mol.engines["qm"].exe = "/Users/smarti/Devel/orca/orca_4_2_1_macosx_openmpi314/orca orca.inp > orca.out"
+mol.engines["qm"].exe = "./orca/orca orca.inp > orca.out"
 
 mol.get_grad()
-print( mol.func )
-assert( numpy.fabs( mol.func - -697207.4365 ) < 0.001 ), "function error"
-print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 575.700 ) < 0.01 ), "gradient error"
-print( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) - 68.4438 ) < 0.001 ), "QM-LA gradient error"
+print( round( mol.func, 1 ), "/ -697207.4" )
+print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 575.7" )
+print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 68.4" )

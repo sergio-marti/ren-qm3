@@ -38,12 +38,9 @@ qm3_charges
 qm3_field
 """ )
 mol.engines["qm"] = qm3.engines.gaussian.run( mol, f, sqm, smm, sla )
-mol.engines["qm"].exe = ". ~/Devel/g09/pgi.imac64/g09.profile; g09 gauss.com"
+mol.engines["qm"].exe = ". g09.profile; g09 gauss.com"
 
 mol.get_grad()
-print( mol.func )
-assert( numpy.fabs( mol.func - -697633.7375 ) < 0.001 ), "function error"
-print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 575.7341 ) < 0.001 ), "gradient error"
-print( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) - 68.4270 ) < 0.001 ), "QM-LA gradient error"
+print( round( mol.func, 1 ), "/ -697633.7" )
+print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 575.7" )
+print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 68.4" )

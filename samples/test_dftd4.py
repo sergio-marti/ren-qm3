@@ -25,9 +25,6 @@ prm = { "chrg": 1.0, "s6": 1.00, "s8": 2.02929367, "a1": 0.40868035, "a2": 4.538
 mol.engines["qm"] = qm3.engines.dftd4.run( mol, prm, sqm, sla )
 
 mol.get_grad()
-print( mol.func )
-assert( numpy.fabs( mol.func - -37.5460 ) < 0.001 ), "function error"
-print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 4.4627 ) < 0.001 ), "gradient error"
-print( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) - 2.7465 ) < 0.001 ), "QM-LA gradient error"
+print( round( mol.func, 1 ), "/ -37.5" )
+print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 4.5" )
+print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 2.7" )

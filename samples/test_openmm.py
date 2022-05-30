@@ -40,10 +40,8 @@ if( who == "AMBER" ):
     print( _sys.getDefaultPeriodicBoxVectors() )
     mol.engines["mm"] = qm3.engines.openmm.run( _sys, _top )
     mol.get_grad()
-    print( mol.func )
-    assert( numpy.fabs( mol.func - -23032.6527 ) < 0.001 ), "[Amber]: function error"
-    print( numpy.linalg.norm( mol.grad ) )
-    assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 1158.8760 ) < 0.001 ), "[Amber]: gradient error"
+    print( round( mol.func, 1 ), "/ -23032.7" )
+    print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 1158.9" )
 
 elif( who == "CHARMM" ):
     # ===================================================================
@@ -63,10 +61,8 @@ elif( who == "CHARMM" ):
     print( _sys.getDefaultPeriodicBoxVectors() )
     mol.engines["mm"] = qm3.engines.openmm.run( _sys, _psf.topology )
     mol.get_grad()
-    print( mol.func )
-    assert( numpy.fabs( mol.func - -23239.8427 ) < 0.001 ), "[Charmm]: function error"
-    print( numpy.linalg.norm( mol.grad ) )
-    assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 1127.7585 ) < 0.001 ), "[Charmm]: gradient error"
+    print( round( mol.func, 1 ), "/ -23239.8" )
+    print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 1127.8" )
 
 else:
     # ===================================================================
@@ -92,7 +88,5 @@ else:
     print( _sys.getDefaultPeriodicBoxVectors() )
     mol.engines["mm"] = qm3.engines.openmm.run( _sys, _psf.topology )
     mol.get_grad()
-    print( mol.func )
-    assert( numpy.fabs( mol.func - -23323.1197 ) < 0.001 ), "[xml]: function error"
-    print( numpy.linalg.norm( mol.grad ) )
-    assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 1127.7546 ) < 0.001 ), "[xml]: gradient error"
+    print( round( mol.func, 1 ), "/ -23323.1" )
+    print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 1127.8" )

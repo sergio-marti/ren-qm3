@@ -39,9 +39,6 @@ qm3_charges
 mol.engines["qm"] = qm3.engines.sqm.run( mol, f, sqm, smm, sla )
 
 mol.get_grad()
-print( mol.func )
-assert( numpy.fabs( mol.func - 845.8024 ) < 0.001 ), "function error"
-print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 714.1929 ) < 0.001 ), "gradient error"
-print( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) - 155.1103 ) < 0.001 ), "QM-LA gradient error"
+print( round( mol.func, 1 ), "/ 845.8" )
+print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 714.2" )
+print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 155.1" )

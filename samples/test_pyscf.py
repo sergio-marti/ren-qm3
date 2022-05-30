@@ -36,9 +36,6 @@ opt = { "basis": "def2-svp",
 mol.engines["qm"] = qm3.engines.pyscf.run( mol, opt, sqm, smm, sla )
 
 mol.get_grad()
-print( mol.func )
-assert( numpy.fabs( mol.func - -697633.7525 ) < 0.001 ), "function error"
-print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 575.7223 ) < 0.001 ), "gradient error"
-print( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) - 68.4215 ) < 0.001 ), "QM-LA gradient error"
+print( round( mol.func, 1 ), "/ -697633.8" )
+print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 575.7" )
+print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 68.4" )

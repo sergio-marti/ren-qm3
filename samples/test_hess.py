@@ -50,63 +50,52 @@ with open( cwd + "test_hess.pk", "rb" ) as f:
     grd = numpy.array( pickle.load( f ) )
 
 tmp = numpy.trace( hes )
-print( tmp )
-assert( numpy.fabs( tmp - 273925.989 ) < 0.01 ), "Hessian calculation error"
+print( round( tmp, 1 ), "/ 273926.0" )
 
 tmp = numpy.linalg.norm( numpy.sum( mol.mass * mol.coor * mol.actv, axis = 0 ) / numpy.sum( mol.mass * mol.actv ) )
-print( tmp )
-assert( numpy.fabs( tmp - 5.6317 ) < 0.001 ), "Center of mass error"
+print( round( tmp, 1 ), "/ 5.6" )
 
 rtm = qm3.utils.RT_modes( mol )
 tmp = rtm[-1].sum()
-print( tmp )
-assert( numpy.fabs( tmp - -0.0191 ) < 0.001 ), "RT modes error"
+print( round( tmp, 2 ), "/ -0.02" )
 
 val, vec = qm3.utils.hessian.frequencies( mol, qm3.utils.hessian.raise_RT( hes, rtm ) )
 print( val[0:7] )
 tmp = numpy.linalg.norm( val )
-print( tmp )
-assert( numpy.fabs( tmp - 13993.7140 ) < 0.001 ), "raise RT modes error"
+print( round( tmp, 1 ), "/ 13993.7" )
 
 val, vec = qm3.utils.hessian.frequencies( mol, hes )
 print( val[0:7] )
 tmp = numpy.linalg.norm( val )
-print( tmp )
-assert( numpy.fabs( tmp - 13112.6629 ) < 0.001 ), "Frequencies error"
+print( round( tmp, 1 ), "/ 13112.7" )
 tmp = numpy.linalg.norm( vec[:,-1] )
-print( tmp )
-assert( numpy.fabs( tmp - 0.9961 ) < 0.001 ), "Normal Modes error"
+print( round( tmp, 3 ), "/ 0.996" )
 
 iri = qm3.utils.hessian.IR_intensities( mol, vec )
 tmp = numpy.linalg.norm( iri[6:] )
-print( tmp )
-assert( numpy.fabs( tmp - 463.80 ) < 0.1 ), "IR intensities error"
+print( round( tmp, 1 ), "/ 463.8" )
 
 qm3.utils.hessian.IR_spectrum( val, iri )
 
 rms, frc = qm3.utils.hessian.force_constants( mol, val, vec )
 tmp = numpy.linalg.norm( rms[6:] )
-print( tmp )
-assert( numpy.fabs( tmp - 39.4503 ) < 0.001 ), "Reduced masses error"
+print( round( tmp, 1 ), "/ 39.5" )
 
 qm3.utils.hessian.normal_mode( mol, val, vec, 0, afac = 8.0 )
 
 zpe, gib = qm3.utils.hessian.rrho( mol, val )
-print( zpe )
-assert( numpy.fabs( zpe - 518.0466 ) < 0.001 ), "ZPE error"
-print( gib )
-assert( numpy.fabs( gib - -110.7683 ) < 0.001 ), "Gibbs error"
+print( round( zpe, 1 ), "/ 518.0" )
+print( round( gib, 1 ), "/ -110.8" )
 
 bak = hes.copy()
-for func, check in [ ( qm3.utils.hessian.update_bfgs, 13120.3661 ),
-        ( qm3.utils.hessian.update_psb, 13112.7332 ),
-        ( qm3.utils.hessian.update_bofill, 13112.7567 ) ]:
+for func, check in [ ( qm3.utils.hessian.update_bfgs, "13120.4" ),
+        ( qm3.utils.hessian.update_psb, "13112.7" ),
+        ( qm3.utils.hessian.update_bofill, "13112.8" ) ]:
     hes = bak.copy()
     func( dsp, grd, hes )
     val, vec = qm3.utils.hessian.frequencies( mol, hes )
     tmp = numpy.linalg.norm( val )
-    print( val[0], tmp )
-    assert( numpy.fabs( tmp - check ) < 0.001 ), "Hessian update error"
+    print( val[0], round( tmp, 1 ), "/ " + check )
 
 mol.grad = grd.reshape( ( mol.natm, 3 ) )
 qm3.utils.hessian.manage( mol, bak )

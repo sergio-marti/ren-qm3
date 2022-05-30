@@ -68,9 +68,6 @@ ParserOptions { WriteHSDInput = No }
 mol.engines["qm"] = qm3.engines.dftb.run( mol, f, sqm, smm, sla )
 
 mol.get_grad()
-print( mol.func )
-assert( numpy.fabs( mol.func - -36796.0612 ) < 0.001 ), "function error"
-print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 560.9452 ) < 0.001 ), "gradient error"
-print( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) - 61.8576 ) < 0.001 ), "QM-LA gradient error"
+print( round( mol.func, 1 ), "/ -36796.1" )
+print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 560.9" )
+print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 61.9" )

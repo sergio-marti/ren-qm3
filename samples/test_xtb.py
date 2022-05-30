@@ -26,10 +26,7 @@ print( sqm.sum(), smm.sum() )
 mol.engines["qm"] = qm3.engines.xtb.run( mol, 1, 0, sqm, smm, sla )
 
 mol.get_grad()
-print( mol.func )
+print( round( mol.func, 1 ), "/ -46100.8" )
 print( mol.grad[sqm] )
-assert( numpy.fabs( mol.func - -46100.7834 ) < 0.001 ), "function error"
-print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 566.7573 ) < 0.001 ), "gradient error"
-print( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ) - 70.3683 ) < 0.001 ), "QM-LA gradient error"
+print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 566.8" )
+print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 70.4" )

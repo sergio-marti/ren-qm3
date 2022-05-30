@@ -17,43 +17,35 @@ print( ">> distance" )
 mol.engines["res"] = qm3.engines.mmres.distance( 2000., 1.6,
     [ mol.indx["A"][1]["C5"], mol.indx["A"][1]["C10"] ] )
 mol.get_grad()
-print( mol.func, mol.rval[0] )
-assert( numpy.fabs( mol.func - 8.1575 ) < 0.001 ), "function error"
+print( mol.rval[0], round( mol.func, 1 ), "/ 8.2" )
 print( mol.grad[sel] )
-print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 255.4604 ) < 0.001 ), "gradient error"
+print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 255.5" )
 
 print( "\n>> angle" )
 mol.engines["res"] = qm3.engines.mmres.angle( 2000., 115,
     [ mol.indx["A"][1]["C3"], mol.indx["A"][1]["C5"], mol.indx["A"][1]["C10"] ] )
 mol.get_grad()
-print( mol.func, mol.rval[0] )
-assert( numpy.fabs( mol.func - 35.7225 ) < 0.001 ), "function error"
+print( mol.rval[0], round( mol.func, 1 ), "/ 35.7" )
 print( mol.grad[sel] )
-print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 596.7694 ) < 0.001 ), "gradient error"
+print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 596.8" )
 
 print( "\n>> dihedral" )
 mol.engines["res"] = qm3.engines.mmres.dihedral( { 3: [ 0.8159, 0.0 ] },
     [ mol.indx["A"][1]["C5"], mol.indx["A"][1]["C10"],
         mol.indx["A"][1]["N4"], mol.indx["A"][1]["C3"] ] )
 mol.get_grad()
-print( mol.func, mol.rval[0] )
-assert( numpy.fabs( mol.func - 1.6318 ) < 0.001 ), "function error"
+print( mol.rval[0], round( mol.func, 1), "/ 1.6" )
 print( mol.grad[sel] )
-print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 0.0156 ) < 0.001 ), "gradient error"
+print( round( numpy.linalg.norm( mol.grad ), 3 ), "/ 0.016" )
 
 print( "\n>> improper" )
 mol.engines["res"] = qm3.engines.mmres.improper( 2000., 0.0,
     [ mol.indx["A"][1]["C5"], mol.indx["A"][1]["C10"],
         mol.indx["A"][1]["N4"], mol.indx["A"][1]["C3"] ] )
 mol.get_grad()
-print( mol.func, mol.rval[0] )
-assert( numpy.fabs( mol.func - 0.0013 ) < 0.001 ), "function error"
+print( mol.rval[0], round( mol.func, 4 ), "/ 0.0013" )
 print( mol.grad[sel] )
-print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 4.2457 ) < 0.001 ), "gradient error"
+print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 4.2" )
 
 print( "\n>> multiple_distance" )
 mol.engines["res"] = qm3.engines.mmres.multiple_distance( 2000., -0.2,
@@ -61,18 +53,14 @@ mol.engines["res"] = qm3.engines.mmres.multiple_distance( 2000., -0.2,
         mol.indx["A"][1]["N4"], mol.indx["A"][1]["C5"] ],
     numpy.array( [ -1.0, 1.0 ] ) )
 mol.get_grad()
-print( mol.func, mol.rval[0] )
-assert( numpy.fabs( mol.func - 3.5035 ) < 0.001 ), "function error"
+print( mol.rval[0], round( mol.func, 1 ), "/ 3.5" )
 print( mol.grad[sel] )
-print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 271.3023 ) < 0.001 ), "gradient error"
+print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 271.3" )
 
 print( "\n>> tether" )
 mol.engines["res"] = qm3.engines.mmres.tether( mol, 2000., mol.resn == "SUS" )
 mol.coor *= 0.95
 mol.get_grad()
-print( mol.func )
-assert( numpy.fabs( mol.func - 356.4791 ) < 0.001 ), "function error"
+print( round( mol.func, 1 ), "/ 356.5" )
 print( mol.grad[sel] )
-print( numpy.linalg.norm( mol.grad ) )
-assert( numpy.fabs( numpy.linalg.norm( mol.grad ) - 1194.1174 ) < 0.001 ), "gradient error"
+print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 1194.1" )

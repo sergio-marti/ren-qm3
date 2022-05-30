@@ -41,8 +41,7 @@ obj = qm3.engines.delta_ml.coulomb( net, mol, numpy.ones( mol.natm, dtype=numpy.
 
 inp = obj.get_info( mol )
 tmp = numpy.linalg.norm( inp )
-print( inp.shape, tmp )
-assert( numpy.fabs( tmp - 5.5619 ) < 0.001 ), "delta_coul info error"
+print( inp.shape, round( tmp, 1 ), "/ 5.6" )
 
 tmp = numpy.zeros( ( len( obj.sele ), len( obj.sele ) ) )
 c = 0
@@ -58,25 +57,21 @@ plt.savefig( "delta_coul.pdf" )
 
 net_f, net_g = net.get_grad( inp )
 tmp = numpy.linalg.norm( net_g )
-print( net_f, net_g.shape, tmp )
-assert( numpy.fabs( tmp - 525.8442 ) < 0.001 ), "network grad error"
+print( net_f, net_g.shape, round( tmp, 1 ), "/ 525.8" )
 
 jac = obj.get_jaco( mol )
 tmp = numpy.linalg.norm( jac )
-print( jac.shape, tmp )
-assert( numpy.fabs( tmp - 4.7827 ) < 0.001 ), "delta_coul jaco error"
+print( jac.shape, round( tmp, 1 ), "/ 4.8" )
 
 mol.engines["ml"] = obj
 mol.get_grad()
 tmp = numpy.linalg.norm( mol.grad )
-print( tmp )
-assert( numpy.fabs( tmp - 186.7486 ) < 0.001 ), "delta_coul grad error"
+print( round( tmp, 1 ), "/ 186.7" )
 
 mol.engines["ml"].get_grad = mol.engines["ml"].num_grad
 mol.get_grad()
 tmp = numpy.linalg.norm( mol.grad )
-print( tmp )
-assert( numpy.fabs( tmp - 186.7486 ) < 0.001 ), "delta_coul num-grad error"
+print( round( tmp, 1 ), "/ 186.7" )
 
 
 net = qm3.engines.delta_ml.network()
@@ -88,8 +83,7 @@ obj.setup()
 
 inp = obj.get_info( mol )
 tmp = numpy.linalg.norm( inp )
-print( inp.shape, tmp )
-assert( numpy.fabs( tmp - 207.0196 ) < 0.001 ), "delta_acsf info error"
+print( inp.shape, round( tmp, 1 ), "/ 207.0" )
 
 tmp = inp.reshape( ( len( obj.sele ), len( obj.eta2 ) + len( obj.eta5 ) ) )
 plt.clf()
@@ -102,25 +96,21 @@ plt.savefig( "delta_acsf.pdf" )
 
 net_f, net_g = net.get_grad( inp )
 tmp = numpy.linalg.norm( net_g )
-print( net_f, net_g.shape, tmp )
-assert( numpy.fabs( tmp - 61.6547 ) < 0.001 ), "network grad error"
+print( net_f, net_g.shape, round( tmp, 1 ), "/ 61.7" )
 
 mol.engines["ml"] = obj
 
 """
 jac = obj.get_jaco( mol )
 tmp = numpy.linalg.norm( jac )
-print( jac.shape, tmp )
-assert( numpy.fabs( tmp - 4.7827 ) < 0.001 ), "delta_acsf jaco error"
+print( jac.shape, round( tmp, 1 ), "/" )
 
 mol.get_grad()
 tmp = numpy.linalg.norm( mol.grad )
-print( tmp )
-assert( numpy.fabs( tmp - 240.9321 ) < 0.001 ), "delta_acsf grad error"
+print( round( tmp, 1 ), "/" )
 """
 
 mol.engines["ml"].get_grad = mol.engines["ml"].num_grad
 mol.get_grad()
 tmp = numpy.linalg.norm( mol.grad )
-print( tmp )
-assert( numpy.fabs( tmp - 240.9321 ) < 0.001 ), "delta_acsf num-grad error"
+print( round( tmp, 1 ), "/ 240.9" )
