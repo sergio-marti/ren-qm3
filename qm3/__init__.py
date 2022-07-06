@@ -279,15 +279,19 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
 
     def xyz_write( self, fdsc: typing.IO,
             sele: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
-            formt: typing.Optional[str] = "%20.10lf" ):
-        fmt = "%-4s" + 3 * formt + "\n"
+            frmt: typing.Optional[str] = "%20.10lf",
+            comm: typing.Optional[str] = "" ):
+        fmt = "%-4s" + 3 * frmt + "\n"
         if( sele.sum() > 0 ):
             lsel = sele
         else:
             lsel = numpy.ones( self.natm, dtype=numpy.bool_ )
         siz = lsel.sum()
         fdsc.write( "%d\n"%( siz ) )
-        fdsc.write( "%12.4le %12.4le %12.4le\n"%( self.boxl[0], self.boxl[1], self.boxl[2] ) )
+        if( comm == "" ):
+            fdsc.write( "%12.4le %12.4le %12.4le\n"%( self.boxl[0], self.boxl[1], self.boxl[2] ) )
+        else:
+            fdsc.write( comm.strip() + "\n" )
         for i in range( self.natm ):
             if( lsel[i] ):
                 fdsc.write( fmt%( qm3.data.symbol[self.anum[i]], self.coor[i,0], self.coor[i,1], self.coor[i,2] ) )
