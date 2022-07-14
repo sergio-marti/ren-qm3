@@ -59,9 +59,9 @@ _xtb.so:
 _dftd4.so:
 	gfortran $(SHD) -o qm3/engines/_dftd4.so qm3/engines/dftd4.f90 -Jbuild -Ibuild \
 		-fPIC -I$(DFTD4)/include \
-	   	$(DFTD4)/subprojects/mctc-lib/libmctc-lib.a \
+		$(DFTD4)/libdftd4.a \
 	   	$(DFTD4)/subprojects/multicharge/libmulticharge.a \
-		$(DFTD4)/libdftd4.a -fopenmp $(MLB)
+	   	$(DFTD4)/subprojects/mctc-lib/libmctc-lib.a -fopenmp $(MLB)
 
 
 _sqm.so:
