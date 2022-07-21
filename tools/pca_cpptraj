@@ -22,19 +22,21 @@ run
 
 crdaction xtrj rms ref xavr
 crdaction xtrj matrix covar name xcov
-runanalysis diagmatrix xcov out evecs.dat vecs 3 name xvec nmwiz nmwizvecs 3 nmwizfile vib.nmd
-crdaction xtrj projection WHO modes xvec beg 1 end 3 crdframes 1,10000 out pca.dat
-#writedata pc1.dat WHO:1
-#writedata pc2.dat WHO:2
-#writedata pc3.dat WHO:3
-hist WHO:1 bins 100 out hist.dat norm
-hist WHO:2 bins 100 out hist.dat norm
-hist WHO:3 bins 100 out hist.dat norm
+
+runanalysis diagmatrix xcov out evecs.dat vecs 3 name xvec
+#runanalysis diagmatrix xcov out evecs.dat vecs 3 name xvec nmwiz nmwizvecs 3 nmwizfile vib.nmd
+
+crdaction xtrj projection who modes xvec beg 1 end 3 crdframes 1,10000 out pca.dat
+#crdaction xtrj projection who modes xvec beg 1 end 3 out pca.dat
+
+hist who:1 bins 100 out hist.dat norm
+hist who:2 bins 100 out hist.dat norm
+hist who:3 bins 100 out hist.dat norm
 run
 
-clear all
-readdata evecs.dat name xvec
-parm strip.prmtop
-runanalysis modes name xvec trajout mode1.dcd pcmin -100 pcmax 100 tmode 1 trajoutfmt dcd
-runanalysis modes name xvec trajout mode2.dcd pcmin -100 pcmax 100 tmode 2 trajoutfmt dcd
-runanalysis modes name xvec trajout mode3.dcd pcmin -100 pcmax 100 tmode 3 trajoutfmt dcd
+#clear all
+#readdata evecs.dat name xvec
+#parm strip.prmtop
+#runanalysis modes name xvec trajout mode1.dcd pcmin -100 pcmax 100 tmode 1 trajoutfmt dcd
+#runanalysis modes name xvec trajout mode2.dcd pcmin -100 pcmax 100 tmode 2 trajoutfmt dcd
+#runanalysis modes name xvec trajout mode3.dcd pcmin -100 pcmax 100 tmode 3 trajoutfmt dcd
