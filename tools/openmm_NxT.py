@@ -6,10 +6,11 @@ import	sys
 import  openmm
 import  openmm.app
 import  openmm.unit
+import  numpy
 
+box  = [ 42.320, 47.736, 43.057 ]
 
 _top = openmm.app.amberprmtopfile.AmberPrmtopFile( "start.prmtop" )
-
 
 _sys = _top.createSystem(
     nonbondedMethod = openmm.app.CutoffPeriodic,
@@ -18,12 +19,11 @@ _sys = _top.createSystem(
     implicitSolvent = None,
     switchDistance = 14.0 * openmm.unit.angstrom )
 
-
 #>> fix prmtop box size (based on VDW radii)
 _sys.setDefaultPeriodicBoxVectors(
-    openmm.Vec3( 42.320, 0.0, 0.0 ) * openmm.unit.angstrom,
-    openmm.Vec3( 0.0, 47.736, 0.0 ) * openmm.unit.angstrom,
-    openmm.Vec3( 0.0, 0.0, 43.057 ) * openmm.unit.angstrom )
+    openmm.Vec3( box[0], 0.0, 0.0 ) * openmm.unit.angstrom,
+    openmm.Vec3( 0.0, box[1], 0.0 ) * openmm.unit.angstrom,
+    openmm.Vec3( 0.0, 0.0, box[2] ) * openmm.unit.angstrom )
 
 
 #>> frezee atoms
@@ -42,32 +42,48 @@ _sys.setDefaultPeriodicBoxVectors(
 
 _int = openmm.LangevinIntegrator( 300.0, 50.0, 0.001 )
 
+#>> NPT [http://docs.openmm.org/latest/userguide/theory/02_standard_forces.html#montecarlobarostat]
+#_sys.addForce( openmm.openmm.MonteCarloBarostat( 1.0 * openmm.unit.atmosphere, 300.0, 25 ) )
+
 
 #>> OpenCL
 _sim = openmm.app.Simulation( _top.topology, _sys, _int, openmm.Platform.getPlatformByName( "OpenCL" ) )
-
 
 #>> CUDA (two cards)
 #_sim = openmm.app.Simulation( _top.topology, _sys, _int,
 #    openmm.Platform.getPlatformByName( "CUDA" ), { "CudaDeviceIndex": "0,1" } )
 
 
-#>> from PDB
+#>> load PDB
 _sim.context.setPositions( openmm.app.pdbfile.PDBFile( "start.pdb" ).getPositions() )
 
-
-#>> from XYZ
+#>> parse XYZ: OpenMM expects the origin at one of the edges...
 #crd = []
 #with open( "start.xyz", "rt" ) as f:
 #    f.readline(); f.readline()
 #    for l in f:
 #        t = l.split()
+# -------------------------------------------------------------------------------------
 #        crd.append( openmm.Vec3( float( t[1] ), float( t[2] ), float( t[3] ) ) )
 #_sim.context.setPositions( openmm.unit.quantity.Quantity( crd, openmm.unit.angstrom ) )
+# -------------------------------------------------------------------------------------
+#        crd.append( [ float( t[1] ), float( t[2] ), float( t[3] ) ] ) 
+#crd = numpy.array( crd )
+#crd -= numpy.min( crd, axis = 0 )
+#crd /= 10.0
+#_sim.context.setPositions( crd.tolist() )
+# -------------------------------------------------------------------------------------
 
-_sim.reporters.append( openmm.app.dcdreporter.DCDReporter( "last.dcd", 1000, enforcePeriodicBox = False ) )
+
+#>> 100 ps NPT
+#_sim.reporters.append( openmm.app.dcdreporter.DCDReporter( "last.dcd", 100, enforcePeriodicBox = True ) )
+#_sim.reporters.append( openmm.app.statedatareporter.StateDataReporter( sys.stdout, 100,
+#    time = True, potentialEnergy = True, temperature = True, volume = True ) )
+#_sim.step( 100000 )
+
+
+#>> 10 ns NVT
+_sim.reporters.append( openmm.app.dcdreporter.DCDReporter( "last.dcd", 1000, enforcePeriodicBox = True ) )
 _sim.reporters.append( openmm.app.statedatareporter.StateDataReporter( sys.stdout, 1000,
     time = True, potentialEnergy = True, temperature = True ) )
-
-# 10 ns
 _sim.step( 10000000 )
