@@ -48,7 +48,7 @@ class run( object ):
                 # charmm (cmap)
                 elif( type( cur ) == openmm.CMAPTorsionForce ):
                     if( cur.getNumTorsions() > 0 ):
-                        print( ">> there are charmm-cmaps defined...(and unhandled!)" )
+                        print( ">> there are charmm-cmaps defined... (and unhandled!)" )
 #                    for i in range( cur.getNumTorsions() ):
 #                        tmp = cur.getTorsionParameters( i )
 #                        if( msk[tmp[0]] + msk[tmp[1]] + msk[tmp[2]] + msk[tmp[3]] >= 3 ):

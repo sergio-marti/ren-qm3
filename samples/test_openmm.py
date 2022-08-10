@@ -90,3 +90,5 @@ else:
     mol.get_grad()
     print( round( mol.func, 1 ), "/ -23323.1" )
     print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 1127.8" )
+
+print( mol.grad[0:19,:] )
