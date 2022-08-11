@@ -49,7 +49,7 @@ with open( sys.argv[1], "rt" ) as f:
                 l = f.readline()
                 t = l.split()
             bnd += 1
-            sys.stdout.write( " " + str( bnd ) + " 0.0 0.0 # >> HARMONIC\n" )
+            sys.stdout.write( " " + str( bnd ) + " 0.0 0.0 # [QM] HARMONIC\n" )
             sys.stdout.write( l )
         elif( len( k ) > 0 and k[0].lower() == "bonds" ):
             sys.stdout.write( l )
@@ -81,7 +81,7 @@ with open( sys.argv[1], "rt" ) as f:
                 l = f.readline()
                 t = l.split()
             ang += 1
-            sys.stdout.write( " " + str( ang ) + " 0.0 0.0 0 0 # >> CHARMM\n" )
+            sys.stdout.write( " " + str( ang ) + " 0.0 0.0 0 0 # [QM] CHARMM\n" )
             sys.stdout.write( l )
         elif( len( k ) > 0 and k[0].lower() == "angles" ):
             sys.stdout.write( l )
@@ -113,7 +113,7 @@ with open( sys.argv[1], "rt" ) as f:
                 l = f.readline()
                 t = l.split()
             dih += 1
-            sys.stdout.write( " " + str( dih ) + " 0.0 0 0 0 # >> CHARMM\n" )
+            sys.stdout.write( " " + str( dih ) + " 0.0 0 0 0 # [QM] CHARMM\n" )
             sys.stdout.write( l )
         elif( len( k ) > 0 and k[0].lower() == "dihedrals" ):
             sys.stdout.write( l )
@@ -145,7 +145,7 @@ with open( sys.argv[1], "rt" ) as f:
                 l = f.readline()
                 t = l.split()
             imp += 1
-            sys.stdout.write( " " + str( imp ) + " 0.0 180 # >> HARMONIC\n" )
+            sys.stdout.write( " " + str( imp ) + " 0.0 180 # [QM] HARMONIC\n" )
             sys.stdout.write( l )
         elif( len( k ) > 0 and k[0].lower() == "impropers" ):
             sys.stdout.write( l )
