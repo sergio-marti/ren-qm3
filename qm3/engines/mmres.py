@@ -356,9 +356,13 @@ class colvar_s( object ):
     WIREs Comput. Mol. Sci. v8 (2018) [10.1002/wcms.1329]
     """
     def __init__( self, mol: object, kumb: float, xref: float,
-            str_cnf: typing.IO, str_crd: typing.IO, str_met: typing.IO ):
+            str_cnf: typing.IO,
+            str_crd: typing.IO,
+            str_met: typing.IO,
+            masses: typing.Optional[bool] = False ):
         self.xref = xref
         self.kumb = kumb
+        self.qmas = masses
         # parse config
         tmp = str_cnf.readline().strip().split()
         self.ncrd = int( tmp[0] )
@@ -396,12 +400,18 @@ class colvar_s( object ):
             mat = numpy.linalg.inv( mat )
             self.arcl[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( mat, vec ) ) )
         self.delz = self.arcl.sum() / float( self.nwin - 1.0 )
-        print( "Colective variable s range: [%.3lf - %.3lf: %.6lf] _Ang amu^0.5"%( 0.0, self.arcl.sum(), self.delz ) )
+        if( self.qmas ):
+            print( "Colective variable s range: [%.3lf - %.3lf: %.6lf] _Ang amu^0.5"%( 0.0, self.arcl.sum(), self.delz ) )
+        else:
+            print( "Colective variable s range: [%.3lf - %.3lf: %.6lf] _Ang"%( 0.0, self.arcl.sum(), self.delz ) )
         # store inverse (constant) metrics
         for i in range( self.nwin ):
             self.rmet[i] = numpy.linalg.inv( self.rmet[i].reshape( ( self.ncrd, self.ncrd ) ) ).ravel()
         # store the square root of the masses
-        self.sqms = numpy.sqrt( mol.mass[list( self.jidx.keys() )] )
+        if( self.qmas ):
+            self.sqms = numpy.sqrt( mol.mass[list( self.jidx.keys() )] )
+        else:
+            self.sqms = numpy.ones( len( self.jidx ), dtype=numpy.float64 )
         self.sqms = numpy.column_stack( ( self.sqms, self.sqms, self.sqms ) ).reshape( ( self.jcol // 3, 3 ) )
 
 
@@ -421,7 +431,10 @@ class colvar_s( object ):
 
     def metrics( self, mol: object ) -> numpy.array:
         ccrd, jaco = self.get_jaco( mol )
-        mass = mol.mass[list( self.jidx.keys() )]
+        if( self.qmas ):
+            mass = mol.mass[list( self.jidx.keys() )]
+        else:
+            mass = numpy.ones( len( self.jidx ), dtype=numpy.float64 )
         mass = numpy.column_stack( ( mass, mass, mass ) ).reshape( self.jcol )
         cmet = numpy.zeros( ( self.ncrd, self.ncrd ), dtype=numpy.float64 )
         for i in range( self.ncrd ):
