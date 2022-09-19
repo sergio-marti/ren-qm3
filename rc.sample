@@ -9,3 +9,6 @@ export PYTHONPATH=$MPLTK:$PYTHONPATH
 lmp=/Users/smarti/Devel/lammps
 export DYLD_LIBRARY_PATH=$lmp:$DYLD_LIBRARY_PATH
 export PYTHONPATH=$lmp/github/python/build/lib:$PYTHONPATH
+
+#export DYLD_LIBRARY_PATH=/Users/smarti/Devel/plumed2/dist/lib:$DYLD_LIBRARY_PATH
+export PYTHONPATH=/Users/smarti/Devel/plumed2/dist/lib/plumed/python:$PYTHONPATH
