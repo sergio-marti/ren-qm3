@@ -145,7 +145,7 @@ static PyObject* __read( PyObject *self, PyObject *args ) {
 static PyObject* __next( PyObject *self, PyObject *args ) {
 	PyObject		*o_mol, *o_crd;
 	PyArrayObject	*n_crd;
-	double			*ptr;
+	double			*ptr; //, box[6];
     float       	blk;
     long        	i, j, k;
     oDCD        	*obj = NULL;
@@ -165,6 +165,9 @@ static PyObject* __next( PyObject *self, PyObject *args ) {
             	printf( "* End-Of-File reached...\n" );
                 Py_INCREF( Py_False ); return( Py_False );
             }
+//for( i = 0; i < 12; i++ ) __swap( obj->swap, &(obj->buff[4*i]) );
+//for( k = 4, i = 0; i < 6; i++ ) { memcpy( &(box[i]), &(obj->buff[k]), 8 ); k += 8; }
+//fprintf(stderr,"[box] %10.3lf%10.3lf%10.3lf%10.3lf%10.3lf%10.3lf\n", box[0], box[1], box[2], box[3], box[4], box[5] );
         }
 		o_crd = PyObject_GetAttrString( o_mol, "coor" );
 		n_crd = (PyArrayObject*) PyArray_FROM_OT( o_crd, NPY_DOUBLE );
