@@ -3,6 +3,7 @@ cwd=/Users/smarti/Devel/ren-qm3
 export PYTHONPATH=$cwd:$PYTHONPATH
 
 MPLTK=/Users/smarti/Library/Python/3.9/lib/python/site-packages/mpl_toolkits
+#MPLTK=/Users/smarti/Library/Python/3.10/lib/python/site-packages/mpl_toolkits
 
 export PYTHONPATH=$MPLTK:$PYTHONPATH
 

@@ -100,22 +100,22 @@ class template( object ):
         raise( NotImplementedError )
 
 
-    def get_jaco( self, mol: object ) -> numpy.array:
-        raise( NotImplementedError )
+#    def get_jaco( self, mol: object ) -> numpy.array:
+#        raise( NotImplementedError )
 
 
     def get_func( self, mol: object ):
         mol.func += self.netw.get_func( self.get_info( mol ) )
 
 
-    def get_grad( self, mol: object ):
-         etmp, gtmp = self.netw.get_grad( self.get_info( mol ) )
-         grd = numpy.dot( gtmp.T, self.get_jaco( mol ) )
-         grd.shape = ( len( self.sele ), 3 )
-         mol.grad[self.sele] += grd
+#    def get_grad( self, mol: object ):
+#         etmp, gtmp = self.netw.get_grad( self.get_info( mol ) )
+#         grd = numpy.dot( gtmp.T, self.get_jaco( mol ) )
+#         grd.shape = ( len( self.sele ), 3 )
+#         mol.grad[self.sele] += grd
 
 
-    def num_grad( self, mol: object, disp: typing.Optional[float] = 1.e-3 ):
+    def get_grad( self, mol: object, disp: typing.Optional[float] = 1.e-3 ):
         mol.func += self.netw.get_func( self.get_info( mol ) )
         for i in self.sele:
             for j in [0, 1, 2]:
@@ -143,8 +143,8 @@ class coulomb( template ):
         return( qm3.engines._ml_info.coul_info( self.anum, mol.coor[self.sele] ) )
 
 
-    def get_jaco( self, mol ) -> numpy.array:
-        return( qm3.engines._ml_info.coul_jaco( self.anum, mol.coor[self.sele] ) )
+#    def get_jaco( self, mol ) -> numpy.array:
+#        return( qm3.engines._ml_info.coul_jaco( self.anum, mol.coor[self.sele] ) )
 
 # =================================================================================================
 
@@ -155,10 +155,10 @@ class acsf( template ):
 
 
     def setup( self,
-            cutx: typing.Optional[float] = 8.0,
-            eta2: typing.Optional[list] = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0],
+            cutx: typing.Optional[float] = 6.0,
+            eta2: typing.Optional[list] = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4],
             dse5: typing.Optional[float] = 1.0,
-            eta5: typing.Optional[list] = [0.1, 0.14, 0.19, 0.23, 0.28, 0.32, 0.37, 0.41, 0.46, 0.5] ):
+            eta5: typing.Optional[list] = [0.1 , 0.11, 0.12, 0.13, 0.14] ):
         self.cutx = cutx
         self.eta2 = eta2
         self.dse5 = dse5

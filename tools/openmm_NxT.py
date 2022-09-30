@@ -80,6 +80,7 @@ _sim.context.setPositions( openmm.app.pdbfile.PDBFile( "start.pdb" ).getPosition
 #_sim.reporters.append( openmm.app.statedatareporter.StateDataReporter( sys.stdout, 100,
 #    time = True, potentialEnergy = True, temperature = True, volume = True ) )
 #_sim.step( 100000 )
+#print( _sim.context.getState( getEnergy = False, getForces = False ).getPeriodicBoxVectors() )
 
 
 #>> 10 ns NVT
