@@ -1,0 +1,17 @@
+from distutils.core import setup, Extension
+
+import	numpy
+
+plumed = "/Users/smarti/Devel/plumed2/dist"
+
+setup( 
+	name = "Plumed hooks", 
+	ext_modules = [ 
+		Extension( "_plumed",
+			sources = [ "qm3/engines/plumed.c" ],
+			include_dirs = [ plumed + "/include/plumed/wrapper", plumed + "/include", numpy.get_include() ],
+			library_dirs = [ plumed + "/lib" ],
+			libraries = [ "plumed" ]
+		)
+	]
+)

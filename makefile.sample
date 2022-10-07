@@ -1,7 +1,7 @@
 include config
 
 
-all: dcd grids ml_info _cgplus.so _lbfgsb.so lapack_deps.o _mopac.so
+all: dcd conn cions grids ml_info _cgplus.so _lbfgsb.so lapack_deps.o _mopac.so
 
 
 dcd:
@@ -14,6 +14,10 @@ grids:
 
 conn:
 	$(PYX) setup/conn build_ext --build-lib qm3/utils
+
+
+cions:
+	$(PYX) setup/cions build_ext --build-lib qm3/utils
 
 
 mpi:
