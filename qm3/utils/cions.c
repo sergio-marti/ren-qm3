@@ -68,7 +68,7 @@ static void* charge_potential( void *range ) {
 static PyObject* cions( PyObject *self, PyObject *args ) {
     PyObject        *o_mole, *o_coor, *o_chrg;
     PyArrayObject   *m_coor, *m_chrg, *m_pnts;
-    long            num, siz, cpu, *dim;
+    long            num, siz, cpu, *dim, xxx[2];
     long            i, j, k, ix, iy, iz, i_rad, I_rad, ii, jj, kk, l;
     double          d_ion, d_prt;
     double          rp, *ptr;
@@ -99,7 +99,7 @@ fprintf( stderr, "+ N.CPUs: %ld\n+ N.Ions: %ld\n+ Charge: %.1lf\n+ d_grd :%8.3lf
         ptr = (double*) PyArray_GETPTR2( m_coor, 0, 0 ); min_x = rx = m_x[0] = *ptr;
         ptr = (double*) PyArray_GETPTR2( m_coor, 0, 1 ); min_y = ry = m_y[0] = *ptr;
         ptr = (double*) PyArray_GETPTR2( m_coor, 0, 2 ); min_z = rz = m_z[0] = *ptr;
-        ptr = (double*) PyArray_GETPTR1( m_chrg, 0 ); m_q[0] = *ptr;
+        ptr = (double*) PyArray_GETPTR1( m_chrg, 0 );                 m_q[0] = *ptr;
         for( i = 1; i < nat; i++ ) {
             ptr = (double*) PyArray_GETPTR2( m_coor, i, 0 ); m_x[i] = *ptr;
             min_x = min( min_x, m_x[i] ); rx = max( rx, m_x[i] );
@@ -107,7 +107,7 @@ fprintf( stderr, "+ N.CPUs: %ld\n+ N.Ions: %ld\n+ Charge: %.1lf\n+ d_grd :%8.3lf
             min_y = min( min_y, m_y[i] ); ry = max( ry, m_y[i] );
             ptr = (double*) PyArray_GETPTR2( m_coor, i, 2 ); m_z[i] = *ptr;
             min_z = min( min_z, m_z[i] ); rz = max( rz, m_z[i] );
-            ptr = (double*) PyArray_GETPTR1( m_chrg, i ); m_q[i] = *ptr;
+            ptr = (double*) PyArray_GETPTR1( m_chrg, i );    m_q[i] = *ptr;
         }
         Py_DECREF( o_coor );
         Py_DECREF( o_chrg );
@@ -164,9 +164,8 @@ fprintf( stderr, "done!\n" );
         free( m_x ); free( m_y ); free( m_z ); free( m_q );
 
         // start placing ions...
-        free( dim ); dim = (long*) malloc( 2 * sizeof( long ) );
-        dim[0] = num; dim[1] = 3;
-        m_pnts = (PyArrayObject*) PyArray_ZEROS( 2, dim, NPY_DOUBLE, 0 );
+        xxx[0] = num; xxx[1] = 3;
+        m_pnts = (PyArrayObject*) PyArray_ZEROS( 2, xxx, NPY_DOUBLE, 0 );
 for( i = 0; i < 11; i++ ) ptje[i] = 0;
         i_rad = (long) ( d_ion / d_grd );
         I_rad = i_rad * i_rad;
