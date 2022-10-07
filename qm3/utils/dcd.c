@@ -20,216 +20,216 @@ void __swap( long flg, char* txt ) {
 
 
 typedef struct {
-	PyObject_HEAD
-	FILE	*fdes;
-	long	natm, free, curr, head, crys, *sele, fsiz, swap;
-	char	*buff, fnam[2048];
+    PyObject_HEAD
+    FILE    *fdes;
+    long    natm, free, curr, head, crys, *sele, fsiz, swap;
+    char    *buff, fnam[2048];
 } oDCD;
 
 
 static int __init( oDCD *self, PyObject *args, PyObject *kwds ) {
-	return( 0 );
+    return( 0 );
 }
 
 
 static PyObject* __new( PyTypeObject *type, PyObject *args, PyObject *kwds ) {
-	oDCD		*self;
+    oDCD        *self;
 
-	self = (oDCD*) type->tp_alloc( type, 0 );
-	self->fdes = NULL;
-	self->natm = 0;
-	self->free = 0;
-	self->curr = 0;
-	self->head = 0;
-	self->crys = 0;
-	self->sele = NULL;
-	self->fsiz = 0;
-	self->buff = NULL;
-	self->swap = 0;
+    self = (oDCD*) type->tp_alloc( type, 0 );
+    self->fdes = NULL;
+    self->natm = 0;
+    self->free = 0;
+    self->curr = 0;
+    self->head = 0;
+    self->crys = 0;
+    self->sele = NULL;
+    self->fsiz = 0;
+    self->buff = NULL;
+    self->swap = 0;
     bzero( self->fnam, 2048 );
-	return( (PyObject*) self ) ;
+    return( (PyObject*) self ) ;
 }
 
 
 static void __dealloc( oDCD *self ) {
-	free( self->sele );
-	free( self->buff );
-	self->fdes = NULL;
-	self->natm = 0;
-	self->free = 0;
-	self->curr = 0;
-	self->head = 0;
-	self->crys = 0;
-	self->sele = NULL;
-	self->fsiz = 0;
-	self->buff = NULL;
-	self->swap = 0;
+    free( self->sele );
+    free( self->buff );
+    self->fdes = NULL;
+    self->natm = 0;
+    self->free = 0;
+    self->curr = 0;
+    self->head = 0;
+    self->crys = 0;
+    self->sele = NULL;
+    self->fsiz = 0;
+    self->buff = NULL;
+    self->swap = 0;
     bzero( self->fnam, 2048 );
-	Py_TYPE( self )->tp_free( (PyObject*) self );
+    Py_TYPE( self )->tp_free( (PyObject*) self );
 }
 
 
 static PyObject* __read( PyObject *self, PyObject *args ) {
-	PyObject	*o_flg;
-	char		*fname, buf[2048];
-	oDCD		*obj = NULL;
-	int			blk;
-	long		i, tmp, fix, nfr = 0;
-	struct stat	inf;
+    PyObject    *o_flg;
+    char        *fname, buf[2048];
+    oDCD        *obj = NULL;
+    int         blk;
+    long        i, tmp, fix, nfr = 0;
+    struct stat inf;
 
-	obj = (oDCD*) self;
-	o_flg = Py_True;
-	if( PyArg_ParseTuple( args, "s|O", &fname, &o_flg ) ) {
-		obj->fdes = fopen( fname, "rb" );
-		if( obj->fdes == NULL ) { Py_INCREF( Py_None ); return( Py_None ); }
-		stat( fname, &inf );
-		obj->fsiz = (long) inf.st_size;
-		if( o_flg == Py_True ) {
-			printf( "* [%s] ", fname );
-			for( i = 0; i < 55 - (long)strlen( fname ); i++ ) printf( "-" );
-			printf( "\n" );
-		}
+    obj = (oDCD*) self;
+    o_flg = Py_True;
+    if( PyArg_ParseTuple( args, "s|O", &fname, &o_flg ) ) {
+        obj->fdes = fopen( fname, "rb" );
+        if( obj->fdes == NULL ) { Py_INCREF( Py_None ); return( Py_None ); }
+        stat( fname, &inf );
+        obj->fsiz = (long) inf.st_size;
+        if( o_flg == Py_True ) {
+            printf( "* [%s] ", fname );
+            for( i = 0; i < 55 - (long)strlen( fname ); i++ ) printf( "-" );
+            printf( "\n" );
+        }
         fread( buf, 1, 4, obj->fdes ); memcpy( &blk, &buf[0], 4 );
-		if( blk == 84 ) { 
-			obj->swap = 0;
-			if( o_flg == Py_True ) { printf( "+ \tSame Endian\n" ); }
-		} else {
-			obj->swap = 1;
-			if( o_flg == Py_True ) { printf( "+ \tSwapping Endian\n" ); }
-		}
-		fread( buf, 1, 4, obj->fdes );
-		fread( buf, 1, 4, obj->fdes ); __swap( obj->swap, buf ); memcpy( &blk, &buf[0], 4 );
-		nfr = (long) blk;
-		if( o_flg == Py_True ) { printf( "+ \tNFrames: %ld\n", nfr ); }
-		fread( buf, 1, 28, obj->fdes );
-		fread( buf, 1, 4, obj->fdes ); __swap( obj->swap, buf ); memcpy( &blk, &buf[0], 4 );
-		fix = (long) blk;
-		fread( buf, 1, 4, obj->fdes );
-		fread( buf, 1, 4, obj->fdes ); __swap( obj->swap, buf ); memcpy( &blk, &buf[0], 4 );
-		obj->crys = (long) blk;
-		fread( buf, 1, 40, obj->fdes );
-		fread( buf, 1, 4, obj->fdes ); __swap( obj->swap, buf ); memcpy( &blk, &buf[0], 4 );
-		tmp = 8 + (long) blk;
-		fread( buf, 1, tmp, obj->fdes );
-		fread( buf, 1, 4, obj->fdes ); __swap( obj->swap, buf ); memcpy( &blk, &buf[0], 4 );
-		obj->natm = (long) blk;
-		if( o_flg == Py_True ) { printf( "+ \tAtoms: %ld\n", obj->natm ); }
-		fread( buf, 1, 4, obj->fdes );
-		obj->free = obj->natm - (long)fix;
-		if( fix > 0 ) {
-			obj->sele = (long*) malloc( obj->free * sizeof( long ) );
-			if( o_flg == Py_True ) {
-				printf( "+ \tFixed Atoms: %ld\n", (long)fix );
-				printf( "+ \tFree  Atoms: %ld\n", obj->free );
-			}
-			fread( buf, 1, 4, obj->fdes );
-			for( i = 0; i < obj->free; i++ ) {
-				fread( buf, 1, 4, obj->fdes ); __swap( obj->swap, buf ); memcpy( &blk, &buf[0], 4 );
-				obj->sele[i] = (long) blk - 1;
+        if( blk == 84 ) { 
+            obj->swap = 0;
+            if( o_flg == Py_True ) { printf( "+ \tSame Endian\n" ); }
+        } else {
+            obj->swap = 1;
+            if( o_flg == Py_True ) { printf( "+ \tSwapping Endian\n" ); }
+        }
+        fread( buf, 1, 4, obj->fdes );
+        fread( buf, 1, 4, obj->fdes ); __swap( obj->swap, buf ); memcpy( &blk, &buf[0], 4 );
+        nfr = (long) blk;
+        if( o_flg == Py_True ) { printf( "+ \tNFrames: %ld\n", nfr ); }
+        fread( buf, 1, 28, obj->fdes );
+        fread( buf, 1, 4, obj->fdes ); __swap( obj->swap, buf ); memcpy( &blk, &buf[0], 4 );
+        fix = (long) blk;
+        fread( buf, 1, 4, obj->fdes );
+        fread( buf, 1, 4, obj->fdes ); __swap( obj->swap, buf ); memcpy( &blk, &buf[0], 4 );
+        obj->crys = (long) blk;
+        fread( buf, 1, 40, obj->fdes );
+        fread( buf, 1, 4, obj->fdes ); __swap( obj->swap, buf ); memcpy( &blk, &buf[0], 4 );
+        tmp = 8 + (long) blk;
+        fread( buf, 1, tmp, obj->fdes );
+        fread( buf, 1, 4, obj->fdes ); __swap( obj->swap, buf ); memcpy( &blk, &buf[0], 4 );
+        obj->natm = (long) blk;
+        if( o_flg == Py_True ) { printf( "+ \tAtoms: %ld\n", obj->natm ); }
+        fread( buf, 1, 4, obj->fdes );
+        obj->free = obj->natm - (long)fix;
+        if( fix > 0 ) {
+            obj->sele = (long*) malloc( obj->free * sizeof( long ) );
+            if( o_flg == Py_True ) {
+                printf( "+ \tFixed Atoms: %ld\n", (long)fix );
+                printf( "+ \tFree  Atoms: %ld\n", obj->free );
+            }
+            fread( buf, 1, 4, obj->fdes );
+            for( i = 0; i < obj->free; i++ ) {
+                fread( buf, 1, 4, obj->fdes ); __swap( obj->swap, buf ); memcpy( &blk, &buf[0], 4 );
+                obj->sele[i] = (long) blk - 1;
 
-			}
-			fread( buf, 1, 4, obj->fdes );
-		}
-		obj->curr = 0;
-		obj->head = ftell( obj->fdes );
-		if( o_flg == Py_True )
-			{ printf( "------------------------------------------------------------\n" ); }
-		obj->buff = (char*) malloc( 4 * obj->natm * sizeof( char ) );
-    	bzero( obj->fnam, 2048 );
-	}
+            }
+            fread( buf, 1, 4, obj->fdes );
+        }
+        obj->curr = 0;
+        obj->head = ftell( obj->fdes );
+        if( o_flg == Py_True )
+            { printf( "------------------------------------------------------------\n" ); }
+        obj->buff = (char*) malloc( 4 * obj->natm * sizeof( char ) );
+        bzero( obj->fnam, 2048 );
+    }
 
-	return(  Py_BuildValue( "l", nfr ) );
+    return(  Py_BuildValue( "l", nfr ) );
 }
 
 
 static PyObject* __next( PyObject *self, PyObject *args ) {
-	PyObject		*o_mol, *o_crd;
-	PyArrayObject	*n_crd;
-	double			*ptr; //, box[6];
-    float       	blk;
-    long        	i, j, k;
-    oDCD        	*obj = NULL;
+    PyObject        *o_mol, *o_crd;
+    PyArrayObject   *n_crd;
+    double          *ptr; //, box[6];
+    float           blk;
+    long            i, j, k;
+    oDCD            *obj = NULL;
 
     obj = (oDCD*) self;
-	if( PyArg_ParseTuple( args, "O", &o_mol ) ) {
-		if( obj->fdes == NULL ) {
+    if( PyArg_ParseTuple( args, "O", &o_mol ) ) {
+        if( obj->fdes == NULL ) {
             printf( "* No DCD open...\n" );
             Py_INCREF( Py_False ); return( Py_False );
-		}
+        }
         if( fread( obj->buff, 1, 4, obj->fdes ) < 4 ) {
             printf( "* End-Of-File reached...\n" );
             Py_INCREF( Py_False ); return( Py_False );
         }
         if( obj->crys == 1 ) {
             if( fread( obj->buff, 1, 56, obj->fdes ) < 56 ) {
-            	printf( "* End-Of-File reached...\n" );
+                printf( "* End-Of-File reached...\n" );
                 Py_INCREF( Py_False ); return( Py_False );
             }
 //for( i = 0; i < 12; i++ ) __swap( obj->swap, &(obj->buff[4*i]) );
 //for( k = 4, i = 0; i < 6; i++ ) { memcpy( &(box[i]), &(obj->buff[k]), 8 ); k += 8; }
 //fprintf(stderr,"[box] %10.3lf%10.3lf%10.3lf%10.3lf%10.3lf%10.3lf\n", box[0], box[1], box[2], box[3], box[4], box[5] );
         }
-		o_crd = PyObject_GetAttrString( o_mol, "coor" );
-		n_crd = (PyArrayObject*) PyArray_FROM_OT( o_crd, NPY_DOUBLE );
+        o_crd = PyObject_GetAttrString( o_mol, "coor" );
+        n_crd = (PyArrayObject*) PyArray_FROM_OT( o_crd, NPY_DOUBLE );
         if( obj->natm != obj->free && obj->curr > 0 ) {
-    		k = 4 * obj->free;
-    		if( obj->fsiz - ftell( obj->fdes ) - 20 - 3 * k < 0 ) {
-            	printf( "* End-Of-File reached...\n" );
+            k = 4 * obj->free;
+            if( obj->fsiz - ftell( obj->fdes ) - 20 - 3 * k < 0 ) {
+                printf( "* End-Of-File reached...\n" );
                 Py_INCREF( Py_False ); return( Py_False );
-    		}
-    		fread( obj->buff, 1, k, obj->fdes );
-    		for( i = 0, j = 0; i < obj->free; i++, j += 4 ) {
-				__swap( obj->swap, &(obj->buff[j]) ); memcpy( &blk, &(obj->buff[j]), 4 );
-				ptr = (double*) PyArray_GETPTR2( n_crd, obj->sele[i], 0 );
-				*ptr = (double) blk;
-    		}
-    		fread( obj->buff, 1, 8, obj->fdes );
-    		fread( obj->buff, 1, k, obj->fdes );
-    		for( i = 0, j = 0; i < obj->free; i++, j += 4 ) {
-				__swap( obj->swap, &(obj->buff[j]) ); memcpy( &blk, &(obj->buff[j]), 4 );
-				ptr = (double*) PyArray_GETPTR2( n_crd, obj->sele[i], 1 );
-				*ptr = (double) blk;
-    		}
-    		fread( obj->buff, 1, 8, obj->fdes );
-    		fread( obj->buff, 1, k, obj->fdes );
-    		for( i = 0, j = 0; i < obj->free; i++, j += 4 ) {
-				__swap( obj->swap, &(obj->buff[j]) ); memcpy( &blk, &(obj->buff[j]), 4 );
-				ptr = (double*) PyArray_GETPTR2( n_crd, obj->sele[i], 2 );
-				*ptr = (double) blk;
-    		}
-    		fread( obj->buff, 1, 4, obj->fdes );
-		} else {
-    		k = 4 * obj->natm;
-    		if( obj->fsiz - ftell( obj->fdes ) - 20 - 3 * k < 0 ) {
-            	printf( "* End-Of-File reached...\n" );
+            }
+            fread( obj->buff, 1, k, obj->fdes );
+            for( i = 0, j = 0; i < obj->free; i++, j += 4 ) {
+                __swap( obj->swap, &(obj->buff[j]) ); memcpy( &blk, &(obj->buff[j]), 4 );
+                ptr = (double*) PyArray_GETPTR2( n_crd, obj->sele[i], 0 );
+                *ptr = (double) blk;
+            }
+            fread( obj->buff, 1, 8, obj->fdes );
+            fread( obj->buff, 1, k, obj->fdes );
+            for( i = 0, j = 0; i < obj->free; i++, j += 4 ) {
+                __swap( obj->swap, &(obj->buff[j]) ); memcpy( &blk, &(obj->buff[j]), 4 );
+                ptr = (double*) PyArray_GETPTR2( n_crd, obj->sele[i], 1 );
+                *ptr = (double) blk;
+            }
+            fread( obj->buff, 1, 8, obj->fdes );
+            fread( obj->buff, 1, k, obj->fdes );
+            for( i = 0, j = 0; i < obj->free; i++, j += 4 ) {
+                __swap( obj->swap, &(obj->buff[j]) ); memcpy( &blk, &(obj->buff[j]), 4 );
+                ptr = (double*) PyArray_GETPTR2( n_crd, obj->sele[i], 2 );
+                *ptr = (double) blk;
+            }
+            fread( obj->buff, 1, 4, obj->fdes );
+        } else {
+            k = 4 * obj->natm;
+            if( obj->fsiz - ftell( obj->fdes ) - 20 - 3 * k < 0 ) {
+                printf( "* End-Of-File reached...\n" );
                 Py_INCREF( Py_False ); return( Py_False );
-    		}
-    		fread( obj->buff, 1, k, obj->fdes );
-    		for( i = 0, j = 0; i < obj->natm; i++, j += 4 ) {
-				__swap( obj->swap, &(obj->buff[j]) ); memcpy( &blk, &(obj->buff[j]), 4 );
-				ptr = (double*) PyArray_GETPTR2( n_crd, i, 0 );
-				*ptr = (double) blk;
-    		}
-    		fread( obj->buff, 1, 8, obj->fdes );
-    		fread( obj->buff, 1, k, obj->fdes );
-    		for( i = 0, j = 0; i < obj->natm; i++, j += 4 ) {
-				__swap( obj->swap, &(obj->buff[j]) ); memcpy( &blk, &(obj->buff[j]), 4 );
-				ptr = (double*) PyArray_GETPTR2( n_crd, i, 1 );
-				*ptr = (double) blk;
-    		}
-    		fread( obj->buff, 1, 8, obj->fdes );
-    		fread( obj->buff, 1, k, obj->fdes );
-    		for( i = 0, j = 0; i < obj->natm; i++, j += 4 ) {
-				__swap( obj->swap, &(obj->buff[j]) ); memcpy( &blk, &(obj->buff[j]), 4 );
-				ptr = (double*) PyArray_GETPTR2( n_crd, i, 2 );
-				*ptr = (double) blk;
-    		}
-    		fread( obj->buff, 1, 4, obj->fdes );
-		}
-		Py_DECREF( n_crd );
-		Py_DECREF( o_crd );
-    	obj->curr += 1;
-	}
+            }
+            fread( obj->buff, 1, k, obj->fdes );
+            for( i = 0, j = 0; i < obj->natm; i++, j += 4 ) {
+                __swap( obj->swap, &(obj->buff[j]) ); memcpy( &blk, &(obj->buff[j]), 4 );
+                ptr = (double*) PyArray_GETPTR2( n_crd, i, 0 );
+                *ptr = (double) blk;
+            }
+            fread( obj->buff, 1, 8, obj->fdes );
+            fread( obj->buff, 1, k, obj->fdes );
+            for( i = 0, j = 0; i < obj->natm; i++, j += 4 ) {
+                __swap( obj->swap, &(obj->buff[j]) ); memcpy( &blk, &(obj->buff[j]), 4 );
+                ptr = (double*) PyArray_GETPTR2( n_crd, i, 1 );
+                *ptr = (double) blk;
+            }
+            fread( obj->buff, 1, 8, obj->fdes );
+            fread( obj->buff, 1, k, obj->fdes );
+            for( i = 0, j = 0; i < obj->natm; i++, j += 4 ) {
+                __swap( obj->swap, &(obj->buff[j]) ); memcpy( &blk, &(obj->buff[j]), 4 );
+                ptr = (double*) PyArray_GETPTR2( n_crd, i, 2 );
+                *ptr = (double) blk;
+            }
+            fread( obj->buff, 1, 4, obj->fdes );
+        }
+        Py_DECREF( n_crd );
+        Py_DECREF( o_crd );
+        obj->curr += 1;
+    }
 
     Py_INCREF( Py_True );
     return( Py_True );
@@ -250,8 +250,8 @@ static PyObject* __close( PyObject *self, PyObject *args ) {
         fwrite( buf, 1, 4, fd );
         fseek( fd, 20, SEEK_SET );
         fwrite( buf, 1, 4, fd );
-		fclose( fd );
-    	bzero( obj->fnam, 2048 );
+        fclose( fd );
+        bzero( obj->fnam, 2048 );
     }
     Py_INCREF( Py_None );
     return( Py_None );
@@ -263,17 +263,17 @@ static PyObject* __goto( PyObject *self, PyObject *args ) {
     oDCD        *obj = NULL;
 
     obj = (oDCD*) self;
-	if( PyArg_ParseTuple( args, "l", &num ) ) {
-		if( obj->fdes != NULL && num >= 0 ) {
-			if( obj->natm != obj->free && num > 1 ) {
+    if( PyArg_ParseTuple( args, "l", &num ) ) {
+        if( obj->fdes != NULL && num >= 0 ) {
+            if( obj->natm != obj->free && num > 1 ) {
                 dsp = 4 + obj->crys * 56 + 3 * 4 * obj->free + 20;
-			} else {
+            } else {
                 dsp = 4 + obj->crys * 56 + 3 * 4 * obj->natm + 20;
-			}
-			obj->curr = num;
-        	fseek( obj->fdes, obj->head + dsp * num, SEEK_SET );
-		}
-	}
+            }
+            obj->curr = num;
+            fseek( obj->fdes, obj->head + dsp * num, SEEK_SET );
+        }
+    }
     Py_INCREF( Py_None );
     return( Py_None );
 }
@@ -331,94 +331,94 @@ static PyObject* __write( PyObject *self, PyObject *args ) {
         blk = 4; memcpy( &buf[0], &blk, 4 ); fwrite( buf, 1, 4, obj->fdes );
         blk = (int) natom; memcpy( &buf[0], &blk, 4 ); fwrite( buf, 1, 4, obj->fdes );
         blk = 4; memcpy( &buf[0], &blk, 4 ); fwrite( buf, 1, 4, obj->fdes );
-		if( obj->sele != NULL ) {
-        	blk = (int)( 4 * obj->free ); memcpy( &buf[0], &blk, 4 ); fwrite( buf, 1, 4, obj->fdes );
-			for( i = 0; i < obj->free; i++ ) {
-				blk = (int)( obj->sele[i] + 1 ); memcpy( &buf[0], &blk, 4 ); fwrite( buf, 1, 4, obj->fdes );
-			}
-        	blk = (int)( 4 * obj->free ); memcpy( &buf[0], &blk, 4 ); fwrite( buf, 1, 4, obj->fdes );
-		}
+        if( obj->sele != NULL ) {
+            blk = (int)( 4 * obj->free ); memcpy( &buf[0], &blk, 4 ); fwrite( buf, 1, 4, obj->fdes );
+            for( i = 0; i < obj->free; i++ ) {
+                blk = (int)( obj->sele[i] + 1 ); memcpy( &buf[0], &blk, 4 ); fwrite( buf, 1, 4, obj->fdes );
+            }
+            blk = (int)( 4 * obj->free ); memcpy( &buf[0], &blk, 4 ); fwrite( buf, 1, 4, obj->fdes );
+        }
 
-		obj->buff = (char*) malloc( 4 * obj->natm * sizeof( char ) );
+        obj->buff = (char*) malloc( 4 * obj->natm * sizeof( char ) );
     }
-	fflush( obj->fdes );
+    fflush( obj->fdes );
     Py_INCREF( Py_None );
     return( Py_None );
 }
 
 
 static PyObject* __append( PyObject *self, PyObject *args ) {
-	PyObject		*o_mol, *o_crd;
-	PyArrayObject	*n_crd;
-	double			*ptr;
-    char        	buf[4];
-    int         	cnt;
-    float       	blk;
-    long        	i, j;
-    oDCD        	*obj = NULL;
+    PyObject        *o_mol, *o_crd;
+    PyArrayObject   *n_crd;
+    double          *ptr;
+    char            buf[4];
+    int             cnt;
+    float           blk;
+    long            i, j;
+    oDCD            *obj = NULL;
 
     obj = (oDCD*) self;
-	if( PyArg_ParseTuple( args, "O", &o_mol ) ) {
-	    if( obj->fdes == NULL ) {
-	        printf( "* No DCD open...\n" );
-	        Py_INCREF( Py_False ); return( Py_False );
-	    }
-		o_crd = PyObject_GetAttrString( o_mol, "coor" );
-		n_crd = (PyArrayObject*) PyArray_FROM_OT( o_crd, NPY_DOUBLE );
+    if( PyArg_ParseTuple( args, "O", &o_mol ) ) {
+        if( obj->fdes == NULL ) {
+            printf( "* No DCD open...\n" );
+            Py_INCREF( Py_False ); return( Py_False );
+        }
+        o_crd = PyObject_GetAttrString( o_mol, "coor" );
+        n_crd = (PyArrayObject*) PyArray_FROM_OT( o_crd, NPY_DOUBLE );
         if( obj->natm != obj->free && obj->curr > 0 ) {
             cnt = (int)( 4 * obj->free );
             memcpy( &buf[0], &cnt, 4 ); fwrite( buf, 1, 4, obj->fdes );
             for( i = 0, j = 0; i < obj->free; i++, j += 4 ) {
-				ptr = (double*) PyArray_GETPTR2( n_crd, obj->sele[i], 0 );
-				blk = (float) *ptr;
-				memcpy( &(obj->buff[j]), &blk, 4 );
+                ptr = (double*) PyArray_GETPTR2( n_crd, obj->sele[i], 0 );
+                blk = (float) *ptr;
+                memcpy( &(obj->buff[j]), &blk, 4 );
             }
-			fwrite( obj->buff, 1, cnt, obj->fdes );
+            fwrite( obj->buff, 1, cnt, obj->fdes );
             fwrite( buf, 1, 4, obj->fdes ); fwrite( buf, 1, 4, obj->fdes );
             for( i = 0, j = 0; i < obj->free; i++, j += 4 ) {
-				ptr = (double*) PyArray_GETPTR2( n_crd, obj->sele[i], 1 );
-				blk = (float) *ptr;
-				memcpy( &(obj->buff[j]), &blk, 4 );
+                ptr = (double*) PyArray_GETPTR2( n_crd, obj->sele[i], 1 );
+                blk = (float) *ptr;
+                memcpy( &(obj->buff[j]), &blk, 4 );
             }
-			fwrite( obj->buff, 1, cnt, obj->fdes );
+            fwrite( obj->buff, 1, cnt, obj->fdes );
             fwrite( buf, 1, 4, obj->fdes ); fwrite( buf, 1, 4, obj->fdes );
             for( i = 0, j = 0; i < obj->free; i++, j += 4 ) {
-				ptr = (double*) PyArray_GETPTR2( n_crd, obj->sele[i], 2 );
-				blk = (float) *ptr;
-				memcpy( &(obj->buff[j]), &blk, 4 );
+                ptr = (double*) PyArray_GETPTR2( n_crd, obj->sele[i], 2 );
+                blk = (float) *ptr;
+                memcpy( &(obj->buff[j]), &blk, 4 );
             }
-			fwrite( obj->buff, 1, cnt, obj->fdes );
+            fwrite( obj->buff, 1, cnt, obj->fdes );
             fwrite( buf, 1, 4, obj->fdes );
         } else {
             cnt = (int)( 4 * obj->natm );
             memcpy( &buf[0], &cnt, 4 ); fwrite( buf, 1, 4, obj->fdes );
             for( i = 0, j = 0; i < obj->natm; i++, j += 4 ) {
-				ptr = (double*) PyArray_GETPTR2( n_crd, i, 0 );
-				blk = (float) *ptr;
-				memcpy( &(obj->buff[j]), &blk, 4 );
+                ptr = (double*) PyArray_GETPTR2( n_crd, i, 0 );
+                blk = (float) *ptr;
+                memcpy( &(obj->buff[j]), &blk, 4 );
             }
-			fwrite( obj->buff, 1, cnt, obj->fdes );
+            fwrite( obj->buff, 1, cnt, obj->fdes );
             fwrite( buf, 1, 4, obj->fdes ); fwrite( buf, 1, 4, obj->fdes );
             for( i = 0, j = 0; i < obj->natm; i++, j += 4 ) {
-				ptr = (double*) PyArray_GETPTR2( n_crd, i, 1 );
-				blk = (float) *ptr;
-				memcpy( &(obj->buff[j]), &blk, 4 );
+                ptr = (double*) PyArray_GETPTR2( n_crd, i, 1 );
+                blk = (float) *ptr;
+                memcpy( &(obj->buff[j]), &blk, 4 );
             }
-			fwrite( obj->buff, 1, cnt, obj->fdes );
+            fwrite( obj->buff, 1, cnt, obj->fdes );
             fwrite( buf, 1, 4, obj->fdes ); fwrite( buf, 1, 4, obj->fdes );
             for( i = 0, j = 0; i < obj->natm; i++, j += 4 ) {
-				ptr = (double*) PyArray_GETPTR2( n_crd, i, 2 );
-				blk = (float) *ptr;
-				memcpy( &(obj->buff[j]), &blk, 4 );
+                ptr = (double*) PyArray_GETPTR2( n_crd, i, 2 );
+                blk = (float) *ptr;
+                memcpy( &(obj->buff[j]), &blk, 4 );
             }
-			fwrite( obj->buff, 1, cnt, obj->fdes );
+            fwrite( obj->buff, 1, cnt, obj->fdes );
             fwrite( buf, 1, 4, obj->fdes );
         }
-		Py_DECREF( n_crd );
-		Py_DECREF( o_crd );
-		obj->curr++;
-		fflush( obj->fdes );
-	}
+        Py_DECREF( n_crd );
+        Py_DECREF( o_crd );
+        obj->curr++;
+        fflush( obj->fdes );
+    }
     Py_INCREF( Py_True );
     return( Py_True );
 }
@@ -431,7 +431,7 @@ static struct PyMethodDef __methods [] = {
     { "next", (PyCFunction)__next, METH_VARARGS },
     { "goto", (PyCFunction)__goto, METH_VARARGS },
     { "append", (PyCFunction)__append, METH_VARARGS },
-	{ 0, 0, 0 }
+    { 0, 0, 0 }
 };
 
 
@@ -446,39 +446,39 @@ static struct PyMemberDef __members [] = {
 
 
 static struct PyMethodDef methods [] = {
-	{ 0, 0, 0 }
+    { 0, 0, 0 }
 };
 
 
 static PyTypeObject tDCD = {
-	PyVarObject_HEAD_INIT( NULL, 0 )
-	.tp_name = "dcd",
-	.tp_doc = "(fast) DCD IO support",
-	.tp_basicsize = sizeof( oDCD ),
-	.tp_itemsize = 0,
-	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-	.tp_new = __new,
-	.tp_init = (initproc) __init,
-	.tp_dealloc = (destructor) __dealloc,
-	.tp_members = __members,
-	.tp_methods = __methods,
+    PyVarObject_HEAD_INIT( NULL, 0 )
+    .tp_name = "dcd",
+    .tp_doc = "(fast) DCD IO support",
+    .tp_basicsize = sizeof( oDCD ),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_new = __new,
+    .tp_init = (initproc) __init,
+    .tp_dealloc = (destructor) __dealloc,
+    .tp_members = __members,
+    .tp_methods = __methods,
 };
 
 static struct PyModuleDef moddef = {
-	PyModuleDef_HEAD_INIT,
-	"_dcd",
-	NULL,
-	-1,
-	methods
+    PyModuleDef_HEAD_INIT,
+    "_dcd",
+    NULL,
+    -1,
+    methods
 };
 
 PyMODINIT_FUNC PyInit__dcd( void ) {
-	PyObject    *my_module;
+    PyObject    *my_module;
 
-	my_module = PyModule_Create( &moddef );
-	PyType_Ready( &tDCD );
+    my_module = PyModule_Create( &moddef );
+    PyType_Ready( &tDCD );
     Py_INCREF( &tDCD );
     PyModule_AddObject( my_module, "dcd", (PyObject *) &tDCD );
-	import_array();
-	return( my_module );
+    import_array();
+    return( my_module );
 }

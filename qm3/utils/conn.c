@@ -27,61 +27,61 @@ typedef struct { one_lst *idx; long siz; double thr; long *num; double *xyz; two
 
 
 void* __connectivity( void *args ) {
-    con_arg		*arg = (con_arg*) args;
-    long		i, j, i3, j3;
-    double		dr, r2;
-    two_lst		*pt2;
-    one_lst		*pt1;
+    con_arg     *arg = (con_arg*) args;
+    long        i, j, i3, j3;
+    double      dr, r2;
+    two_lst     *pt2;
+    one_lst     *pt1;
 
     pt2 = arg->bnd;
     for( pt1 = arg->idx; pt1 != NULL ; pt1 = pt1->n ) {
         i = pt1->i;
-		for( j = i + 1; j < arg->siz; j++ ) {
-    		if( arg->num[i] == 1 && arg->num[j] == 1 ) { continue; }
-	    	i3  = 3 * i;
-	    	j3  = 3 * j;
-	    	r2  = ( r_cov[arg->num[i]] + r_cov[arg->num[j]] + arg->thr ) * ( r_cov[arg->num[i]] + r_cov[arg->num[j]] + arg->thr );
-	    	dr  = ( arg->xyz[i3] - arg->xyz[j3] ) * ( arg->xyz[i3] - arg->xyz[j3] ) +
-	    			( arg->xyz[i3+1] - arg->xyz[j3+1] ) * ( arg->xyz[i3+1] - arg->xyz[j3+1] ) +
-	    			( arg->xyz[i3+2] - arg->xyz[j3+2] ) * ( arg->xyz[i3+2] - arg->xyz[j3+2] );
-	    	if( dr <= r2 ) {
-	    		pt2->n    = (two_lst*) malloc( sizeof( two_lst ) );
-	    		pt2->n->i = i;
-	    		pt2->n->j = j;
-	    		pt2->n->n = NULL;
-	    		pt2       = pt2->n;
-	    	}
-	    }
-	}
+        for( j = i + 1; j < arg->siz; j++ ) {
+            if( arg->num[i] == 1 && arg->num[j] == 1 ) { continue; }
+            i3  = 3 * i;
+            j3  = 3 * j;
+            r2  = ( r_cov[arg->num[i]] + r_cov[arg->num[j]] + arg->thr ) * ( r_cov[arg->num[i]] + r_cov[arg->num[j]] + arg->thr );
+            dr  = ( arg->xyz[i3] - arg->xyz[j3] ) * ( arg->xyz[i3] - arg->xyz[j3] ) +
+                    ( arg->xyz[i3+1] - arg->xyz[j3+1] ) * ( arg->xyz[i3+1] - arg->xyz[j3+1] ) +
+                    ( arg->xyz[i3+2] - arg->xyz[j3+2] ) * ( arg->xyz[i3+2] - arg->xyz[j3+2] );
+            if( dr <= r2 ) {
+                pt2->n    = (two_lst*) malloc( sizeof( two_lst ) );
+                pt2->n->i = i;
+                pt2->n->j = j;
+                pt2->n->n = NULL;
+                pt2       = pt2->n;
+            }
+        }
+    }
     return( NULL );
 }
 
 
 static PyObject* w_connectivity( PyObject *self, PyObject *args ) {
-    PyObject		*out, *ocrd, *onum, *otmp;
-    double			*xyz, dr, r2, *p_double, bthr = 0.1;
-	PyArrayObject	*mcrd, *mnum;
-    long			*siz, *num, *p_long, i, j, k, cpu, i3, j3;
-    pthread_t		*pid;
-    con_arg			*arg;
-    one_lst     	*lst, *pt1;
-    two_lst			*pt2;
+    PyObject        *out, *ocrd, *onum, *otmp;
+    double          *xyz, dr, r2, *p_double, bthr = 0.1;
+    PyArrayObject   *mcrd, *mnum;
+    long            *siz, *num, *p_long, i, j, k, cpu, i3, j3;
+    pthread_t       *pid;
+    con_arg         *arg;
+    one_lst         *lst, *pt1;
+    two_lst         *pt2;
 
     if( PyArg_ParseTuple( args, "lOO|d", &cpu, &onum, &ocrd, &bthr ) ) {
 
-		mnum = (PyArrayObject*) PyArray_FROM_OT( onum, NPY_LONG );
-		mcrd = (PyArrayObject*) PyArray_FROM_OT( ocrd, NPY_DOUBLE );
-		siz  = PyArray_SHAPE( mcrd );
-		xyz  = (double*) malloc( siz[0] * siz[1] * sizeof( double ) );
-		num  = (long*) malloc( siz[0] * sizeof( long ) );
-		for( k = 0, i = 0; i < siz[0]; i++ ) {
-			p_long = (long*) PyArray_GETPTR1( mnum, i );
-			num[i] = *p_long;
-			for( j = 0; j < siz[1]; j++ ) {
-				p_double = (double*) PyArray_GETPTR2( mcrd, i, j );
-				xyz[k++] = *p_double;
-			}
-		}
+        mnum = (PyArrayObject*) PyArray_FROM_OT( onum, NPY_LONG );
+        mcrd = (PyArrayObject*) PyArray_FROM_OT( ocrd, NPY_DOUBLE );
+        siz  = PyArray_SHAPE( mcrd );
+        xyz  = (double*) malloc( siz[0] * siz[1] * sizeof( double ) );
+        num  = (long*) malloc( siz[0] * sizeof( long ) );
+        for( k = 0, i = 0; i < siz[0]; i++ ) {
+            p_long = (long*) PyArray_GETPTR1( mnum, i );
+            num[i] = *p_long;
+            for( j = 0; j < siz[1]; j++ ) {
+                p_double = (double*) PyArray_GETPTR2( mcrd, i, j );
+                xyz[k++] = *p_double;
+            }
+        }
 
         if( cpu > 1 ) {
             // ======================================================================
@@ -116,11 +116,11 @@ static PyObject* w_connectivity( PyObject *self, PyObject *args ) {
             for( i = 0; i < cpu; i++ ) {
                 arg[i].siz    = siz[0];
                 arg[i].idx    = lst[i].n;
-				arg[i].thr    = bthr;
-	    		arg[i].num    = num;
-	    		arg[i].xyz    = xyz;
-	    		arg[i].bnd    = (two_lst*) malloc( sizeof( two_lst ) ); 
-	    		arg[i].bnd->n = NULL;
+                arg[i].thr    = bthr;
+                arg[i].num    = num;
+                arg[i].xyz    = xyz;
+                arg[i].bnd    = (two_lst*) malloc( sizeof( two_lst ) ); 
+                arg[i].bnd->n = NULL;
                 pthread_create( &pid[i], NULL, __connectivity, (void*) &arg[i] );
             }
             for( i = 0; i < cpu; i++ ) pthread_join( pid[i], NULL );
@@ -131,7 +131,7 @@ static PyObject* w_connectivity( PyObject *self, PyObject *args ) {
                 while( pt2 != NULL ) {
                     otmp = Py_BuildValue( "[l,l]", pt2->i, pt2->j );
                     PyList_Append( out, otmp );
-    				Py_DECREF( otmp );
+                    Py_DECREF( otmp );
                     pt2 = pt2->n;
                 }
             }
@@ -163,23 +163,23 @@ static PyObject* w_connectivity( PyObject *self, PyObject *args ) {
             for( i = 0; i < siz[0] - 1; i++ ) {
                 for( j = i + 1; j < siz[0]; j++ ) {
                     if( num[i] == 1 && num[j] == 1 ) { continue; }
-	    			i3  = 3 * i;
-			    	j3  = 3 * j;
-			    	r2  = ( r_cov[num[i]] + r_cov[num[j]] + bthr ) * ( r_cov[num[i]] + r_cov[num[j]] + bthr );
-			    	dr  = ( xyz[i3] - xyz[j3] ) * ( xyz[i3] - xyz[j3] ) +
-			    			( xyz[i3+1] - xyz[j3+1] ) * ( xyz[i3+1] - xyz[j3+1] ) +
-			    			( xyz[i3+2] - xyz[j3+2] ) * ( xyz[i3+2] - xyz[j3+2] );
-			    	if( dr <= r2 ) {
-                    	otmp = Py_BuildValue( "[l,l]", i, j );
-	                    PyList_Append( out, otmp );
-	    				Py_DECREF( otmp );
+                    i3  = 3 * i;
+                    j3  = 3 * j;
+                    r2  = ( r_cov[num[i]] + r_cov[num[j]] + bthr ) * ( r_cov[num[i]] + r_cov[num[j]] + bthr );
+                    dr  = ( xyz[i3] - xyz[j3] ) * ( xyz[i3] - xyz[j3] ) +
+                            ( xyz[i3+1] - xyz[j3+1] ) * ( xyz[i3+1] - xyz[j3+1] ) +
+                            ( xyz[i3+2] - xyz[j3+2] ) * ( xyz[i3+2] - xyz[j3+2] );
+                    if( dr <= r2 ) {
+                        otmp = Py_BuildValue( "[l,l]", i, j );
+                        PyList_Append( out, otmp );
+                        Py_DECREF( otmp );
                     }
                 }
             }
         }
 
-    	free( num ); free( xyz );
-    	return( out );
+        free( num ); free( xyz );
+        return( out );
     } else { Py_INCREF( Py_None ); return( Py_None ); }
 }
 
@@ -204,6 +204,6 @@ static struct PyModuleDef moddef = {
 PyMODINIT_FUNC PyInit__conn( void ) {
     PyObject    *my_module;
     my_module = PyModule_Create( &moddef );
-	import_array();
+    import_array();
     return( my_module );
 }
