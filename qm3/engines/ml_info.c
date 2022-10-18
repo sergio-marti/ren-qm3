@@ -127,7 +127,7 @@ static PyObject* _coul_info( PyObject *self, PyObject *args ) {
     PyObject        *ocrd, *onum;
     PyArrayObject   *mcrd, *mnum, *out;
     long            *siz, dim[1], i, j, k, ww;
-    double          *num, *xyz, *itm, mmm;
+    double          *num, *xyz, *itm;
 
     if( PyArg_ParseTuple( args, "OO", &onum, &ocrd ) ) {
         mcrd = (PyArrayObject*) PyArray_FROM_OT( ocrd, NPY_DOUBLE );
@@ -147,22 +147,14 @@ static PyObject* _coul_info( PyObject *self, PyObject *args ) {
         }
         dim[0] = siz[0] * ( siz[0] - 1 ) / 2;
         out = (PyArrayObject*) PyArray_ZEROS( 1, dim, NPY_DOUBLE, 0 );
-//        mmm = 0.0;
         for( i = 0; i < siz[0] - 1; i++ ) {
             k    = i * 3;
             ww   = i * siz[0] - ( ( i + 1 ) * i ) / 2 - i - 1;
             for( j = i + 1; j < siz[0]; j++ ) {
                 itm  = (double*) PyArray_GETPTR1( out, ww+j );
                 *itm = num[i] * num[j] / __dist( k, j * 3, xyz );
-//                mmm  = max( mmm, *itm );
             }
         }
-//        if( mmm > 0.0 ) {
-//            for( i = 0; i < dim[0]; i++ ) {
-//                itm  = (double*) PyArray_GETPTR1( out, i );
-//                *itm /= mmm;
-//            }
-//        }
         free( num ); free( xyz );
         return( (PyObject*) out );
     } else { Py_INCREF( Py_None ); return( Py_None ); }

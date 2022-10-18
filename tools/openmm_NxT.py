@@ -80,7 +80,7 @@ _sim.context.setPositions( openmm.app.pdbfile.PDBFile( "start.pdb" ).getPosition
 #_sim.reporters.append( openmm.app.statedatareporter.StateDataReporter( sys.stdout, 100,
 #    time = True, potentialEnergy = True, temperature = True, volume = True ) )
 #_sim.step( 100000 )
-#print( _sim.context.getState( getEnergy = False, getForces = False ).getPeriodicBoxVectors() )
+#print( _sim.context.getState().getPeriodicBoxVectors() )
 
 
 #>> 10 ns NVT
@@ -88,3 +88,9 @@ _sim.reporters.append( openmm.app.dcdreporter.DCDReporter( "last.dcd", 1000, enf
 _sim.reporters.append( openmm.app.statedatareporter.StateDataReporter( sys.stdout, 1000,
     time = True, potentialEnergy = True, temperature = True ) )
 _sim.step( 10000000 )
+
+
+#>> save coordinates
+with open( "last.pdb", "wt" ) as f:
+    openmm.app.pdbfile.PDBFile.writeFile( _sim.topology,
+        _sim.context.getState( getPositions = True ).getPositions(), f )
