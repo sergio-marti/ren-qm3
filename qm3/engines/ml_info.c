@@ -284,34 +284,34 @@ static PyObject* _acsf_info( PyObject *self, PyObject *args ) {
                 }
             }
         }
-//        // normalize by kind ---------------------------------------------
-//        mx2 = 0.0;
-//        mx5 = 0.0;
-//        for( i = 0; i < siz[0]; i++ ) {
-//            dd = i * dim;
-//            for( l = 0; l < neta2; l++ ) {
-//                itm  = (double*) PyArray_GETPTR1( out, dd + l );
-//                mx2 = max( mx2, *itm );
-//            }
-//            for( l = 0; l < neta5; l++ ) {
-//                itm  = (double*) PyArray_GETPTR1( out, dd + neta2 + l );
-//                mx5 = max( mx5, *itm );
-//            }
-//        }
-//        if( mx2 < 1.e-6 ) mx2 = 1.0;
-//        if( mx5 < 1.e-6 ) mx5 = 1.0;
-//        for( i = 0; i < siz[0]; i++ ) {
-//            dd = i * dim;
-//            for( l = 0; l < neta2; l++ ) {
-//                itm  = (double*) PyArray_GETPTR1( out, dd + l );
-//                *itm /= mx2;
-//            }
-//            for( l = 0; l < neta5; l++ ) {
-//                itm  = (double*) PyArray_GETPTR1( out, dd + neta2 + l );
-//                *itm /= mx5;
-//            }
-//        }
-//        // ---------------------------------------------------------------
+        // normalize by kind ---------------------------------------------
+        mx2 = 0.0;
+        mx5 = 0.0;
+        for( i = 0; i < siz[0]; i++ ) {
+            dd = i * dim;
+            for( l = 0; l < neta2; l++ ) {
+                itm  = (double*) PyArray_GETPTR1( out, dd + l );
+                mx2 = max( mx2, *itm );
+            }
+            for( l = 0; l < neta5; l++ ) {
+                itm  = (double*) PyArray_GETPTR1( out, dd + neta2 + l );
+                mx5 = max( mx5, *itm );
+            }
+        }
+        if( mx2 < 1.e-6 ) mx2 = 1.0;
+        if( mx5 < 1.e-6 ) mx5 = 1.0;
+        for( i = 0; i < siz[0]; i++ ) {
+            dd = i * dim;
+            for( l = 0; l < neta2; l++ ) {
+                itm  = (double*) PyArray_GETPTR1( out, dd + l );
+                *itm /= mx2;
+            }
+            for( l = 0; l < neta5; l++ ) {
+                itm  = (double*) PyArray_GETPTR1( out, dd + neta2 + l );
+                *itm /= mx5;
+            }
+        }
+        // ---------------------------------------------------------------
         free( eta2 ); free( eta5 ); free( xyz );
         return( (PyObject*) out );
     } else { Py_INCREF( Py_None ); return( Py_None ); }
@@ -404,36 +404,36 @@ static PyObject* _acsf_pinf( PyObject *self, PyObject *args ) {
         }
         for( i = 0; i < ncpu; i++ ) pthread_join( pid[i], NULL );
         // backup
-//        mx2 = 0.0;
-//        mx5 = 0.0;
+        mx2 = 0.0;
+        mx5 = 0.0;
         for( j = 0; j < siz[0]; j++ ) {
             dd = j * dim;
             for( k = 0; k < neta2; k++ ) {
                 itm  = (double*) PyArray_GETPTR1( out, dd + k );
                 for( i = 0; i < ncpu; i++ ) *itm += arg[i].out[dd + k];
-//                mx2 = max( mx2, *itm );
+                mx2 = max( mx2, *itm );
             }
             for( k = 0; k < neta5; k++ ) {
                 itm  = (double*) PyArray_GETPTR1( out, dd + neta2 + k );
                 for( i = 0; i < ncpu; i++ ) *itm += arg[i].out[dd + neta2 + k];
-//                mx5 = max( mx5, *itm );
+                mx5 = max( mx5, *itm );
             }
         }
         free( arg ); free( pid );
-//        // normalize
-//        if( mx2 < 1.e-6 ) mx2 = 1.0;
-//        if( mx5 < 1.e-6 ) mx5 = 1.0;
-//        for( j = 0; j < siz[0]; j++ ) {
-//            dd = j * dim;
-//            for( k = 0; k < neta2; k++ ) {
-//                itm  = (double*) PyArray_GETPTR1( out, dd + k );
-//                *itm /= mx2;
-//            }
-//            for( k = 0; k < neta5; k++ ) {
-//                itm  = (double*) PyArray_GETPTR1( out, dd + neta2 + k );
-//                *itm /= mx5;
-//            }
-//        }
+        // normalize
+        if( mx2 < 1.e-6 ) mx2 = 1.0;
+        if( mx5 < 1.e-6 ) mx5 = 1.0;
+        for( j = 0; j < siz[0]; j++ ) {
+            dd = j * dim;
+            for( k = 0; k < neta2; k++ ) {
+                itm  = (double*) PyArray_GETPTR1( out, dd + k );
+                *itm /= mx2;
+            }
+            for( k = 0; k < neta5; k++ ) {
+                itm  = (double*) PyArray_GETPTR1( out, dd + neta2 + k );
+                *itm /= mx5;
+            }
+        }
         free( eta2 ); free( eta5 ); free( xyz );
         return( (PyObject*) out );
     } else { Py_INCREF( Py_None ); return( Py_None ); }

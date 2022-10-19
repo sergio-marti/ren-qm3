@@ -155,10 +155,14 @@ class acsf( template ):
 
 
     def setup( self,
-            cutx: typing.Optional[float] = 6.0,
-            eta2: typing.Optional[list] = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4],
+            cutx: typing.Optional[float] = 4.0,
+            eta2: typing.Optional[list] = [ 1.0 ],
             dse5: typing.Optional[float] = 1.0,
-            eta5: typing.Optional[list] = [0.1 , 0.11, 0.12, 0.13, 0.14] ):
+            eta5: typing.Optional[list] = [ 0.1 ] ):
+#            cutx: typing.Optional[float] = 6.0,
+#            eta2: typing.Optional[list] = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4],
+#            dse5: typing.Optional[float] = 1.0,
+#            eta5: typing.Optional[list] = [0.1 , 0.11, 0.12, 0.13, 0.14] ):
         self.cutx = cutx
         self.eta2 = eta2
         self.dse5 = dse5
