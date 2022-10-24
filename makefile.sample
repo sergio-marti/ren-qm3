@@ -4,6 +4,10 @@ include config
 all: dcd conn cions grids ml_info _cgplus.so _lbfgsb.so lapack_deps.o _mopac.so
 
 
+qmlj:
+	$(PYX) setup/qmlj build_ext --build-lib qm3/engines
+
+
 dcd:
 	$(PYX) setup/dcd build_ext --build-lib qm3/utils
 
