@@ -10,7 +10,7 @@ def f_distance( mol: object, kumb: float, xref: float, a_i: int, a_j: int,
         skip_BE: typing.Optional[float] = 9.e99,
         grad: typing.Optional[bool] = False ) -> float:
     """
-    bond = force_constant / 2 * ( distance - reference )^2
+    e_bond = force_constant / 2 * ( distance - reference )^2
 
     force_constant [kJ/mol.A^2]
     reference [A]
@@ -30,7 +30,7 @@ def f_distance( mol: object, kumb: float, xref: float, a_i: int, a_j: int,
 def f_angle( mol: object, kumb: float, xref: float, a_i: int, a_j: int, a_k: int,
         grad: typing.Optional[bool] = False ) -> float:
     """
-    angle = force_constant / 2 * ( angle - reference )^2
+    e_angle = force_constant / 2 * ( angle - reference )^2
 
     force_constant [kJ/mol.rad^2]
     reference [rad]
@@ -63,7 +63,7 @@ def f_angle( mol: object, kumb: float, xref: float, a_i: int, a_j: int, a_k: int
 def f_dihedral( mol: object, data: list, a_i: int, a_j: int, a_k: int, a_l: int,
         grad: typing.Optional[bool] = False ) -> float:
     """
-    dihedral = force_constant * ( 1 + cos( periodicity * angle - displacement ) )
+    e_dihedral = force_constant * ( 1 + cos( periodicity * angle - displacement ) )
 
     force_constant [kJ/mol]
     displacement [rad]
@@ -139,10 +139,60 @@ def f_dihedral( mol: object, data: list, a_i: int, a_j: int, a_k: int, a_l: int,
     return( ang )
 
 
+def u_dihedral( mol: object, kumb: float, xref: float, a_i: int, a_j: int, a_k: int, a_l: int,
+        grad: typing.Optional[bool] = False ) -> float:
+    """
+    e_dihedral = force_constant / 2 * ( dihedral - reference )^2
+
+    force_constant [kJ/mol.rad^2]
+    reference [rad]
+
+    >> similar to f_dihedral with:
+        data = [ kmb, pi + dsp, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
+    """
+    rij = mol.coor[a_i] - mol.coor[a_j]
+    rkj = mol.coor[a_k] - mol.coor[a_j]
+    rkl = mol.coor[a_k] - mol.coor[a_l]
+    rmm = numpy.cross( rij, rkj )
+    dmm = numpy.linalg.norm( rmm )
+    rmm /= dmm
+    rnn = numpy.cross( rkj, rkl )
+    dnn = numpy.linalg.norm( rnn )
+    rnn /= dnn
+    fac = numpy.dot( rmm, rnn )
+    sgn = 1.0
+    if( numpy.dot( rij, rnn ) < 0.0 ):
+        sgn = -1.0
+    val = sgn * numpy.arccos( fac )
+    dif = val - xref
+    if( dif < - 180 ):
+        val += 360
+        dif += 360
+    if( dif > 180 ):
+        val -= 360
+        dif -= 360
+    df  = kumb * dif
+    mol.func += 0.5 * df * dif
+    if( grad ):
+        dkj = numpy.linalg.norm( rkj )
+        dti =  df * dkj * rmm / dmm
+        dtl = -df * dkj * rnn / dnn
+        fij = numpy.dot( rij, rkj ) / ( dkj * dkj )
+        fkl = numpy.dot( rkl, rkj ) / ( dkj * dkj )
+        dtj = dti * ( fij - 1.0 ) - fkl * dtl
+        dtk = dtl * ( fkl - 1.0 ) - fij * dti
+        mol.grad[a_i] += dti
+        mol.grad[a_j] += dtj
+        mol.grad[a_k] += dtk
+        mol.grad[a_l] += dtl
+    return( val )
+
+
+
 def f_improper( mol: object, kumb: float, xref: float, a_i: int, a_j: int, a_k: int, a_l: int,
         grad: typing.Optional[bool] = False ) -> float:
     """
-    improper = force_constant / 2 * ( angle - reference )^2
+    e_improper = force_constant / 2 * ( angle - reference )^2
 
     force_constant [kJ/mol.rad^2]
     reference [deg]
@@ -295,7 +345,6 @@ class multiple_distance( object ):
         mol.rval.append( vv )
 
 
-
 class tether( object ):
     """
     thether = force_constant / 2 * SUM ( cartesian - reference )^2
@@ -320,7 +369,6 @@ class tether( object ):
         dr = ( mol.coor - self.cref ) * self.sele
         mol.func += 0.5 * self.kumb * numpy.sum( dr * dr )
         mol.grad += self.kumb * dr
-
 
 
 class colvar_s( object ):
