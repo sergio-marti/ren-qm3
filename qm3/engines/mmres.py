@@ -185,7 +185,7 @@ def u_dihedral( mol: object, kumb: float, xref: float, a_i: int, a_j: int, a_k: 
         mol.grad[a_j] += dtj
         mol.grad[a_k] += dtk
         mol.grad[a_l] += dtl
-    return( val )
+    return( val * qm3.data.R2D )
 
 
 
