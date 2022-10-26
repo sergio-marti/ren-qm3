@@ -69,6 +69,10 @@ def f_dihedral( mol: object, data: list, a_i: int, a_j: int, a_k: int, a_l: int,
     displacement [rad]
 
     data = [ frc_per=1, dsp_per=1, frc_per=2, dsp_per=2, ..., frc_per=6, dsp_per=6 ]
+
+    can be used for umbrella sampling (in radians) with:
+        frc_per[1] = kumb
+        dsp_per[1] = pi + xref
     """
     dji = mol.coor[a_j] - mol.coor[a_i]
     dkj = mol.coor[a_k] - mol.coor[a_j]
@@ -137,49 +141,6 @@ def f_dihedral( mol: object, data: list, a_i: int, a_j: int, a_k: int, a_l: int,
     if( sn1 <= 0.0 ):
         ang = -ang
     return( ang )
-
-
-def u_dihedral( mol: object, kumb: float, xref: float, a_i: int, a_j: int, a_k: int, a_l: int,
-        grad: typing.Optional[bool] = False ) -> float:
-    """
-    e_dihedral = force_constant / 2 * ( dihedral - reference )^2
-
-    force_constant [kJ/mol.rad^2]
-    reference [rad, positive values only = 0 -- 2 pi]
-
-    >> similar to f_dihedral with:
-        data = [ kmb, pi + dsp, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
-    """
-    rij = mol.coor[a_i] - mol.coor[a_j]
-    rkj = mol.coor[a_k] - mol.coor[a_j]
-    rkl = mol.coor[a_k] - mol.coor[a_l]
-    rmm = numpy.cross( rij, rkj )
-    dmm = numpy.linalg.norm( rmm )
-    rmm /= dmm
-    rnn = numpy.cross( rkj, rkl )
-    dnn = numpy.linalg.norm( rnn )
-    rnn /= dnn
-    fac = numpy.dot( rmm, rnn )
-    val = numpy.arccos( fac )
-    if( numpy.dot( rij, rnn ) < 0.0 ):
-        val += 2.0 * numpy.pi
-    dif = val - xref
-    df  = kumb * dif
-    mol.func += 0.5 * df * dif
-    if( grad ):
-        dkj = numpy.linalg.norm( rkj )
-        dti =  df * dkj * rmm / dmm
-        dtl = -df * dkj * rnn / dnn
-        fij = numpy.dot( rij, rkj ) / ( dkj * dkj )
-        fkl = numpy.dot( rkl, rkj ) / ( dkj * dkj )
-        dtj = dti * ( fij - 1.0 ) - fkl * dtl
-        dtk = dtl * ( fkl - 1.0 ) - fij * dti
-        mol.grad[a_i] += dti
-        mol.grad[a_j] += dtj
-        mol.grad[a_k] += dtk
-        mol.grad[a_l] += dtl
-    return( val * qm3.data.R2D )
-
 
 
 def f_improper( mol: object, kumb: float, xref: float, a_i: int, a_j: int, a_k: int, a_l: int,
