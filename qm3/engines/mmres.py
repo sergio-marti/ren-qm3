@@ -145,7 +145,7 @@ def u_dihedral( mol: object, kumb: float, xref: float, a_i: int, a_j: int, a_k: 
     e_dihedral = force_constant / 2 * ( dihedral - reference )^2
 
     force_constant [kJ/mol.rad^2]
-    reference [rad]
+    reference [rad, positive values only = 0 -- 2 pi]
 
     >> similar to f_dihedral with:
         data = [ kmb, pi + dsp, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
@@ -160,17 +160,10 @@ def u_dihedral( mol: object, kumb: float, xref: float, a_i: int, a_j: int, a_k: 
     dnn = numpy.linalg.norm( rnn )
     rnn /= dnn
     fac = numpy.dot( rmm, rnn )
-    sgn = 1.0
+    val = numpy.arccos( fac )
     if( numpy.dot( rij, rnn ) < 0.0 ):
-        sgn = -1.0
-    val = sgn * numpy.arccos( fac )
+        val += 2.0 * numpy.pi
     dif = val - xref
-    if( dif < - 180 ):
-        val += 360
-        dif += 360
-    if( dif > 180 ):
-        val -= 360
-        dif -= 360
     df  = kumb * dif
     mol.func += 0.5 * df * dif
     if( grad ):
