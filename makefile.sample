@@ -1,7 +1,7 @@
 include config
 
 
-all: dcd conn cions grids ml_info _cgplus.so _lbfgsb.so lapack_deps.o _mopac.so
+all: dcd conn cions grids ml_info qmlj _cgplus.so _lbfgsb.so lapack_deps.o _mopac.so
 
 
 qmlj:
