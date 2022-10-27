@@ -123,7 +123,7 @@ with open( sys.argv[1], "rt" ) as f:
                 l = f.readline()
                 t = l.split()
             ang += 1
-            sys.stdout.write( " " + str( ang ) + " 0.0 0.0 0 0 #[QM]\n" )
+            sys.stdout.write( " " + str( ang ) + " 0.0 0.0 #[QM]\n" )
             sys.stdout.write( l )
         elif( len( k ) > 0 and k[0].lower() == "angles" ):
             sys.stdout.write( l )
