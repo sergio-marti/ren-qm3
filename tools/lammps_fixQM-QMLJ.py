@@ -12,6 +12,7 @@ ang = 0
 dih = 0
 imp = 0
 typ = 0
+num = 0
 t_rmin = {}
 t_epsi = {}
 rmin = []
@@ -31,16 +32,17 @@ with open( sys.argv[1], "rt" ) as f:
                 rmin.append( t_rmin[t[2]] )
                 epsi.append( t_epsi[t[2]] )
                 nat = int( t[0] )
+                num = max( num, nat )
                 if( nat in sqm ):
                     t[2] = str( typ )
                     t[3] = "0.0"
-                    sys.stdout.write( "  ".join( t ) + "\n" )
+                    sys.stdout.write( "  ".join( t ) + " #[QM]\n" )
                 else:
                     sys.stdout.write( l )
                 l = f.readline()
                 t = l.split()
             sys.stdout.write( l )
-            flg = { i: 0 for i in range( 1, nat + 1 ) }
+            flg = { i: 0 for i in range( 1, num + 1 ) }
             for i in sqm:
                 flg[i] = 1
         # ============================================================================
@@ -57,7 +59,7 @@ with open( sys.argv[1], "rt" ) as f:
                 l = f.readline()
                 t = l.split()
             typ += 1
-            sys.stdout.write( " " + str( typ ) + " 1.0 # [QM]\n" )
+            sys.stdout.write( " " + str( typ ) + " 1.0 #[QM]\n" )
             sys.stdout.write( l )
         # ============================================================================
         elif( len( k ) > 1 and k[0].lower() == "pair" and k[1].lower() == "coeffs" ):
@@ -73,23 +75,23 @@ with open( sys.argv[1], "rt" ) as f:
                 sys.stdout.write( l )
                 l = f.readline()
                 t = l.split()
-            sys.stdout.write( " " + str( typ ) + " 0.0 1.0 # [QM]\n" )
+            sys.stdout.write( " " + str( typ ) + " 0.0 1.0 #[QM]\n" )
             sys.stdout.write( l )
         # ============================================================================
         elif( len( k ) > 1 and k[0].lower() == "bond" and k[1].lower() == "coeffs" ):
             sys.stdout.write( l )
             l = f.readline()
-            while( len( l.split() ) < 4 ):
+            while( len( l.split() ) < 3 ):
                 sys.stdout.write( l )
                 l = f.readline()
             t = l.split()
-            while( len( t ) >= 4 ):
+            while( len( t ) >= 3 ):
                 sys.stdout.write( l )
                 bnd += 1
                 l = f.readline()
                 t = l.split()
             bnd += 1
-            sys.stdout.write( " " + str( bnd ) + " 0.0 0.0 # [QM] HARMONIC\n" )
+            sys.stdout.write( " " + str( bnd ) + " 0.0 0.0 #[QM]\n" )
             sys.stdout.write( l )
         elif( len( k ) > 0 and k[0].lower() == "bonds" ):
             sys.stdout.write( l )
@@ -103,7 +105,7 @@ with open( sys.argv[1], "rt" ) as f:
                     sys.stdout.write( l )
                 else:
                     t[1] = str( bnd )
-                    sys.stdout.write( "  " + "  ".join( t ) + "\n" )
+                    sys.stdout.write( "  " + "  ".join( t ) + " #[QM]\n" )
                 l = f.readline()
                 t = l.split()
             sys.stdout.write( l )
@@ -111,17 +113,17 @@ with open( sys.argv[1], "rt" ) as f:
         elif( len( k ) > 1 and k[0].lower() == "angle" and k[1].lower() == "coeffs" ):
             sys.stdout.write( l )
             l = f.readline()
-            while( len( l.split() ) < 5 ):
+            while( len( l.split() ) < 3 ):
                 sys.stdout.write( l )
                 l = f.readline()
             t = l.split()
-            while( len( t ) >= 5 ):
+            while( len( t ) >= 3 ):
                 sys.stdout.write( l )
                 ang += 1
                 l = f.readline()
                 t = l.split()
             ang += 1
-            sys.stdout.write( " " + str( ang ) + " 0.0 0.0 0 0 # [QM] CHARMM\n" )
+            sys.stdout.write( " " + str( ang ) + " 0.0 0.0 0 0 #[QM]\n" )
             sys.stdout.write( l )
         elif( len( k ) > 0 and k[0].lower() == "angles" ):
             sys.stdout.write( l )
@@ -135,7 +137,7 @@ with open( sys.argv[1], "rt" ) as f:
                     sys.stdout.write( l )
                 else:
                     t[1] = str( ang )
-                    sys.stdout.write( "  " + "  ".join( t ) + "\n" )
+                    sys.stdout.write( "  " + "  ".join( t ) + " #[QM]\n" )
                 l = f.readline()
                 t = l.split()
             sys.stdout.write( l )
@@ -143,17 +145,17 @@ with open( sys.argv[1], "rt" ) as f:
         elif( len( k ) > 1 and k[0].lower() == "dihedral" and k[1].lower() == "coeffs" ):
             sys.stdout.write( l )
             l = f.readline()
-            while( len( l.split() ) < 5 ):
+            while( len( l.split() ) < 4 ):
                 sys.stdout.write( l )
                 l = f.readline()
             t = l.split()
-            while( len( t ) >= 5 ):
+            while( len( t ) >= 4 ):
                 sys.stdout.write( l )
                 dih += 1
                 l = f.readline()
                 t = l.split()
             dih += 1
-            sys.stdout.write( " " + str( dih ) + " 0.0 0 0 0 # [QM] CHARMM\n" )
+            sys.stdout.write( " " + str( dih ) + " 0.0 0 0 0 #[QM]\n" )
             sys.stdout.write( l )
         elif( len( k ) > 0 and k[0].lower() == "dihedrals" ):
             sys.stdout.write( l )
@@ -167,7 +169,7 @@ with open( sys.argv[1], "rt" ) as f:
                     sys.stdout.write( l )
                 else:
                     t[1] = str( dih )
-                    sys.stdout.write( "  " + "  ".join( t ) + "\n" )
+                    sys.stdout.write( "  " + "  ".join( t ) + " #[QM]\n" )
                 l = f.readline()
                 t = l.split()
             sys.stdout.write( l )
@@ -185,7 +187,7 @@ with open( sys.argv[1], "rt" ) as f:
                 l = f.readline()
                 t = l.split()
             imp += 1
-            sys.stdout.write( " " + str( imp ) + " 0.0 180 # [QM] HARMONIC\n" )
+            sys.stdout.write( " " + str( imp ) + " 0.0 180 #[QM]\n" )
             sys.stdout.write( l )
         elif( len( k ) > 0 and k[0].lower() == "impropers" ):
             sys.stdout.write( l )
@@ -199,7 +201,7 @@ with open( sys.argv[1], "rt" ) as f:
                     sys.stdout.write( l )
                 else:
                     t[1] = str( imp )
-                    sys.stdout.write( "  " + "  ".join( t ) + "\n" )
+                    sys.stdout.write( "  " + "  ".join( t ) + " #[QM]\n" )
                 l = f.readline()
                 t = l.split()
             sys.stdout.write( l )
