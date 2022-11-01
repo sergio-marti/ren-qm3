@@ -28,7 +28,7 @@ with open( sys.argv[1], "rt" ) as f:
                 num = max( num, nat )
                 if( nat in sqm ):
                     t[3] = "0.0"
-                    sys.stdout.write( "  ".join( t ) + "\n" )
+                    sys.stdout.write( "  ".join( t ) + " #[QM]\n" )
                 else:
                     sys.stdout.write( l )
                 l = f.readline()

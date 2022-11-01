@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import  math
 import  sys
 import  pickle
 
@@ -70,7 +71,7 @@ with open( sys.argv[1], "rt" ) as f:
                 l = f.readline()
             t = l.split()
             while( len( t ) >= 3 ):
-                t_epsi[t[0]] = float( t[1] ) * 4.184
+                t_epsi[t[0]] = math.sqrt( float( t[1] ) * 4.184 )
                 t_rmin[t[0]] = float( t[2] ) * 0.5612310241546865
                 sys.stdout.write( l )
                 l = f.readline()
