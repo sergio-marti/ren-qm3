@@ -52,10 +52,18 @@ _mopac.so:
 	gfortran $(SHD) -o qm3/engines/_mopac.so -fPIC -Ibuild -Jbuild -O2 qm3/engines/mopac.f90 $(MLB)
 
 
+#_dftb.so:
+#	gfortran $(SHD) -o qm3/engines/_dftb.so qm3/engines/dftb.f90 -Jbuild -Ibuild \
+#		-fPIC -I$(DFTB)/src/dftbp/include \
+#		$(DFTB)/src/dftbp/libdftbplus.a $(MLB) -fopenmp
+# -----------------------------------------------------------------------------------------
 _dftb.so:
 	gfortran $(SHD) -o qm3/engines/_dftb.so qm3/engines/dftb.f90 -Jbuild -Ibuild \
-		-fPIC -I$(DFTB)/src/dftbp/include \
-		$(DFTB)/src/dftbp/libdftbplus.a $(MLB) -fopenmp
+                -fPIC -I$(DFTB)/src/dftbp/include \
+                $(DFTB)/src/dftbp/libdftbplus.a \
+                $(DFTB)/external/s-dftd3/origin/libs-dftd3.a \
+                $(DFTB)/external/mctc-lib/origin/libmctc-lib.a \
+                $(MLB) -fopenmp
 
 
 _xtb.so:
@@ -64,12 +72,20 @@ _xtb.so:
 		$(XTB)/libxtb.a $(XTB)/_deps/mctc-lib-build/libmctc-lib.a $(MLB)
 
 
+#_dftd4.so:
+#	gfortran $(SHD) -o qm3/engines/_dftd4.so qm3/engines/dftd4.f90 -Jbuild -Ibuild \
+#		-fPIC -I$(DFTD4)/include \
+#		$(DFTD4)/libdftd4.a \
+#	   	$(DFTD4)/subprojects/multicharge/libmulticharge.a \
+#	   	$(DFTD4)/subprojects/mctc-lib/libmctc-lib.a -fopenmp $(MLB)
+# -----------------------------------------------------------------------------------------
 _dftd4.so:
 	gfortran $(SHD) -o qm3/engines/_dftd4.so qm3/engines/dftd4.f90 -Jbuild -Ibuild \
-		-fPIC -I$(DFTD4)/include \
-		$(DFTD4)/libdftd4.a \
-	   	$(DFTD4)/subprojects/multicharge/libmulticharge.a \
-	   	$(DFTD4)/subprojects/mctc-lib/libmctc-lib.a -fopenmp $(MLB)
+                -fPIC -I$(DFTD4)/include \
+                $(DFTD4)/libdftd4.a \
+                $(DFTD4)/_deps/multicharge-build/libmulticharge.a \
+                $(DFTD4)/_deps/mctc-lib-build/libmctc-lib.a \
+                -fopenmp $(MLB)
 
 
 _sqm.so:

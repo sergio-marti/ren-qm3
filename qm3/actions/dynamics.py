@@ -77,7 +77,7 @@ def langevin_verlet( mol: object,
     mol.get_grad()
     cacc = - mol.grad / mol.mass * 100.0
     cacc -= numpy.sum( cacc * proj, axis = 0 ) * proj
-    xtmp = numpy.array( [ mol.func, kine, mol.func + kine, temp ] )
+    xtmp = numpy.array( [ mol.func, kine, mol.func + kine, temp ], dtype=object )
     xavr = xtmp.copy()
     xrms = numpy.square( xtmp )
     time = 0.0
@@ -95,7 +95,7 @@ def langevin_verlet( mol: object,
         mol.velo = oacc + fv2 * cacc
         mol.velo -= numpy.sum( mol.velo * proj, axis = 0 ) * proj
         temp, kine = current_temperature( mol, ndeg )
-        xtmp = numpy.array( [ mol.func, kine, mol.func + kine, temp ] )
+        xtmp = numpy.array( [ mol.func, kine, mol.func + kine, temp ], dtype=object )
         xavr += xtmp
         xrms += numpy.square( xtmp )
         if( istp % print_frequency == 0 ):
@@ -146,7 +146,7 @@ def csvr_verlet( mol: object,
     mol.get_grad()
     cacc = - mol.grad / mol.mass * 100.0
     cacc -= numpy.sum( cacc * proj, axis = 0 ) * proj
-    xtmp = numpy.array( [ mol.func, kine, mol.func + kine, temp ] )
+    xtmp = numpy.array( [ mol.func, kine, mol.func + kine, temp ], dtype=object )
     xavr = xtmp.copy()
     xrms = numpy.square( xtmp )
     time = 0.0
@@ -168,7 +168,7 @@ def csvr_verlet( mol: object,
         #scv = math.sqrt( 1.0 + step_size / temperature_coupling * ( temperature / temp - 1.0 ) )
         mol.velo *= scv
         temp, kine = current_temperature( mol, ndeg )
-        xtmp = numpy.array( [ mol.func, kine, mol.func + kine, temp ] )
+        xtmp = numpy.array( [ mol.func, kine, mol.func + kine, temp ], dtype=object )
         xavr += xtmp
         xrms += numpy.square( xtmp )
         if( istp % print_frequency == 0 ):
