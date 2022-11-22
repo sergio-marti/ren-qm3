@@ -5,7 +5,6 @@ import  qm3.data
 import  openmm
 import  openmm.app
 import  openmm.unit
-import  time
 
 
 class run( object ):
