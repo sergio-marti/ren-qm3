@@ -5,6 +5,7 @@ import  qm3.data
 import  openmm
 import  openmm.app
 import  openmm.unit
+import  time
 
 
 class run( object ):
@@ -79,10 +80,11 @@ class run( object ):
 
 
     def update_coor( self, mol: object ):
-        tmp = []
-        for i in range( mol.natm ):
-            tmp.append( openmm.Vec3( mol.coor[i,0], mol.coor[i,1], mol.coor[i,2] ) * openmm.unit.angstrom )
-        self.sim.context.setPositions( tmp )
+#        tmp = []
+#        for i in range( mol.natm ):
+#            tmp.append( openmm.Vec3( mol.coor[i,0], mol.coor[i,1], mol.coor[i,2] ) * openmm.unit.angstrom )
+#        self.sim.context.setPositions( tmp )
+        self.sim.context.setPositions( mol.coor * 0.1 )
 
 
     def get_func( self, mol: object ):
@@ -95,7 +97,9 @@ class run( object ):
         self.update_coor( mol )
         stt = self.sim.context.getState( getEnergy = True, getForces = True )
         mol.func += stt.getPotentialEnergy().value_in_unit( openmm.unit.kilojoule/openmm.unit.mole )
-        frc = stt.getForces()
-        for i in range( mol.natm ):
-            for j in [0, 1, 2]:
-                mol.grad[i,j] -= frc[i][j].value_in_unit( openmm.unit.kilojoule/(openmm.unit.angstrom*openmm.unit.mole) )
+#        frc = stt.getForces()
+#        for i in range( mol.natm ):
+#            for j in [0, 1, 2]:
+#                mol.grad[i,j] -= frc[i][j].value_in_unit( openmm.unit.kilojoule/(openmm.unit.angstrom*openmm.unit.mole) )
+        frc = numpy.array( stt.getForces( True ) )
+        mol.grad -= frc * 0.1
