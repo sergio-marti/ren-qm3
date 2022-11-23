@@ -69,8 +69,11 @@ def langevin_verlet( mol: object,
     fv2  = step_size * c2
     fr2  = step_size * fv2
     sdev = 0.01 * numpy.sqrt( qm3.data.KB * temperature * 1000.0 * qm3.data.NA / mol.mass ) * mol.actv.astype( numpy.float64 )
-    ndeg -= 3
-    proj = numpy.sqrt( mol.mass / numpy.sum( mol.mass * mol.actv.astype( numpy.float64 ) ) ) * mol.actv.astype( numpy.float64 )
+    if( mol.actv.sum() < mol.natm ):
+        proj = numpy.zeros( ( mol.natm, 3 ) )
+    else:
+        ndeg -= 3
+        proj = numpy.sqrt( mol.mass / numpy.sum( mol.mass * mol.actv.astype( numpy.float64 ) ) ) * mol.actv.astype( numpy.float64 )
     if( not hasattr( mol, "velo" ) ):
         assign_velocities( mol, temperature, proj, ndeg )
     temp, kine = current_temperature( mol, ndeg )
@@ -139,7 +142,11 @@ def csvr_verlet( mol: object,
     fv   = fc * 0.5
     fa   = fc * fv
     ndeg -= 3
-    proj = numpy.sqrt( mol.mass / numpy.sum( mol.mass * mol.actv.astype( numpy.float64 ) ) ) * mol.actv.astype( numpy.float64 )
+    if( mol.actv.sum() < mol.natm ):
+        proj = numpy.zeros( ( mol.natm, 3 ) )
+    else:
+        ndeg -= 3
+        proj = numpy.sqrt( mol.mass / numpy.sum( mol.mass * mol.actv.astype( numpy.float64 ) ) ) * mol.actv.astype( numpy.float64 )
     if( not hasattr( mol, "velo" ) ):
         assign_velocities( mol, temperature, proj, ndeg )
     temp, kine = current_temperature( mol, ndeg )

@@ -10,8 +10,8 @@ class run( object ):
     def __init__( self, config = "lammps.inp", options = [ "-sc", "none" ] ):
         self.lmp = lammps.lammps( cmdargs = options )
         self.lmp.file( config )
-        self.chg = self.lmp.gather_atoms( "q", 1, 1 )
-        self.crd = self.lmp.gather_atoms( "x", 1, 3 )
+#        self.chg = self.lmp.gather_atoms( "q", 1, 1 )
+#        self.crd = self.lmp.gather_atoms( "x", 1, 3 )
 
 
     def stop( self ):
