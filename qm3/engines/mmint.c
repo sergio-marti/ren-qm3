@@ -161,7 +161,6 @@ static PyObject* MMINT__get_grad( PyObject *self, PyObject *args ) {
                 r2 += dr[k] * dr[k];
             }
             rr = sqrt( r2 );
-if( rr < 0.5 ) printf("%ld %ld: %lf\n",obj->qm[i],obj->mm[i],rr);
             if( rr > 0.0 ) {
                 ss = ( obj->rmin[obj->qm[i]] + obj->rmin[obj->mm[i]] ) / rr;
                 ss = ss * ss * ss * ss * ss * ss;
