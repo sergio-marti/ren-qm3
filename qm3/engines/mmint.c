@@ -118,7 +118,7 @@ static PyObject* MMINT__get_grad( PyObject *self, PyObject *args ) {
     long            i, j, k;
     double          *coor = NULL, *grad = NULL, *chrg = NULL, *itm;
     double          boxl[3], dr[3], rr, r2, ss, func, df, qij, eij;
-    double		    EC = 1389.35484620709144110151;
+    double          EC = 1389.35484620709144110151;
     oMMINT          *obj = NULL;
 
     obj = (oMMINT*) self;
@@ -161,13 +161,14 @@ static PyObject* MMINT__get_grad( PyObject *self, PyObject *args ) {
                 r2 += dr[k] * dr[k];
             }
             rr = sqrt( r2 );
+if( rr < 0.5 ) printf("%ld %ld: %lf\n",obj->qm[i],obj->mm[i],rr);
             if( rr > 0.0 ) {
                 ss = ( obj->rmin[obj->qm[i]] + obj->rmin[obj->mm[i]] ) / rr;
                 ss = ss * ss * ss * ss * ss * ss;
                 eij = obj->epsi[obj->qm[i]] * obj->epsi[obj->mm[i]] * ss * obj->sc[i];
                 qij = EC * chrg[obj->qm[i]] * chrg[obj->mm[i]] / rr * obj->sc[i];
                 func += qij + eij * ( ss - 2.0 );
-                df = ( qij + 12.0 * eij * ( 1.0 - ss ) ) / r2;
+                df = ( 12.0 * eij * ( 1.0 - ss ) - qij ) / r2;
                 for( k = 0; k < 3; k++ ) {
                     grad[3*obj->qm[i]+k] += df * dr[k];
                     grad[3*obj->mm[i]+k] -= df * dr[k];
