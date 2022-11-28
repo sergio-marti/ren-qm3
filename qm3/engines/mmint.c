@@ -117,7 +117,7 @@ static PyObject* MMINT__get_grad( PyObject *self, PyObject *args ) {
     PyArrayObject   *m_coor, *m_grad, *m_boxl, *m_chrg;
     long            i, j, k;
     double          *coor = NULL, *grad = NULL, *chrg = NULL, *itm;
-    double          boxl[3], dr[3], rr, r2, ss, func, dfv, dfe;
+    double          boxl[3], dr[3], rr, r2, ss, func, df, qij, eij;
     double		    EC = 1389.35484620709144110151;
     oMMINT          *obj = NULL;
 
@@ -161,15 +161,18 @@ static PyObject* MMINT__get_grad( PyObject *self, PyObject *args ) {
                 r2 += dr[k] * dr[k];
             }
             rr = sqrt( r2 );
-            ss = ( obj->rmin[obj->qm[i]] + obj->rmin[obj->mm[i]] ) / rr;
-            ss = ss * ss * ss * ss * ss * ss;
-            func += obj->epsi[obj->qm[i]] * obj->epsi[obj->mm[i]] * ss * ( ss - 2.0 ) * obj->sc[i];
-    		func += EC * chrg[obj->qm[i]] * chrg[obj->mm[i]] / rr * obj->sc[i];
-            dfv = 12.0 * obj->epsi[obj->qm[i]] * obj->epsi[obj->mm[i]] * ss * ( 1.0 - ss ) / r2 * obj->sc[i];
-    		dfe = EC * chrg[obj->qm[i]] * chrg[obj->mm[i]] / ( r2 * rr ) * obj->sc[i];
-            for( k = 0; k < 3; k++ ) {
-                grad[3*obj->qm[i]+k] += ( dfv + dfe ) * dr[k];
-                grad[3*obj->mm[i]+k] -= ( dfv + dfe ) * dr[k];
+            if( rr > 0.0 ) {
+                ss = ( obj->rmin[obj->qm[i]] + obj->rmin[obj->mm[i]] ) / rr;
+                ss = ss * ss * ss * ss * ss * ss;
+                eij = obj->epsi[obj->qm[i]] * obj->epsi[obj->mm[i]] * ss * obj->sc[i];
+                qij = EC * chrg[obj->qm[i]] * chrg[obj->mm[i]] / rr * obj->sc[i];
+                func += eij * ( ss - 2.0 );
+        		func += qij;
+                df = ( qij + 12.0 * eij * ( 1.0 - ss ) ) / r2;
+                for( k = 0; k < 3; k++ ) {
+                    grad[3*obj->qm[i]+k] += df * dr[k];
+                    grad[3*obj->mm[i]+k] -= df * dr[k];
+                }
             }
         }
 
