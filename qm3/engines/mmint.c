@@ -132,7 +132,7 @@ static PyObject* MMINT__get_grad( PyObject *self, PyObject *args ) {
         Py_DECREF( o_boxl );
 
         o_coor = PyObject_GetAttrString( o_mol, "coor" );
-        o_chrg = PyObject_GetAttrString( o_mol, "coor" );
+        o_chrg = PyObject_GetAttrString( o_mol, "chrg" );
         m_coor = (PyArrayObject*) PyArray_FROM_OT( o_coor, NPY_DOUBLE );
         m_chrg = (PyArrayObject*) PyArray_FROM_OT( o_chrg, NPY_DOUBLE );
         coor = (double*) malloc( 3 * obj->natm * sizeof( double ) );
