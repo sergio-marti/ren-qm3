@@ -166,8 +166,7 @@ static PyObject* MMINT__get_grad( PyObject *self, PyObject *args ) {
                 ss = ss * ss * ss * ss * ss * ss;
                 eij = obj->epsi[obj->qm[i]] * obj->epsi[obj->mm[i]] * ss * obj->sc[i];
                 qij = EC * chrg[obj->qm[i]] * chrg[obj->mm[i]] / rr * obj->sc[i];
-                func += eij * ( ss - 2.0 );
-        		func += qij;
+                func += qij + eij * ( ss - 2.0 );
                 df = ( qij + 12.0 * eij * ( 1.0 - ss ) ) / r2;
                 for( k = 0; k < 3; k++ ) {
                     grad[3*obj->qm[i]+k] += df * dr[k];
