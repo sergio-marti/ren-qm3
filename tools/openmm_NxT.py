@@ -93,4 +93,4 @@ _sim.step( 10000000 )
 #>> save coordinates
 with open( "last.pdb", "wt" ) as f:
     openmm.app.pdbfile.PDBFile.writeFile( _sim.topology,
-        _sim.context.getState( getPositions = True ).getPositions(), f )
+        _sim.context.getState( getPositions = True, enforcePeriodicBox = True ).getPositions(), f )

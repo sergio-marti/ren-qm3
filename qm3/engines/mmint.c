@@ -12,10 +12,10 @@ typedef struct {
     long    *qm, *mm;
     double  *sc;
     double  *epsi, *rmin;
-} oQMLJ;
+} oMMINT;
 
 
-static int QMLJ__init( oQMLJ *self, PyObject *args, PyObject *kwds ) {
+static int MMINT__init( oMMINT *self, PyObject *args, PyObject *kwds ) {
     PyObject        *o_qm = NULL, *o_mm = NULL, *o_ex = NULL, *tmp = NULL;
     PyObject        *o_mol = NULL, *o_epsi = NULL, *o_rmin = NULL;
     PyArrayObject   *m_epsi, *m_rmin;
@@ -84,10 +84,10 @@ static int QMLJ__init( oQMLJ *self, PyObject *args, PyObject *kwds ) {
 }
 
 
-static PyObject* QMLJ__new( PyTypeObject *type, PyObject *args, PyObject *kwds ) {
-    oQMLJ    *self;
+static PyObject* MMINT__new( PyTypeObject *type, PyObject *args, PyObject *kwds ) {
+    oMMINT    *self;
 
-    self = (oQMLJ*) type->tp_alloc( type, 0 );
+    self = (oMMINT*) type->tp_alloc( type, 0 );
     self->ni   = 0;
     self->qm   = NULL;
     self->mm   = NULL;
@@ -99,7 +99,7 @@ static PyObject* QMLJ__new( PyTypeObject *type, PyObject *args, PyObject *kwds )
 }
 
 
-static void QMLJ__dealloc( oQMLJ *self ) {
+static void MMINT__dealloc( oMMINT *self ) {
     free( self->qm ); free( self->mm ); free( self->sc ); free( self->epsi ); free( self->rmin );
     self->ni   = 0;
     self->qm   = NULL;
@@ -112,15 +112,16 @@ static void QMLJ__dealloc( oQMLJ *self ) {
 }
 
 
-static PyObject* QMLJ__get_grad( PyObject *self, PyObject *args ) {
-    PyObject        *o_mol, *o_coor, *o_boxl, *o_grad, *o_func;
-    PyArrayObject   *m_coor, *m_grad, *m_boxl;
+static PyObject* MMINT__get_grad( PyObject *self, PyObject *args ) {
+    PyObject        *o_mol, *o_coor, *o_boxl, *o_grad, *o_func, *o_chrg;
+    PyArrayObject   *m_coor, *m_grad, *m_boxl, *m_chrg;
     long            i, j, k;
-    double          *coor = NULL, *grad = NULL, *itm;
-    double          boxl[3], dr[3], r2, ss, func, df;
-    oQMLJ           *obj = NULL;
+    double          *coor = NULL, *grad = NULL, *chrg = NULL, *itm;
+    double          boxl[3], dr[3], rr, r2, ss, func, dfv, dfe;
+    double		    EC = 1389.35484620709144110151;
+    oMMINT          *obj = NULL;
 
-    obj = (oQMLJ*) self;
+    obj = (oMMINT*) self;
     if( PyArg_ParseTuple( args, "O", &o_mol ) ) {
         o_boxl = PyObject_GetAttrString( o_mol, "boxl" );
         m_boxl = (PyArrayObject*) PyArray_FROM_OT( o_boxl, NPY_DOUBLE );
@@ -131,10 +132,15 @@ static PyObject* QMLJ__get_grad( PyObject *self, PyObject *args ) {
         Py_DECREF( o_boxl );
 
         o_coor = PyObject_GetAttrString( o_mol, "coor" );
+        o_chrg = PyObject_GetAttrString( o_mol, "coor" );
         m_coor = (PyArrayObject*) PyArray_FROM_OT( o_coor, NPY_DOUBLE );
+        m_chrg = (PyArrayObject*) PyArray_FROM_OT( o_chrg, NPY_DOUBLE );
         coor = (double*) malloc( 3 * obj->natm * sizeof( double ) );
         grad = (double*) malloc( 3 * obj->natm * sizeof( double ) );
+        chrg = (double*) malloc( obj->natm * sizeof( double ) );
         for( k = 0, i = 0; i < obj->natm; i++ ) {
+            itm = (double*) PyArray_GETPTR1( m_chrg, i );
+            chrg[i] = *itm;
             for( j = 0; j < 3; j++ ) {
                 itm = (double*) PyArray_GETPTR2( m_coor, i, j );
                 coor[k] = *itm;
@@ -142,6 +148,7 @@ static PyObject* QMLJ__get_grad( PyObject *self, PyObject *args ) {
             }
         }
         Py_DECREF( o_coor );
+        Py_DECREF( o_chrg );
 
         func = 0.0;
         for( i = 0; i < obj->ni; i++ ) {
@@ -153,13 +160,16 @@ static PyObject* QMLJ__get_grad( PyObject *self, PyObject *args ) {
                 dr[k] -= boxl[k] * round( dr[k] / boxl[k] );
                 r2 += dr[k] * dr[k];
             }
-            ss = ( obj->rmin[obj->qm[i]] + obj->rmin[obj->mm[i]] ) / sqrt( r2 );
+            rr = sqrt( r2 );
+            ss = ( obj->rmin[obj->qm[i]] + obj->rmin[obj->mm[i]] ) / rr;
             ss = ss * ss * ss * ss * ss * ss;
             func += obj->epsi[obj->qm[i]] * obj->epsi[obj->mm[i]] * ss * ( ss - 2.0 ) * obj->sc[i];
-            df = 12.0 * obj->epsi[obj->qm[i]] * obj->epsi[obj->mm[i]] * ss * ( 1.0 - ss ) / r2 * obj->sc[i];
+    		func += EC * chrg[obj->qm[i]] * chrg[obj->mm[i]] / rr * obj->sc[i];
+            dfv = 12.0 * obj->epsi[obj->qm[i]] * obj->epsi[obj->mm[i]] * ss * ( 1.0 - ss ) / r2 * obj->sc[i];
+    		dfe = EC * chrg[obj->qm[i]] * chrg[obj->mm[i]] / ( r2 * rr ) * obj->sc[i];
             for( k = 0; k < 3; k++ ) {
-                grad[3*obj->qm[i]+k] += df * dr[k];
-                grad[3*obj->mm[i]+k] -= df * dr[k];
+                grad[3*obj->qm[i]+k] += ( dfv + dfe ) * dr[k];
+                grad[3*obj->mm[i]+k] -= ( dfv + dfe ) * dr[k];
             }
         }
 
@@ -180,19 +190,20 @@ static PyObject* QMLJ__get_grad( PyObject *self, PyObject *args ) {
 
         free( coor );
         free( grad );
+        free( chrg );
     }
     Py_INCREF( Py_None );
     return( Py_None );
 }
 
 
-static struct PyMethodDef QMLJ_methods [] = {
-    { "get_grad", (PyCFunction)QMLJ__get_grad, METH_VARARGS },
+static struct PyMethodDef MMINT_methods [] = {
+    { "get_grad", (PyCFunction)MMINT__get_grad, METH_VARARGS },
     { 0, 0, 0 }
 };
 
 
-static struct PyMemberDef QMLJ_members [] = {
+static struct PyMemberDef MMINT_members [] = {
     { 0, 0, 0, 0 }
 };
 
@@ -202,35 +213,35 @@ static struct PyMethodDef methods [] = {
 };
 
 
-static PyTypeObject TQMLJ = {
+static PyTypeObject TMMINT = {
     PyVarObject_HEAD_INIT( NULL, 0 )
-    .tp_name = "QMLJ",
-    .tp_doc = "Truncated Non-Bonded (QM:Lennard-Jones)",
-    .tp_basicsize = sizeof( oQMLJ ),
+    .tp_name = "MMINT",
+    .tp_doc = "Truncated Non-Bonded (Electrostatics + Lennard-Jones)",
+    .tp_basicsize = sizeof( oMMINT ),
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-    .tp_new = QMLJ__new,
-    .tp_init = (initproc) QMLJ__init,
-    .tp_dealloc = (destructor) QMLJ__dealloc,
-    .tp_members = QMLJ_members,
-    .tp_methods = QMLJ_methods,
+    .tp_new = MMINT__new,
+    .tp_init = (initproc) MMINT__init,
+    .tp_dealloc = (destructor) MMINT__dealloc,
+    .tp_members = MMINT_members,
+    .tp_methods = MMINT_methods,
 };
 
 static struct PyModuleDef moddef = {
     PyModuleDef_HEAD_INIT,
-    "_qmlj",
+    "_mmint",
     NULL,
     -1,
     methods
 };
 
-PyMODINIT_FUNC PyInit__qmlj( void ) {
+PyMODINIT_FUNC PyInit__mmint( void ) {
     PyObject    *my_module;
 
     my_module = PyModule_Create( &moddef );
-    PyType_Ready( &TQMLJ );
-    Py_INCREF( &TQMLJ );
-    PyModule_AddObject( my_module, "run", (PyObject *) &TQMLJ );
+    PyType_Ready( &TMMINT );
+    Py_INCREF( &TMMINT );
+    PyModule_AddObject( my_module, "run", (PyObject *) &TMMINT );
     import_array();
     return( my_module );
 }
