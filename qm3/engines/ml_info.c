@@ -74,6 +74,8 @@ static PyObject* _coul_info( PyObject *self, PyObject *args ) {
                 xyz[k++] = *itm;
             }
         }
+        Py_DECREF( mcrd );
+        Py_DECREF( mnum );
         dim[0] = siz[0] * ( siz[0] - 1 ) / 2;
         out = (PyArrayObject*) PyArray_ZEROS( 1, dim, NPY_DOUBLE, 0 );
         for( i = 0; i < siz[0] - 1; i++ ) {
@@ -112,6 +114,8 @@ static PyObject* _coul_jaco( PyObject *self, PyObject *args ) {
                 xyz[k++] = *itm;
             }
         }
+        Py_DECREF( mcrd );
+        Py_DECREF( mnum );
         dim[0] = siz[0] * ( siz[0] - 1 ) / 2;
         dim[1] = siz[0] * 3;
         out = (PyArrayObject*) PyArray_ZEROS( 2, dim, NPY_DOUBLE, 0 );
@@ -196,6 +200,7 @@ static PyObject* _acsf_info( PyObject *self, PyObject *args ) {
                 xyz[k++] = *itm;
             }
         }
+        Py_DECREF( mcrd );
         dim     = neta2 + neta5;
         odim[0] = siz[0] * dim;
         out     = (PyArrayObject*) PyArray_ZEROS( 1, odim, NPY_DOUBLE, 0 );
@@ -254,6 +259,7 @@ static PyObject* _acsf_jaco( PyObject *self, PyObject *args ) {
                 xyz[k++] = *itm;
             }
         }
+        Py_DECREF( mcrd );
         dim     = neta2 + neta5;
         odim[0] = siz[0] * dim;
         odim[1] = siz[0] * siz[1];
@@ -379,6 +385,7 @@ static PyObject* _acsf_pinf( PyObject *self, PyObject *args ) {
                 xyz[k++] = *itm;
             }
         }
+        Py_DECREF( mcrd );
         dim     = neta2 + neta5;
         pre5    = pow( 2.0, 1.0 - dse5 );
         odim[0] = siz[0] * dim;

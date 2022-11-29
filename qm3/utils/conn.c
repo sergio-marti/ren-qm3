@@ -82,6 +82,8 @@ static PyObject* w_connectivity( PyObject *self, PyObject *args ) {
                 xyz[k++] = *p_double;
             }
         }
+        Py_DECREF( mnum );
+        Py_DECREF( mcrd );
 
         if( cpu > 1 ) {
             // ======================================================================

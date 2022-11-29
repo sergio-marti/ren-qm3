@@ -39,6 +39,8 @@ static int MMINT__init( oMMINT *self, PyObject *args, PyObject *kwds ) {
                 itm = (double*) PyArray_GETPTR1( m_rmin, i );
                 self->rmin[i] = *itm;
             }
+            Py_DECREF( m_epsi );
+            Py_DECREF( m_rmin );
             Py_DECREF( o_epsi );
             Py_DECREF( o_rmin );
 
@@ -129,6 +131,7 @@ static PyObject* MMINT__get_grad( PyObject *self, PyObject *args ) {
             itm = (double*) PyArray_GETPTR1( m_boxl, k );
             boxl[k] = *itm;
         }
+        Py_DECREF( m_boxl );
         Py_DECREF( o_boxl );
 
         o_coor = PyObject_GetAttrString( o_mol, "coor" );
@@ -147,6 +150,8 @@ static PyObject* MMINT__get_grad( PyObject *self, PyObject *args ) {
                 grad[k++] = 0.0;
             }
         }
+        Py_DECREF( m_coor );
+        Py_DECREF( m_chrg );
         Py_DECREF( o_coor );
         Py_DECREF( o_chrg );
 
@@ -188,6 +193,7 @@ static PyObject* MMINT__get_grad( PyObject *self, PyObject *args ) {
                 *itm += grad[k++];
             }
         }
+        Py_DECREF( m_grad );
         Py_DECREF( o_grad );
 
         free( coor );

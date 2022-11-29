@@ -109,6 +109,8 @@ fprintf( stderr, "+ N.CPUs: %ld\n+ N.Ions: %ld\n+ Charge: %.1lf\n+ d_grd :%8.3lf
             min_z = min( min_z, m_z[i] ); rz = max( rz, m_z[i] );
             ptr = (double*) PyArray_GETPTR1( m_chrg, i );    m_q[i] = *ptr;
         }
+        Py_DECREF( m_coor );
+        Py_DECREF( m_chrg );
         Py_DECREF( o_coor );
         Py_DECREF( o_chrg );
         min_x -= max( d_ion, d_prt ); min_y -= max( d_ion, d_prt ); min_z -= max( d_ion, d_prt );
