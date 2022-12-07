@@ -45,7 +45,13 @@ def langevin_verlet( mol: object,
     """
     log_file.write( "---------------------------------------- Dynamics: Langevin-Verlet (NVT)\n\n" )
     ndeg = 3 * mol.actv.sum()
-    log_file.write( "Degrees of Freedom: %20ld\n"%( ndeg ) )
+    if( mol.actv.sum() < mol.natm ):
+        proj = numpy.zeros( ( mol.natm, 3 ) )
+        log_file.write( "Degrees of Freedom: %20ld\n"%( ndeg ) )
+    else:
+        ndeg -= 3
+        proj = numpy.sqrt( mol.mass / numpy.sum( mol.mass * mol.actv.astype( numpy.float64 ) ) ) * mol.actv.astype( numpy.float64 )
+        log_file.write( "Degrees of Freedom: %20ld [removing COM]\n"%( ndeg ) )
     log_file.write( "Step Size:          %20.10lg (ps)\n"%( step_size ) )
     log_file.write( "Temperature:        %20.10lg (K)\n"%( temperature ) )
     log_file.write( "Gamma Factor:       %20.10lg (ps^-1)\n"%( gamma_factor ) )
@@ -69,11 +75,6 @@ def langevin_verlet( mol: object,
     fv2  = step_size * c2
     fr2  = step_size * fv2
     sdev = 0.01 * numpy.sqrt( qm3.data.KB * temperature * 1000.0 * qm3.data.NA / mol.mass ) * mol.actv.astype( numpy.float64 )
-    if( mol.actv.sum() < mol.natm ):
-        proj = numpy.zeros( ( mol.natm, 3 ) )
-    else:
-        ndeg -= 3
-        proj = numpy.sqrt( mol.mass / numpy.sum( mol.mass * mol.actv.astype( numpy.float64 ) ) ) * mol.actv.astype( numpy.float64 )
     if( not hasattr( mol, "velo" ) ):
         assign_velocities( mol, temperature, proj, ndeg )
     temp, kine = current_temperature( mol, ndeg )
@@ -127,6 +128,11 @@ def csvr_verlet( mol: object,
     """
     log_file.write( "---------------------------------------- Dynamics: CSVR-Verlet (NVT)\n\n" )
     ndeg = 3 * mol.actv.sum()
+    if( mol.actv.sum() < mol.natm ):
+        proj = numpy.zeros( ( mol.natm, 3 ) )
+    else:
+        ndeg -= 3
+        proj = numpy.sqrt( mol.mass / numpy.sum( mol.mass * mol.actv.astype( numpy.float64 ) ) ) * mol.actv.astype( numpy.float64 )
     log_file.write( "Degrees of Freedom: %20ld\n"%( ndeg ) )
     log_file.write( "Step Size:          %20.10lg (ps)\n"%( step_size ) )
     log_file.write( "Temperature:        %20.10lg (K)\n"%( temperature ) )
@@ -142,11 +148,6 @@ def csvr_verlet( mol: object,
     fv   = fc * 0.5
     fa   = fc * fv
     ndeg -= 3
-    if( mol.actv.sum() < mol.natm ):
-        proj = numpy.zeros( ( mol.natm, 3 ) )
-    else:
-        ndeg -= 3
-        proj = numpy.sqrt( mol.mass / numpy.sum( mol.mass * mol.actv.astype( numpy.float64 ) ) ) * mol.actv.astype( numpy.float64 )
     if( not hasattr( mol, "velo" ) ):
         assign_velocities( mol, temperature, proj, ndeg )
     temp, kine = current_temperature( mol, ndeg )

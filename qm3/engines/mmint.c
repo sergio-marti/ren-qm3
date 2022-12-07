@@ -196,9 +196,7 @@ static PyObject* MMINT__get_grad( PyObject *self, PyObject *args ) {
         Py_DECREF( m_grad );
         Py_DECREF( o_grad );
 
-        free( coor );
-        free( grad );
-        free( chrg );
+        free( coor ); free( grad ); free( chrg );
     }
     Py_INCREF( Py_None );
     return( Py_None );
