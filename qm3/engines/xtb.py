@@ -35,10 +35,10 @@ class run( qm3.engines.template ):
         for i in range( len( self.lnk ) ):
             self.vec[l] = 1
             l += 1
-        l  = 3 + 5 * self.nQM
-        for i in self.nbn:
-            self.vec[l] = mol.chrg[i]
-            l += 1
+#        l  = 3 + 5 * self.nQM
+#        for i in self.nbn:
+#            self.vec[l] = mol.chrg[i]
+#            l += 1
 
 
     def update_coor( self, mol ):
@@ -56,7 +56,11 @@ class run( qm3.engines.template ):
                 l += 1
             self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
             k += 1
-        l = 3 + 5 * self.nQM + self.nMM
+        l  = 3 + 5 * self.nQM
+        for i in self.nbn:
+            self.vec[l] = mol.chrg[i]
+            l += 1
+#        l = 3 + 5 * self.nQM + self.nMM
         for i in self.nbn:
             for j in [0, 1, 2]:
                 self.vec[l] = mol.coor[i,j] - mol.boxl[j] * numpy.round( mol.coor[i,j] / mol.boxl[j], 0 )
