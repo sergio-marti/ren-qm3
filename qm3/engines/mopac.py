@@ -66,9 +66,15 @@ class run( qm3.engines.template ):
             for j in [0, 1, 2]:
                 self.vec[l] = mol.coor[i,j] - mol.boxl[j] * numpy.round( mol.coor[i,j] / mol.boxl[j], 0 )
                 l += 1
+        # redistribute MM-charge on the remaining atoms of the group
+        dq = numpy.zeros( mol.natm )
+        for i,j in self.lnk:
+            if( j in self.grp ):
+                dq[self.grp[j]] += mol.chrg[j] / len( self.grp[j] )
+        # ----------------------------------------------------------
         l  = 1 + 4 * self.nQM
         for i in self.nbn:
-            self.vec[l] = mol.chrg[i]
+            self.vec[l] = mol.chrg[i] + dq[i]
             l += 1
 
 

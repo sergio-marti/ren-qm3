@@ -25,6 +25,7 @@ class run( qm3.engines.template ):
         for i in self.sel:
             s_qm += "%2s%20.10lf%20.10lf%20.10lf\n"%( qm3.data.symbol[mol.anum[i]],
                     mol.coor[i,0], mol.coor[i,1], mol.coor[i,2] )
+        dq = numpy.zeros( mol.natm )
         if( len( self.lnk ) > 0 ):
             self.vla = []
             k = len( self.sel )
@@ -33,11 +34,16 @@ class run( qm3.engines.template ):
                 s_qm += "%-2s%20.10lf%20.10lf%20.10lf\n"%( "H", c[0], c[1], c[2] )
                 self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
                 k += 1
+            # redistribute MM-charge on the remaining atoms of the group
+            for i,j in self.lnk:
+                if( j in self.grp ):
+                    dq[self.grp[j]] += mol.chrg[j] / len( self.grp[j] )
+            # ----------------------------------------------------------
         s_mm = ""
         s_nq = ""
         for i in self.nbn:
             tmp = mol.coor[i] - mol.boxl * numpy.round( mol.coor[i] / mol.boxl, 0 )
-            s_mm += "%20.10lf%20.10lf%20.10lf%12.4lf\n"%( tmp[0], tmp[1], tmp[2], mol.chrg[i] )
+            s_mm += "%20.10lf%20.10lf%20.10lf%12.4lf\n"%( tmp[0], tmp[1], tmp[2], mol.chrg[i] + dq[i] )
             s_nq += "%20.10lf%20.10lf%20.10lf\n"%( tmp[0], tmp[1], tmp[2] )
         s_rn = ""
         if( run == "grad" ):

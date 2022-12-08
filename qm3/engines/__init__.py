@@ -53,12 +53,24 @@ class template( object ):
             self.sel = numpy.argwhere( sel_QM ).ravel()
         else:
             self.sel = numpy.arange( mol.natm )
+
+        self.vla = []
+        self.lnk = []
+        self.grp = {}
+        for i in range( len( link ) ):
+            if( len( link[i] ) == 3 ):
+                self.lnk.append( ( link[i][0], link[i][1] ) )
+                self.grp[link[i][1]] = link[i][2][:]
+            else:
+                self.lnk.append( link[i] )
+        if( len( self.lnk ) > 0 ):
+            print( "link-atoms [QM,MM]:", self.lnk )
+            print( "link-charge groups:", self.grp )
+
         if( sel_MM.sum() > 0 ):
             self.nbn = numpy.logical_and( sel_MM, numpy.logical_not( sel_QM ) )
-            for i,j in link:
+            for i,j in self.lnk:
                 self.nbn[j] = False
             self.nbn = numpy.argwhere( self.nbn ).ravel()
         else:
             self.nbn = numpy.array( [], dtype=numpy.int32 )
-        self.lnk = link[:]
-        self.vla = []

@@ -34,6 +34,7 @@ class run( qm3.engines.template ):
             aQM.atom += "%-2s%20.10lf%20.10lf%20.10lf\n"%( qm3.data.symbol[mol.anum[i]],
                     mol.coor[i,0], mol.coor[i,1], mol.coor[i,2] )
         self.vla = []
+        dq = numpy.zeros( mol.natm )
         if( len( self.lnk ) > 0 ):
             k = len( self.sel )
             for i in range( len( self.lnk ) ):
@@ -41,6 +42,11 @@ class run( qm3.engines.template ):
                 aQM.atom += "%-2s%20.10lf%20.10lf%20.10lf\n"%( "H", c[0], c[1], c[2] )
                 self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
                 k += 1
+            # redistribute MM-charge on the remaining atoms of the group
+            for i,j in self.lnk:
+                if( j in self.grp ):
+                    dq[self.grp[j]] += mol.chrg[j] / len( self.grp[j] )
+            # ----------------------------------------------------------
         aQM.build()
         if( aQM.spin == 0 ):
             self.dft = pyscf.dft.RKS( aQM )
@@ -57,7 +63,7 @@ class run( qm3.engines.template ):
             crd = mol.coor[self.nbn]
             crd -= mol.boxl * numpy.round( crd / mol.boxl, 0 )
             crd *= self.cx
-            chg = mol.chrg[self.nbn]
+            chg = mol.chrg[self.nbn] + dq[self.nbn]
             self.scf = pyscf.qmmm.mm_charge( self.dft, crd, chg, unit = "Bohr" )
         else:
             self.scf = self.dft

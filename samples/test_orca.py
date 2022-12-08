@@ -21,7 +21,8 @@ for a in [ "C6", "C9", "H11", "H12", "H13", "H14", "H15" ]:
     sqm[mol.indx["A"][1][a]] = True
 sqm = numpy.logical_not( sqm )
 smm = mol.sph_sel( sqm, 12 )
-sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"] ) ]
+#sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"] ) ]
+sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"], [ mol.indx["A"][1]["H11"], mol.indx["A"][1]["H12"] ] ) ]
 
 f = io.StringIO( """%pal nprocs 2 end
 qm3_charges

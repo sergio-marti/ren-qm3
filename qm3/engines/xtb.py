@@ -56,15 +56,21 @@ class run( qm3.engines.template ):
                 l += 1
             self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
             k += 1
-        l  = 3 + 5 * self.nQM
-        for i in self.nbn:
-            self.vec[l] = mol.chrg[i]
-            l += 1
-#        l = 3 + 5 * self.nQM + self.nMM
+        l = 3 + 5 * self.nQM + self.nMM
         for i in self.nbn:
             for j in [0, 1, 2]:
                 self.vec[l] = mol.coor[i,j] - mol.boxl[j] * numpy.round( mol.coor[i,j] / mol.boxl[j], 0 )
                 l += 1
+        # redistribute MM-charge on the remaining atoms of the group
+        dq = numpy.zeros( mol.natm )
+        for i,j in self.lnk:
+            if( j in self.grp ):
+                dq[self.grp[j]] += mol.chrg[j] / len( self.grp[j] )
+        # ----------------------------------------------------------
+        l  = 3 + 5 * self.nQM
+        for i in self.nbn:
+            self.vec[l] = mol.chrg[i] + dq[i]
+            l += 1
 
 
     def get_func( self, mol, density = False ):
