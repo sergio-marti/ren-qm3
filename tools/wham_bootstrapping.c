@@ -59,7 +59,17 @@ void wham( long try, long n_win, long n_bin, double kbt, double *_ss, double *_n
 	}
 }
 
+
 int main( int argc, char **argv ){
+/* arguments:
+ 1: minimal value of coordinate
+ 2: maximal value of coordinate
+ 3: num bins for integration
+ 4: temperature [Kelvin]
+ 5: number of bootstrappings
+ 6: 1 for window-based gaussian distribution, else global-based MC density
+ 7: data files
+*/
 	FILE *fd;
 	double x_min, x_max, b_wid, f_tol, kbt;
 	double *_fc = NULL, *_rf = NULL, *_gm = NULL, *_gr = NULL, *_nn = NULL, *_ss = NULL, *_ff = NULL;
