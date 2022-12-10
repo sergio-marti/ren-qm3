@@ -8,7 +8,7 @@ import  qm3.engines
 
 
 class run( qm3.engines.template ):
-    def __init__( self, mol: object, fdsc,
+    def __init__( self, mol: object, fdsc: typing.IO,
             sel_QM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
             sel_MM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
             link: typing.Optional[list] = [] ):

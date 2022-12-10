@@ -1,7 +1,7 @@
 include config
 
 
-all: dcd conn cions grids ml_info mmint _cgplus.so _lbfgsb.so lapack_deps.o _mopac.so
+all: dcd conn cions grids ml_info mmint _cgplus.so _lbfgsb.so lapack_deps.o _mopac.so molmech
 
 
 mmint:
@@ -50,6 +50,10 @@ lapack_deps.o:
 
 _mopac.so:
 	gfortran $(SHD) -o qm3/engines/_mopac.so -fPIC -Ibuild -Jbuild -O2 qm3/engines/mopac.f90 $(MLB)
+
+
+molmech:
+	$(PYX) setup/molmech build_ext --build-lib qm3/engines
 
 
 #_dftb.so:
