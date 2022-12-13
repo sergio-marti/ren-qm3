@@ -10,7 +10,6 @@ import  os
 import  pickle
 
 
-
 class run( object ):
     def __init__( self, mol: object, ncpu: typing.Optional[int] = os.sysconf( 'SC_NPROCESSORS_ONLN' ) ):
         self.path     = os.path.abspath( os.path.dirname( inspect.getfile( self.__class__ ) ) ) + os.sep
@@ -276,10 +275,12 @@ class run( object ):
                 mol.epsi.append( tmp_typ[mol.type[i]][0] )
                 mol.rmin.append( tmp_typ[mol.type[i]][1] )
             else:
-                mol.epsi.append( None )
-                mol.rmin.append( None )
+                mol.epsi.append( numpy.nan )
+                mol.rmin.append( numpy.nan )
                 print( "- missing atom type [%s]: %d"%( mol.type[i], i+1 ) )
                 out = False
+        mol.epsi = numpy.array( mol.epsi )
+        mol.rmin = numpy.array( mol.rmin )
         for i,j in self.bond:
             td = "%s:%s"%( mol.type[i], mol.type[j] )
             ti = "%s:%s"%( mol.type[j], mol.type[i] )
@@ -400,7 +401,7 @@ class run( object ):
         self.__calculate( mol, epsilon, True, qprint )
 
 
-    def system_write( self, fdsc: typing.IO ):
+    def system_write( self, mol:object, fdsc: typing.IO ):
         pickle.dump( self.natm, fdsc )
         pickle.dump( self.bond, fdsc )
         pickle.dump( self.conn, fdsc )
@@ -415,8 +416,12 @@ class run( object ):
         pickle.dump( self.dihe_indx, fdsc )
         pickle.dump( self.impr_data, fdsc )
         pickle.dump( self.impr_indx, fdsc )
+        pickle.dump( mol.type, fdsc )
+        pickle.dump( mol.chrg, fdsc )
+        pickle.dump( mol.epsi, fdsc )
+        pickle.dump( mol.rmin, fdsc )
 
-    def system_read( self, fdsc: typing.IO ):
+    def system_read( self, mol: object, fdsc: typing.IO ):
         self.natm = pickle.load( fdsc )
         self.bond = pickle.load( fdsc )
         self.conn = pickle.load( fdsc )
@@ -431,3 +436,7 @@ class run( object ):
         self.dihe_indx = pickle.load( fdsc )
         self.impr_data = pickle.load( fdsc )
         self.impr_indx = pickle.load( fdsc )
+        mol.type = pickle.load( fdsc )
+        mol.chrg = pickle.load( fdsc )
+        mol.epsi = pickle.load( fdsc )
+        mol.rmin = pickle.load( fdsc )

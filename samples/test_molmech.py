@@ -31,7 +31,6 @@ H           2.8897268521        0.1470538127       -0.7390574846
 mol = qm3.molecule()
 mol.xyz_read( f )
 mol.guess_atomic_numbers()
-mol.chrg = [ .0 for i in range( mol.natm ) ]
 mol.chrg[5]  = +1.0
 mol.chrg[13] = -0.5
 mol.chrg[14] = -0.5
