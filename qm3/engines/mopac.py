@@ -4,6 +4,7 @@ import  ctypes
 import  os
 import  inspect
 import  qm3.data
+import  qm3.engines
 
 
 class run( qm3.engines.template ):

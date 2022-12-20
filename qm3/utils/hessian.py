@@ -11,7 +11,7 @@ def numerical( mol: object,
         dsp: typing.Optional[float] = 1.e-4,
         central: typing.Optional[bool] = True ) -> numpy.array:
     size = 3 * mol.actv.sum()
-    sele = numpy.argwhere( mol.actv.ravel() ).ravel()
+    sele = numpy.flatnonzero( mol.actv.ravel() )
     hess = numpy.zeros( ( size, size ), dtype=numpy.float64 )
     if( central ):
         k = 0
@@ -172,7 +172,7 @@ def normal_mode( mol: object, freq: numpy.array, mods: numpy.array, who: int,
         temp: typing.Optional[float] = 298.15,
         afac: typing.Optional[float] = 1.0 ):
     siz = mol.actv.sum()
-    sel = numpy.argwhere( mol.actv.ravel() ).ravel()
+    sel = numpy.flatnonzero( mol.actv.ravel() )
     ome = math.fabs( freq[who] )
     if( ome < 0.1 ): 
         return
@@ -200,7 +200,7 @@ def rrho( mol: object, freq: numpy.array,
         symm: typing.Optional[float] = 1.0,
         fcut: typing.Optional[float] = 10.0 ) -> tuple:
     size = mol.actv.sum()
-    sele = numpy.argwhere( mol.actv.ravel() ).ravel()
+    sele = numpy.flatnonzero( mol.actv.ravel() )
     mass = mol.mass[mol.actv].ravel()
     # Translation (divided by N_Avogadro)
     mt = numpy.sum( mol.mass * mol.actv )
@@ -307,7 +307,7 @@ def manage( mol: object, hess: numpy.array,
         update_func: typing.Optional[typing.Callable] = update_bofill,
         dump_name: typing.Optional[str] = "update.dump" ):
     size = 3 * mol.actv.sum()
-    sele = numpy.argwhere( mol.actv.ravel() ).ravel()
+    sele = numpy.flatnonzero( mol.actv.ravel() )
     rr   = mol.coor[sele].ravel()
     gg   = mol.grad[sele].ravel()
     if( should_update and os.access( dump_name, os.R_OK ) and os.stat( dump_name )[stat.ST_SIZE] == size * ( size * 8 + 16 ) ):

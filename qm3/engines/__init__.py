@@ -13,7 +13,7 @@ def exclusions( natm, bond, sele ):
     nx12 = 0
     nx13 = 0
     nx14 = 0
-    for i in numpy.argwhere( sele.ravel() ).ravel():
+    for i in numpy.flatnonzero( sele.ravel() ):
         for j in conn[i]:
             if( j != i and not sele[j] ):
                 excl.append( [ i, j, 0.0 ] )
@@ -50,7 +50,7 @@ class template( object ):
             sel_MM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
             link: typing.Optional[list] = [] ):
         if( sel_QM.sum() > 0 ):
-            self.sel = numpy.argwhere( sel_QM ).ravel()
+            self.sel = numpy.flatnonzero( sel_QM )
         else:
             self.sel = numpy.arange( mol.natm )
 
@@ -71,6 +71,6 @@ class template( object ):
             self.nbn = numpy.logical_and( sel_MM, numpy.logical_not( sel_QM ) )
             for i,j in self.lnk:
                 self.nbn[j] = False
-            self.nbn = numpy.argwhere( self.nbn ).ravel()
+            self.nbn = numpy.flatnonzero( self.nbn )
         else:
             self.nbn = numpy.array( [], dtype=numpy.int32 )

@@ -1,21 +1,20 @@
 #!/usr/bin/env python3
-import  sys
 import  numpy
 import  qm3
 import  qm3.utils._dcd
 import  matplotlib.pyplot as plt
 
 mol = qm3.molecule()
-mol.prmtop_read( open( "../just_protein.prmtop" ) )
+mol.prmtop_read( open( "prmtop" ) )
 
 sel = mol.labl == "C"
 sel = numpy.logical_or( sel, mol.labl == "N" )
 sel = numpy.logical_or( sel, mol.labl == "CA" )
 
-sel = mol.anum > 1
+#sel = mol.anum > 1
 
 dcd = qm3.utils._dcd.dcd()
-dcd.open_read( "just_protein.dcd" )
+dcd.open_read( "dcd" )
 dcd.next( mol )
 
 ref = mol.coor[sel]

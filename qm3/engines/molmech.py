@@ -327,7 +327,7 @@ class run( object ):
 
 
     def define_QM( self, sele: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ) ):
-        for i in numpy.argwhere( sele ).ravel():
+        for i in numpy.flatnonzero( sele ):
             self.qmat[i] = True
         # delete QM-QM bonds
         for i in range( len( self.bond ) -1, -1, -1 ):

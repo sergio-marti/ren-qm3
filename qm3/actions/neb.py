@@ -35,7 +35,7 @@ class serial( object ):
     def __init__( self, mol: object, guess: list, kumb: float ):
         self.mole = mol
         self.kumb = kumb
-        self.sele = numpy.argwhere( mol.actv.ravel() ).ravel()
+        self.sele = numpy.flatnonzero( mol.actv.ravel() )
         self.dime = len( self.sele )
         self.node = len( guess )
         self.natm = self.dime * self.node
@@ -112,7 +112,7 @@ class parall( object ):
     def __init__( self, mol: object, guess: list, kumb: float, chunks: list, opar: object ):
         self.mole = mol
         self.kumb = kumb
-        self.sele = numpy.argwhere( mol.actv.ravel() ).ravel()
+        self.sele = numpy.flatnonzero( mol.actv.ravel() )
         self.dime = len( self.sele )
         self.node = len( guess )
         self.chnk = chunks[:]

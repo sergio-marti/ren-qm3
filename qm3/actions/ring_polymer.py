@@ -44,7 +44,7 @@ class instanton( object ):
             temperature: typing.Optional[float] = 300.0 ):
         self.mole = mol
         self.CHes = mol_hess
-        self.sele = numpy.argwhere( mol.actv.ravel() ).ravel()
+        self.sele = numpy.flatnonzero( mol.actv.ravel() )
         self.temp = temperature
         self.bead = nbeads
         self.half = self.bead // 2

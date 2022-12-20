@@ -12,7 +12,7 @@ class molecule( object ):
     selections are based on numpy.bool_ arrays
     use numpy.logical_[and/or/not] to perform complex selections
 
-    apply numpy.argwhere( SELECTION.ravel() ).ravel() to obtain the indices for the engines
+    apply numpy.flatnonzero( SELECTION.ravel() ) to obtain the indices for the engines
     """
     def __init__( self ):
         self.natm = 0
@@ -61,7 +61,7 @@ class molecule( object ):
     def sph_sel( self, sele: numpy.array, radius: float ) -> numpy.array:
         out = numpy.zeros( self.natm, dtype=numpy.bool_ )
         siz = sele.sum()
-        idx = numpy.argwhere( sele ).ravel()
+        idx = numpy.flatnonzero( sele )
         cen = numpy.sum( self.coor[sele], axis = 0 ) / siz
         dsp = max( map( lambda c: qm3.utils.distanceSQ( cen, c ), self.coor[sele] ) )
         cut = numpy.power( radius + math.sqrt( dsp ) + 0.1, 2.0 )
@@ -483,7 +483,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
 #        mode = numpy.zeros( ( 6, size ), dtype=numpy.float64 )
 #        cent = numpy.sum( self.mass * self.coor * self.actv, axis = 0 ) / numpy.sum( self.mass * self.actv )
 #        k = 0
-#        for i in numpy.argwhere( self.actv.ravel() ).ravel():
+#        for i in numpy.flatnonzero( self.actv.ravel() ):
 #            sqrm = math.sqrt( self.mass[i] )
 #            mode[0,k:k+3] = [ sqrm, 0.0, 0.0 ]
 #            mode[1,k:k+3] = [ 0.0, sqrm, 0.0 ]
@@ -507,7 +507,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         projects R/T from the gradient vector using the RT-modes of the active selection
         """
         rtmd = qm3.utils.RT_modes( self )
-        sele = numpy.argwhere( self.actv.ravel() ).ravel()
+        sele = numpy.flatnonzero( self.actv.ravel() )
         rtmd.shape = ( 6, len( sele ), 3 )
         grad = self.grad[sele]
         for i in range( 6 ):
@@ -525,7 +525,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             mass = self.mass
         self.coor -= numpy.sum( mass * self.coor * self.actv, axis = 0 ) / numpy.sum( mass * self.actv )
         xx = 0.0; xy = 0.0; xz = 0.0; yy = 0.0; yz = 0.0; zz = 0.0
-        for i in numpy.argwhere( self.actv.ravel() ).ravel():
+        for i in numpy.flatnonzero( self.actv.ravel() ):
             xx += mass[i] * self.coor[i,0] * self.coor[i,0]
             xy += mass[i] * self.coor[i,0] * self.coor[i,1]
             xz += mass[i] * self.coor[i,0] * self.coor[i,2]
@@ -575,6 +575,6 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         mcb[1,:] /= numpy.linalg.norm( mcb[1,:] )
         rot = numpy.dot( mcb.T,
                 numpy.array( [ [ cos, sin, 0.0 ], [ - sin, cos, 0.0 ], [ 0.0, 0.0, 1.0 ] ] ) )
-        for i in numpy.argwhere( self.actv.ravel() ).ravel():
+        for i in numpy.flatnonzero( self.actv.ravel() ):
             self.coor[i] = numpy.dot( rot, numpy.dot( mcb,
                 ( self.coor[i] - center ).reshape( ( 3, 1 ) ) ) ).ravel() + center

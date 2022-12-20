@@ -177,7 +177,7 @@ def cgplus( mol: object,
         ctypes.POINTER( ctypes.c_int ) ]
     dlib.cgp_cgfam_.restype = None
     ndeg = math.sqrt( size )
-    sele = numpy.argwhere( mol.actv.ravel() ).ravel()
+    sele = numpy.flatnonzero( mol.actv.ravel() )
     mol.get_grad()
     grms = numpy.linalg.norm( mol.grad ) / ndeg
     coor = mol.coor[sele].ravel().ctypes.data_as( ctypes.POINTER( ctypes.c_double ) )
@@ -275,7 +275,7 @@ def lbfgsb( mol: object,
     isv = ( ctypes.c_int * 44 )()
     dsv = ( ctypes.c_double * 29 )()
     ndeg = math.sqrt( size )
-    sele = numpy.argwhere( mol.actv.ravel() ).ravel()
+    sele = numpy.flatnonzero( mol.actv.ravel() )
     mol.get_grad()
     grms = numpy.linalg.norm( mol.grad ) / ndeg
     k = 0
@@ -372,7 +372,7 @@ def baker( mol: object,
     emin = 1.0e-3
     mxit = 999
     ndeg = math.sqrt( size )
-    sele = numpy.argwhere( mol.actv.ravel() ).ravel()
+    sele = numpy.flatnonzero( mol.actv.ravel() )
     grms = gradient_tolerance * 2.0
     crd  = numpy.zeros( ( actv, 3 ), dtype=numpy.float64 )
     flg  = True
@@ -520,7 +520,7 @@ def rfo( mol: object,
     log_file.write( "-" * 50 + "\n" )
     tol2 = 1.0e-8
     ndeg = math.sqrt( size )
-    sele = numpy.argwhere( mol.actv.ravel() ).ravel()
+    sele = numpy.flatnonzero( mol.actv.ravel() )
     grms = gradient_tolerance * 2.0
     crd  = numpy.zeros( ( actv, 3 ), dtype=numpy.float64 )
     new  = 0.5 * numpy.ones( size, dtype=numpy.float64 )

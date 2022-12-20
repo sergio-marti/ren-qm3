@@ -13,7 +13,7 @@ class run( object ):
             platform = "CPU" ):
         nqm = sel_QM.sum()
         if( nqm > 0 ):
-            idx = numpy.argwhere( sel_QM.ravel() ).ravel()
+            idx = numpy.flatnonzero( sel_QM.ravel() )
             msk = sel_QM * 1
             for ii in range( omm_sys.getNumForces() ):
                 cur = omm_sys.getForce( ii )

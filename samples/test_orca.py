@@ -35,6 +35,9 @@ mol.engines["qm"] = qm3.engines.orca.run( mol, f, sqm, smm, sla )
 mol.engines["qm"].exe = "./orca/orca orca.inp > orca.out"
 
 mol.get_grad()
-print( round( mol.func, 1 ), "/ -697207.4" )
-print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 575.7" )
-print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 68.4" )
+#print( round( mol.func, 1 ), "/ -697207.4" )
+#print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 575.7" )
+#print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 68.4" )
+print( round( mol.func, 1 ), "/ -697238.5" )
+print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 571.1" )
+print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 65.3" )

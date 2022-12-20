@@ -12,7 +12,7 @@ class run( object ):
             sel_QM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
             link: typing.Optional[list] = [] ):
         if( sel_QM.sum() > 0 ):
-            self.sel = numpy.argwhere( sel_QM ).ravel()
+            self.sel = numpy.flatnonzero( sel_QM )
         else:
             self.sel = numpy.arange( mol.natm )
         self.lnk = link[:]

@@ -19,7 +19,7 @@ def initial_step( mol: object, get_hess: typing.Callable, step_size: float ) -> 
     """
     actv = numpy.sum( mol.actv )
     size = 3 * actv
-    sele = numpy.argwhere( mol.actv.ravel() ).ravel()
+    sele = numpy.flatnonzero( mol.actv.ravel() )
     mass = 1.0 / numpy.sqrt( mol.mass[sele] )
     hess = get_hess( mol, 0 )
     for i in range( size ):
@@ -72,7 +72,7 @@ def page_mciver( mol: object,
     it2m = 1000
     it3m = 100000
     ndeg = math.sqrt( size )
-    sele = numpy.argwhere( mol.actv.ravel() ).ravel()
+    sele = numpy.flatnonzero( mol.actv.ravel() )
     grms = gradient_tolerance * 2.0
     mass = numpy.sqrt( mol.mass[sele] )
     if( from_saddle ):
