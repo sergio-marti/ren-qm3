@@ -21,14 +21,14 @@ dcd.open_read( "dcd" )
 dcd.next( mol )
 
 ref = mol.coor[sel]
-ref -= numpy.average( ref, axis = 0 )
+ref -= numpy.mean( ref, axis = 0 )
 
 out = []
 dif = []
 crd = []
 while( dcd.next( mol ) ):
     cur = mol.coor[sel]
-    cur -= numpy.average( cur, axis = 0 )
+    cur -= numpy.mean( cur, axis = 0 )
     cov = numpy.dot( cur.T, ref )
     r1, s, r2 = numpy.linalg.svd( cov )
     if( numpy.linalg.det( cov ) < 0 ):
