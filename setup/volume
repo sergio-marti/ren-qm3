@@ -1,0 +1,11 @@
+from distutils.core import setup, Extension
+
+import	numpy
+
+setup( 
+	name = "Molecular and cavity volume", 
+	ext_modules = [ 
+		Extension( "_volume", sources = [ "qm3/utils/volume.c" ],
+		include_dirs = [ numpy.get_include() ] )
+	]
+)

@@ -1,7 +1,7 @@
 include config
 
 
-all: dcd conn cions grids ml_info mmint _cgplus.so _lbfgsb.so lapack_deps.o _mopac.so molmech
+all: dcd conn cions grids volume ml_info mmint _cgplus.so _lbfgsb.so lapack_deps.o _mopac.so molmech
 
 
 mmint:
@@ -18,6 +18,10 @@ grids:
 
 conn:
 	$(PYX) setup/conn build_ext --build-lib qm3/utils
+
+
+volume:
+	$(PYX) setup/volume build_ext --build-lib qm3/utils
 
 
 cions:

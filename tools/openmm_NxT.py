@@ -15,9 +15,9 @@ _top = openmm.app.amberprmtopfile.AmberPrmtopFile( "start.prmtop" )
 _sys = _top.createSystem(
     nonbondedMethod = openmm.app.CutoffPeriodic,
     nonbondedCutoff = 16.5 * openmm.unit.angstrom,
+    switchDistance = 14.0 * openmm.unit.angstrom,
     rigidWater = False,
-    implicitSolvent = None,
-    switchDistance = 14.0 * openmm.unit.angstrom )
+    implicitSolvent = None )
 
 #>> fix prmtop box size (based on VDW radii)
 _sys.setDefaultPeriodicBoxVectors(
@@ -74,7 +74,6 @@ _sim.context.setPositions( openmm.app.pdbfile.PDBFile( "start.pdb" ).getPosition
 #_sim.context.setPositions( crd.tolist() )
 # -------------------------------------------------------------------------------------
 
-
 #>> 100 ps NPT
 #_sim.reporters.append( openmm.app.dcdreporter.DCDReporter( "last.dcd", 100, enforcePeriodicBox = True ) )
 #_sim.reporters.append( openmm.app.statedatareporter.StateDataReporter( sys.stdout, 100,
@@ -90,7 +89,21 @@ _sim.reporters.append( openmm.app.statedatareporter.StateDataReporter( sys.stdou
 _sim.step( 10000000 )
 
 
-#>> save coordinates
+#>> save coordinates (OpenMM: PDB)
 with open( "last.pdb", "wt" ) as f:
     openmm.app.pdbfile.PDBFile.writeFile( _sim.topology,
         _sim.context.getState( getPositions = True, enforcePeriodicBox = True ).getPositions(), f )
+
+#>> save coordinates (XYZ)
+tmp = _sim.context.getState( getPositions = True, enforcePeriodicBox = True ).getPositions()
+crd = []
+for i in range( len( tmp ) ):
+    crd.append( [ tmp[i].x, tmp[i].y, tmp[i].z ] )
+crd = numpy.array( crd ) * 10
+crd -= numpy.mean( crd, axis = 0 )
+box = _sim.context.getState().getPeriodicBoxVectors()
+with open( "last.xyz", "wt" ) as f:
+    f.write( "%d\n"%( crd.shape[0] ) )
+    f.write( "%14.6lf%14.6lf%14.6lf\n"%( box[0].x * 10, box[1].y * 10, box[2].z * 10 ) )
+    for i in range( crd.shape[0] ):
+        f.write( "%-2s%20.10lf%20.10lf%20.10lf\n"%( "X", crd[i,0], crd[i,1], crd[i,2] ) )
