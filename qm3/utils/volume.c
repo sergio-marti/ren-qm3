@@ -62,11 +62,9 @@ static PyObject* __molecular_surf( PyObject *self, PyObject *args ){
     srf_lst         *srf = NULL, *cur;
 
     if( PyArg_ParseTuple( args, "OO|l", &o_num, &o_xyz, &npt ) ) {
-fprintf(stderr,"NPT: %ld\nDIM: %ld\n", npt, siz );
         m_num = (PyArrayObject*) PyArray_FROM_OT( o_num, NPY_LONG );
         m_xyz = (PyArrayObject*) PyArray_FROM_OT( o_xyz, NPY_DOUBLE );
         dim   = PyArray_SHAPE( m_xyz );
-fprintf(stderr,"NAT: %ld\n", dim[0] );
         rad   = (double*) malloc(     dim[0] * sizeof( double ) );
         crd   = (double*) malloc( 3 * dim[0] * sizeof( double ) );
         for( i = 0; i < dim[0]; i++ ) {
@@ -91,8 +89,10 @@ fprintf(stderr,"NAT: %ld\n", dim[0] );
             i3  = i * 3;
             ri2 = rad[i] * rad[i];
             //for( k = 0; k < siz; k++ ) flg[k] = 0;
+            // ----------------------------------------------------------------------
             sph = fibonacci_sphere( max( npt, lround( rad[i] * 10.0 ) ), &siz );
             flg = (long*) calloc( siz, sizeof( long ) );
+            // ----------------------------------------------------------------------
             for( j = 0; j < dim[0]; j++ ) {
                 if( i != j ) {
                     j3  = j * 3;
@@ -122,7 +122,6 @@ fprintf(stderr,"NAT: %ld\n", dim[0] );
             }
             free( sph ); free( flg );
         }
-fprintf(stderr,"NEL: %ld\n", nit );
 
         dim[0] = nit; dim[1]  = 3;
         m_xyz  = (PyArrayObject*) PyArray_ZEROS( 2, dim, NPY_DOUBLE, 0 );
