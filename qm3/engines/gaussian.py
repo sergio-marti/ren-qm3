@@ -125,6 +125,8 @@ class run( qm3.engines.template ):
                     fl = False
                     mol.func -= float( l.strip().split()[-2] ) * self.ce
                 l = fd.readline()
+            if( fl ):
+                print( ">> gaussian: self energy of the MM charges not found!" )
             if( run in [ "grad", "hess" ] and self.gmm ):
                 fl = True
                 while( l != "" and fl ):
@@ -137,6 +139,8 @@ class run( qm3.engines.template ):
                             for j in [0, 1, 2]:
                                 mol.grad[i,j] += - self.cg * mol.chrg[i] * float( t[j] )
                     l = fd.readline()
+            if( fl ):
+                print( ">> gaussian: electric field on the MM charges not found!" )
             fd.close()
         os.unlink( "Test.FChk" )
         return( h )
