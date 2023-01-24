@@ -523,7 +523,8 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             mass = numpy.ones( ( self.natm, 1 ), dtype=numpy.float64 )
         else:
             mass = self.mass
-        self.coor -= numpy.sum( mass * self.coor * self.actv, axis = 0 ) / numpy.sum( mass * self.actv )
+        cen = numpy.sum( mass * self.coor * self.actv, axis = 0 ) / numpy.sum( mass * self.actv )
+        self.coor -= cen
         xx = 0.0; xy = 0.0; xz = 0.0; yy = 0.0; yz = 0.0; zz = 0.0
         for i in numpy.flatnonzero( self.actv.ravel() ):
             xx += mass[i] * self.coor[i,0] * self.coor[i,0]
@@ -538,6 +539,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             vec[:,0] = - vec[:,0]
         for i in range( self.natm ):
             self.coor[i] = numpy.dot( self.coor[i], vec ) 
+        return( cen, vec )
 
 
     def superimpose( self, cref: numpy.array ):
