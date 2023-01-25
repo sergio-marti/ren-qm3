@@ -80,7 +80,7 @@ static int MMINT__init( oMMINT *self, PyObject *args, PyObject *kwds ) {
             }
 
             free( e_qm ); free( e_mm ); free( e_sc );
-        }
+        } else { fprintf( stderr, "[_mmint]: expecting arguments to be python lists...\n" ); }
     }
     return( 0 );
 }
@@ -179,7 +179,6 @@ static PyObject* MMINT__get_grad( PyObject *self, PyObject *args ) {
                 }
             }
         }
-
         o_func = PyObject_GetAttrString( o_mol, "func" );
         func  += PyFloat_AsDouble( o_func );
         Py_DECREF( o_func );

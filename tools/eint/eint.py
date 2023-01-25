@@ -5,10 +5,10 @@ import  openmm
 import  openmm.app
 import  openmm.unit
 import	qm3
+import  qm3.engines
 import  qm3.engines.mopac
 import  qm3.utils._dcd
 import  _mmdec
-import  exclusions
 import  pickle
 import  collections
 
@@ -54,7 +54,7 @@ for k in range( _sys.getNumForces() ):
             ai, aj, r0, ku = cur.getBondParameters( i )
             bnd.append( [ ai, aj ] )
 
-emm = _mmdec.QMLJ( mol, iqm, imm, exclusions.exclusions( mol.natm, bnd, sqm ) )
+emm = _mmdec.QMLJ( mol, iqm, imm, qm3.engines.exclusions( mol.natm, bnd, sqm ) )
 
 eqm = qm3.engines.mopac.run( mol, "AM1", 0, sel_QM = sqm, sel_MM = smm, link = sla )
 
