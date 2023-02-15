@@ -68,7 +68,8 @@ class run( qm3.engines.template ):
             t = re.compile( "[0-9\.\-]+" ).findall( f.read() )
             f.close()
             n = int( t[0] )
-            mol.func += float( t[1] ) * self.ce
+            out = float( t[1] ) * self.ce
+            mol.func += out
             g = [ float( t[i] ) * self.cg for i in range( 2, 2 + n * 3 ) ]
             qm3.engines.Link_grad( self.vla, g )
             k = 0
@@ -111,19 +112,19 @@ class run( qm3.engines.template ):
         for ff in glob.glob( "orca.*" ):
             if( ff != "orca.gbw" and ff != "orca.ges" ):
                 os.unlink( ff )
-        return( h )
+        return( ( out, h ) )
 
 
     def get_func( self, mol ):
         self.mk_input( mol, "ener" )
         os.system( self.exe )
-        self.parse_log( mol, "ener" )
+        return( self.parse_log( mol, "ener" )[0] )
 
 
     def get_grad( self, mol ):
         self.mk_input( mol, "grad" )
         os.system( self.exe )
-        self.parse_log( mol, "grad" )
+        return( self.parse_log( mol, "grad" )[0] )
 
 
     def get_hess( self, mol ):

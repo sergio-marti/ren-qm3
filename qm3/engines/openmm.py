@@ -89,16 +89,20 @@ class run( object ):
     def get_func( self, mol: object ):
         self.update_coor( mol )
         stt = self.sim.context.getState( getEnergy = True, getForces = False )
-        mol.func += stt.getPotentialEnergy().value_in_unit( openmm.unit.kilojoule/openmm.unit.mole )
+        out = stt.getPotentialEnergy().value_in_unit( openmm.unit.kilojoule/openmm.unit.mole )
+        mol.func += out
+        return( out )
 
 
     def get_grad( self, mol: object ):
         self.update_coor( mol )
         stt = self.sim.context.getState( getEnergy = True, getForces = True )
-        mol.func += stt.getPotentialEnergy().value_in_unit( openmm.unit.kilojoule/openmm.unit.mole )
+        out = stt.getPotentialEnergy().value_in_unit( openmm.unit.kilojoule/openmm.unit.mole )
+        mol.func += out
 #        frc = stt.getForces()
 #        for i in range( mol.natm ):
 #            for j in [0, 1, 2]:
 #                mol.grad[i,j] -= frc[i][j].value_in_unit( openmm.unit.kilojoule/(openmm.unit.angstrom*openmm.unit.mole) )
         frc = numpy.array( stt.getForces( True ) )
         mol.grad -= frc * 0.1
+        return( out )

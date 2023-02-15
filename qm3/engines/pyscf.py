@@ -92,17 +92,20 @@ class run( qm3.engines.template ):
 
     def get_func( self, mol ):
         self.update_coor( mol )
-        mol.func += self.scf.kernel() * self.ce
+        out = self.scf.kernel() * self.ce
+        mol.func += out
         chg = self.scf.mulliken_pop( verbose = 0 )[1].tolist()
         k = 0
         for i in self.sel:
             mol.chrg[i] = chg[k]
             k += 1
+        return( out )
 
 
     def get_grad( self, mol ):
         self.update_coor( mol )
-        mol.func += self.scf.kernel() * self.ce
+        out = self.scf.kernel() * self.ce
+        mol.func += out
         chg = self.scf.mulliken_pop( verbose = 0 )[1].tolist()
         k = 0
         for i in self.sel:
@@ -135,3 +138,4 @@ class run( qm3.engines.template ):
             for i in self.nbn:
                 mol.grad[i,:] += g[k,:] * self.cg
                 k += 1
+        return( out )

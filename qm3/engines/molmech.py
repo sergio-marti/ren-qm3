@@ -388,6 +388,7 @@ class run( object ):
             print( "ETot:", e_bond + e_angl + e_dihe + e_impr + e_elec + e_vdwl, "_kJ/mol" )
             print( "   Bond:%18.4lf   Angl:%18.4lf   Dihe:%18.4lf"%( e_bond, e_angl, e_dihe ) )
             print( "   Impr:%18.4lf   Elec:%18.4lf   VdWl:%18.4lf"%( e_impr, e_elec, e_vdwl ) )
+        return( ( e_bond, e_angl, e_dihe, e_impr, e_elec, e_vdwl ) )
 
 
     def get_func( self, mol: object,

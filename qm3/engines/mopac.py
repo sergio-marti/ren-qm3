@@ -87,6 +87,7 @@ class run( qm3.engines.template ):
         for i in self.sel:
             mol.chrg[i] = self.vec[l]
             l += 1
+        return( self.vec[0] )
 
 
     def get_grad( self, mol: object, maxit: typing.Optional[int] = 200 ):
@@ -109,3 +110,4 @@ class run( qm3.engines.template ):
             for j in [0, 1, 2]:
                 mol.grad[i,j] += self.vec[l]
                 l += 1
+        return( self.vec[0] )

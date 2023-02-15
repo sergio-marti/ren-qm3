@@ -55,7 +55,8 @@ class run( qm3.engines.template ):
     def parse_log( self, mol, run ):
         with open( "energy", "rt" ) as f:
             f.readline()
-            mol.func += float( f.readline().split()[1] ) * self.ce
+            out = float( f.readline().split()[1] ) * self.ce
+            mol.func += out
         os.unlink( "energy" )
         if( run == "grad" ):
             f = open( "gradient", "rt" )
@@ -81,13 +82,14 @@ class run( qm3.engines.template ):
                         mol.grad[i,j] += t[j]
                 f.close()
                 os.unlink( "charges.gradient" )
+        return( out )
 
 
     def get_grad( self, mol ):
         self.mk_input( mol, "grad" )
         os.system( self.exe_ene )
         os.system( self.exe_grd )
-        self.parse_log( mol, "grad" )
+        return( self.parse_log( mol, "grad" ) )
 
 
 

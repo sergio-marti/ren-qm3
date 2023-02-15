@@ -40,6 +40,7 @@ class run:
         mol.func += float( ene )
         mol.grad -= frz
         self.step += 1
+        return( float( ene ) )
 
 
     def stop( self ):

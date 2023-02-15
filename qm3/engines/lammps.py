@@ -39,11 +39,13 @@ class run( object ):
     def get_func( self, mol: object ):
         self.update_coor( mol )
         self.lmp.command( "run 0" )
-        mol.func += self.lmp.get_thermo( "pe" ) * qm3.data.K2J
+        out = self.lmp.get_thermo( "pe" ) * qm3.data.K2J
+        mol.func += out
+        return( out )
 
 
     def get_grad( self, mol: object ):
-        self.get_func( mol )
+        out = self.get_func( mol )
 #        frz = self.lmp.gather_atoms( "f", 1, 3 )
 #        k = 0
 #        for i in range( mol.natm ):
@@ -51,3 +53,4 @@ class run( object ):
 #                mol.grad[i,j] -= frz[k] * qm3.data.K2J
 #                k += 1
         mol.grad -= numpy.array( self.lmp.gather_atoms( "f", 1, 3 ) ).reshape( ( mol.natm, 3 ) ) * 4.184
+        return( out )

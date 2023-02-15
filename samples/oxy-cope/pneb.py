@@ -59,7 +59,6 @@ ncpu += 1
 
 # get only QM energy for the NEB
 def my_grad():
-    mol.rval = []
     mol.func = 0.0
     mol.grad = numpy.zeros( ( mol.natm, 3 ) )
     mol.engines["mm"].get_grad( mol )

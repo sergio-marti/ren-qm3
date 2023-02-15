@@ -31,7 +31,7 @@ class molecule( object ):
         self.engines = {}
         self.func = 0.0
         self.grad = None # dtype=numpy.float64
-        self.rval = None
+        self.rval = {}
 
 
     def rebuild( self ):
@@ -461,19 +461,19 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
 # =================================================================================================
 
     def get_func( self ):
-        self.rval = []
+        self.rval = {}
         self.func = 0.0
         self.grad = numpy.zeros( ( self.natm, 3 ), dtype=numpy.float64 )
         for itm in self.engines:
-            self.engines[itm].get_func( self )
+            self.rval[itm] = self.engines[itm].get_func( self )
 
 
     def get_grad( self ):
-        self.rval = []
+        self.rval = {}
         self.func = 0.0
         self.grad = numpy.zeros( ( self.natm, 3 ), dtype=numpy.float64 )
         for itm in self.engines:
-            self.engines[itm].get_grad( self )
+            self.rval[itm] = self.engines[itm].get_grad( self )
         self.grad *= self.actv.astype( numpy.float64 )
 
 # =================================================================================================

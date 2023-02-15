@@ -70,7 +70,8 @@ class run( qm3.engines.template ):
         h = numpy.array( [] )
         while( l != "" ):
             if( l[0:12] == "Total Energy" ):
-                mol.func += float( l.strip().split()[3] ) * self.ce
+                out = float( l.strip().split()[3] ) * self.ce
+                mol.func += out
             if( run in [ "grad", "hess" ] and l[0:18] == "Cartesian Gradient" ):
                 i = int( l.strip().split()[-1] )
                 j = int( i // 5 ) + ( i%5 != 0 )
@@ -143,19 +144,19 @@ class run( qm3.engines.template ):
                 print( ">> gaussian: electric field on the MM charges not found!" )
             fd.close()
         os.unlink( "Test.FChk" )
-        return( h )
+        return( ( out, h ) )
 
 
     def get_func( self, mol ):
         self.mk_input( mol, "ener" )
         os.system( self.exe )
-        self.parse_log( mol, "ener" )
+        return( self.parse_log( mol, "ener" )[0] )
 
 
     def get_grad( self, mol ):
         self.mk_input( mol, "grad" )
         os.system( self.exe )
-        self.parse_log( mol, "grad" )
+        return( self.parse_log( mol, "grad" )[0] )
 
 
     def get_hess( self, mol ):

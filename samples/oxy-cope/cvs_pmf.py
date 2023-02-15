@@ -52,7 +52,7 @@ mol.dcd = qm3.utils._dcd.dcd()
 mol.dcd.open_write( "dcd.%02d"%( who ), mol.natm )
 
 def cstep( obj, stp ):
-    obj.dat.write( "%20.10lf\n"%( obj.rval[0] ) )
+    obj.dat.write( "%20.10lf\n"%( obj.rval["cv"][1] ) )
     if( stp % 100 == 0 ):
         obj.dat.flush()
         obj.dcd.append( obj )

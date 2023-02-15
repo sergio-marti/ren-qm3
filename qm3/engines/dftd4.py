@@ -70,6 +70,7 @@ class run( object ):
         self.update_coor( mol )
         self.lib.qm3_dftd4_calc_( ctypes.c_int( self.all ), ctypes.c_int( self.siz ), self.vec )
         mol.func += self.vec[0]
+        return( self.vec[0] )
 
 
     def get_grad( self, mol ):
@@ -83,3 +84,4 @@ class run( object ):
             for j in [0, 1, 2]:
                 mol.grad[i,j] += g[l]
                 l += 1
+        return( self.vec[0] )
