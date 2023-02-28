@@ -44,9 +44,9 @@ class string( object ):
 
     kumb_i: kJ / ( mol Angs^2 )  ~ 3000
 
-    Chem. Phys. Lett. v446, p182 (2007) [10.1016/j.cplett.2007.08.017]
-    J. Comput. Chem. v35, p1672 (2014) [10.1002/jcc.23673]
-    J. Phys. Chem. A v121, p9764 (2017) [10.1021/acs.jpca.7b10842]
+    Chem. Phys. Lett. v446, p182 (2007) [doi:10.1016/j.cplett.2007.08.017]
+    J. Comput. Chem. v35, p1672 (2014) [doi:10.1002/jcc.23673]
+    J. Phys. Chem. A v121, p9764 (2017) [doi:10.1021/acs.jpca.7b10842]
     """
     def __init__( self, mol: object, node: int, tstp: float,
             str_cnf: typing.IO ):

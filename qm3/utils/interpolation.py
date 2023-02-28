@@ -165,7 +165,7 @@ def savitzky_golay( x: numpy.array, y: numpy.array,
         points: typing.Optional[int] = 0 ) -> numpy.array:
     """
     Savitzky-Golay cubic smoothing
-    Anal. Chem. v36, p1627 (1964) [10.1021/ac60214a047]
+    Anal. Chem. v36, p1627 (1964) [doi:10.1021/ac60214a047]
 
     points are the total fitting points (2 * m + 1)
     >> x values must be equally spaced <<

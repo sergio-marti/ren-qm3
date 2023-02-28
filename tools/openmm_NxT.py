@@ -77,7 +77,7 @@ _sim.context.setPositions( openmm.app.pdbfile.PDBFile( "start.pdb" ).getPosition
 #>> 100 ps NPT
 #_sim.reporters.append( openmm.app.dcdreporter.DCDReporter( "last.dcd", 100, enforcePeriodicBox = True ) )
 #_sim.reporters.append( openmm.app.statedatareporter.StateDataReporter( sys.stdout, 100,
-#    time = True, potentialEnergy = True, temperature = True, volume = True ) )
+#    time = True, potentialEnergy = True, temperature = True, density = True ) )
 #_sim.step( 100000 )
 #print( _sim.context.getState().getPeriodicBoxVectors() )
 

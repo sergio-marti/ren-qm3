@@ -1,9 +1,8 @@
 # ------------------------------------------------------------------
 # Python
 
-PYX = python3
-#PYL = -lpython3.9
-PYL = -L/usr/local/Cellar/python@3.9/3.9.10/Frameworks/Python.framework/Versions/3.9/lib -lpython3.9
+PYX = python3.10
+#PYL = -L/usr/local/Cellar/python@3.9/3.9.10/Frameworks/Python.framework/Versions/3.9/lib -lpython3.9
 
 # ------------------------------------------------------------------
 # Linker

@@ -34,9 +34,9 @@ class instanton( object ):
     left(x_{i,1}, dotslow ,x_{i,3N} right) +4 k m_{ k/3 } %delta_{j=i,l=k} -2 k m_{ k/3 } %delta_{j=i+1,l=k}
     -2 k m_{ k/3 } %delta_{j=i-1,l=k}
 
-    J. Phys. Chem. Lett. v7, p4374 (2016) [10.1021/acs.jpclett.6b02115]
-    J. Chem. Phys. v134, p184107 (2011) [10.1063/1.3587240]
-    J. Chem. Phys. v148, p102334 (2018) [10.1063/1.5007180]
+    J. Phys. Chem. Lett. v7, p4374 (2016) [doi:10.1021/acs.jpclett.6b02115]
+    J. Chem. Phys. v134, p184107 (2011) [doi:10.1063/1.3587240]
+    J. Chem. Phys. v148, p102334 (2018) [doi:10.1063/1.5007180]
     """
     def __init__( self, mol: object,
             mol_hess: typing.Callable,

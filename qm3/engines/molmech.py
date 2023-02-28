@@ -58,7 +58,7 @@ class run( object ):
     def guess_types( self, mol: object ):
         """
         SYBYL atom types (kinda)
-        http://www.sdsc.edu/CCMS/Packages/cambridge/pluto/atom_types.html
+        [doi:10.1002/jcc.540100804]
 
         uses FORMAL CHARGES (integers, fractional only for carboxylates) present in mol.chrg
         """
@@ -134,7 +134,7 @@ class run( object ):
 
     def guess_charges( self, mol: object, parm: typing.Optional[str] = "" ):
         """
-        Electronegativity Equalization Method (B3LYP_6-311G_NPA.par) [10.1186/s13321-015-0107-1]
+        Electronegativity Equalization Method (B3LYP_6-311G_NPA.par) [doi:10.1186/s13321-015-0107-1]
 
         uses FORMAL CHARGES (integers, fractional only for carboxylates) present in mol.chrg
         """

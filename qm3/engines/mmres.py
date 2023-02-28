@@ -8,7 +8,7 @@ import  qm3.data
 def f_distance( mol: object, kumb: float, xref: float, a_i: int, a_j: int,
         skip_LE: typing.Optional[float] = 0.0,
         skip_BE: typing.Optional[float] = 9.e99,
-        grad: typing.Optional[bool] = False ) -> float:
+        grad: typing.Optional[bool] = False ) -> tuple:
     """
     e_bond = force_constant / 2 * ( distance - reference )^2
 
@@ -30,7 +30,7 @@ def f_distance( mol: object, kumb: float, xref: float, a_i: int, a_j: int,
 
 
 def f_angle( mol: object, kumb: float, xref: float, a_i: int, a_j: int, a_k: int,
-        grad: typing.Optional[bool] = False ) -> float:
+        grad: typing.Optional[bool] = False ) -> tuple:
     """
     e_angle = force_constant / 2 * ( angle - reference )^2
 
@@ -64,7 +64,7 @@ def f_angle( mol: object, kumb: float, xref: float, a_i: int, a_j: int, a_k: int
 
 
 def f_dihedral( mol: object, data: list, a_i: int, a_j: int, a_k: int, a_l: int,
-        grad: typing.Optional[bool] = False ) -> float:
+        grad: typing.Optional[bool] = False ) -> tuple:
     """
     e_dihedral = force_constant * ( 1 + cos( periodicity * angle - displacement ) )
 
@@ -149,7 +149,7 @@ def f_dihedral( mol: object, data: list, a_i: int, a_j: int, a_k: int, a_l: int,
 
 
 def f_improper( mol: object, kumb: float, xref: float, a_i: int, a_j: int, a_k: int, a_l: int,
-        grad: typing.Optional[bool] = False ) -> float:
+        grad: typing.Optional[bool] = False ) -> tuple:
     """
     e_improper = force_constant / 2 * ( angle - reference )^2
 
@@ -365,9 +365,9 @@ class colvar_s( object ):
     ~~~~
     M_{i,j}=sum from{k=1} to{3n} {{partial %zeta_i}over{partial x_k} 1 over m_k {partial %zeta_j}over{partial x_k}}
 
-    J. Comput. Chem. v35, p1672 (2014) [10.1002/jcc.23673]
-    J. Phys. Chem. A v121, p9764 (2017) [10.1021/acs.jpca.7b10842]
-    WIREs Comput. Mol. Sci. v8 (2018) [10.1002/wcms.1329]
+    J. Comput. Chem. v35, p1672 (2014) [doi:10.1002/jcc.23673]
+    J. Phys. Chem. A v121, p9764 (2017) [doi:10.1021/acs.jpca.7b10842]
+    WIREs Comput. Mol. Sci. v8 (2018) [doi:10.1002/wcms.1329]
     """
     def __init__( self, mol: object, kumb: float, xref: float,
             str_cnf: typing.IO,

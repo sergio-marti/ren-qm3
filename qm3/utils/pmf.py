@@ -14,8 +14,8 @@ def wham( data_lst: list,
         toler: typing.Optional[float] = 1.0e-3 ) -> tuple:
     """
     wham.F90 fDynamo module
-    Comput. Phys. Communications v135, p40 (2001) [10.1016/S0010-4655(00)00215-0]
-    J. Chem. Theory Comput. v6, p3713 (2010) [10.1021/ct100494z]
+    Comput. Phys. Communications v135, p40 (2001) [doi:10.1016/S0010-4655(00)00215-0]
+    J. Chem. Theory Comput. v6, p3713 (2010) [doi:10.1021/ct100494z]
     """
     # ---------------------------------------------
     data = []
@@ -81,8 +81,8 @@ def umbint( data_lst: list,
         nbins: typing.Optional[int] = -1,
         temperature: typing.Optional[float] = 300.0 ) -> tuple:
     """
-    J. Chem. Phys. v123, p144104 (2005) [10.1063/1.2052648]
-    J. Chem. Phys. v124, p234106 (2006) [10.1063/1.2206775]
+    J. Chem. Phys. v123, p144104 (2005) [doi:10.1063/1.2052648]
+    J. Chem. Phys. v124, p234106 (2006) [doi:10.1063/1.2206775]
     """
     # ---------------------------------------------
     def __dAdx( x: float, rt: float, gs: float,

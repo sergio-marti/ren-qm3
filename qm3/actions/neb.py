@@ -30,7 +30,7 @@ class serial( object ):
 
     when optimizing the whole band, set the 'gradient_tolerance' equal to [0.1:0.5] * nodes (_kJ/mol.A)
 
-    J. Chem. Phys. v113, p9978 (2000) [10.1063/1.1323224]
+    J. Chem. Phys. v113, p9978 (2000) [doi:10.1063/1.1323224]
     """
     def __init__( self, mol: object, guess: list, kumb: float ):
         self.mole = mol
@@ -107,7 +107,7 @@ class parall( object ):
 
     when optimizing the whole band, set the 'gradient_tolerance' equal to [0.1:0.5] * nodes (_kJ/mol.A)
 
-    J. Chem. Phys. v113, p9978 (2000) [10.1063/1.1323224]
+    J. Chem. Phys. v113, p9978 (2000) [doi:10.1063/1.1323224]
     """
     def __init__( self, mol: object, guess: list, kumb: float, chunks: list, opar: object ):
         self.mole = mol

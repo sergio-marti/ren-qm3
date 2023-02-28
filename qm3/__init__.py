@@ -226,7 +226,8 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
 
 
     def pdb_write( self, fdsc: typing.IO,
-            sele: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ) ):
+            sele: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
+            endl: typing.Optional[str] = "END\n" ):
         if( sele.sum() > 0 ):
             lsel = sele
         else:
@@ -240,7 +241,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
                     self.resn[i], self.resi[i], self.coor[i,0], self.coor[i,1], self.coor[i,2], 
                     0.0, 0.0, self.segn[i] ) )
                 j += 1
-        fdsc.write( "END\n" )
+        fdsc.write( endl )
 
 # =================================================================================================
 
@@ -357,7 +358,129 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         self.engines = {}
         self.rebuild()
 
+
+    def zmat_read( self, fdsc: typing.IO,
+                  field: typing.Optional[dict] = { "label": 0,
+                        "r_dst": 1, "r_ang": 3, "r_die": 5,
+                        "dist":  2, "angl":  4, "dihe":  6, "chrg": None } ):
+        # 1st atom
+        tmp  = fdsc.readline().split()
+        natm = 1
+        labl = [ tmp[field["label"]] ]
+        coor = [ [ .0, .0, .0 ] ]
+        if( field["chrg"] != None ):
+            chrg = [ float( tmp[field["chrg"]] ) ]
+        else:
+            chrg = [ .0 ]
+        # 2nd atom
+        tmp  = fdsc.readline().split()
+        natm += 1
+        labl.append( tmp[field["label"]] )
+        coor.append( [ float( tmp[field["dist"]] ), .0 , .0 ] )
+        if( field["chrg"] != None ):
+            chrg.append( float( tmp[field["chrg"]] ) )
+        else:
+            chrg.append( .0 )
+        # 3rd atom
+        tmp  = fdsc.readline().split()
+        natm += 1
+        labl.append( tmp[field["label"]] )
+        dst  = float( tmp[field["dist"]] )
+        ang  = float( tmp[field["angl"]] ) / qm3.data.R2D
+        if( tmp[field["r_dst"]] == "1" ):
+            coor.append( [ coor[0][0] + dst * math.cos( ang ), dst * math.sin( ang ), 0.0 ] )
+        else:
+            coor.append( [ coor[1][0] - dst * math.cos( ang ), dst * math.sin( ang ), 0.0 ] )
+        if( field["chrg"] != None ):
+            chrg.append( float( tmp[field["chrg"]] ) )
+        else:
+            chrg.append( .0 )
+        # 4th and so on...
+        for l in fdsc:
+            tmp  = l.split()
+            natm += 1
+            labl.append( tmp[field["label"]] )
+            rdst = int( tmp[field["r_dst"]] ) - 1
+            dst  = float( tmp[field["dist"]] )
+            rang = int( tmp[field["r_ang"]] ) - 1
+            ang  = float( tmp[field["angl"]] ) / qm3.data.R2D
+            rdie = int( tmp[field["r_die"]] ) - 1
+            die  = float( tmp[field["dihe"]] ) / qm3.data.R2D
+            # ------------------------------------------------------------------------
+            cosa = math.cos( ang )
+            pa = coor[rdst]
+            pb = coor[rang]
+            vb = [ i-j for i,j in zip( pb, pa ) ]
+            r = 1. / math.sqrt( vb[0] * vb[0] + vb[1] * vb[1] + vb[2] * vb[2] )
+            if( math.fabs( cosa ) >= 0.9999999991 ):
+                r *= ( cosa * dst )
+                coor.append( [ pa[i] + vb[i] + r for i in [0, 1, 2] ] )
+            else:
+                pc = coor[rdie]
+                va = [ i-j for i,j in zip( pc, pa ) ]
+                xyb = math.sqrt( vb[0] * vb[0] + vb[1] * vb[1] )
+                flg = 0
+                if( xyb <= 0.10 ):
+                    xpa = va[2]
+                    va[2] = - va[0]
+                    va[0] = xpa
+                    xpb = vb[2]
+                    vb[2] = - vb[0]
+                    vb[0] = xpb
+                    xyb = math.sqrt( vb[0] * vb[0] + vb[1] * vb[1] )
+                    flg = 1
+                costh = vb[0] / xyb
+                sinth = vb[1] / xyb
+                xpa = va[0] * costh + va[1] * sinth
+                ypa = va[1] * costh - va[0] * sinth
+                sinph = vb[2] * r
+                cosph = math.sqrt( math.fabs( 1.0 - sinph * sinph ) )
+                xqa = xpa * cosph + va[2] * sinph
+                zqa = va[2] * cosph - xpa * sinph
+                yza = math.sqrt( ypa * ypa + zqa * zqa )
+                coskh = ypa / yza
+                sinkh = zqa / yza
+                if( yza < 1.0e-10 ):
+                    coskh = 1.0
+                    sinkh = 0.0
+                sina =  math.sin( ang )
+                sind = -math.sin( die )
+                cosd =  math.cos( die )
+                vd = [ dst * cosa, dst * sina * cosd, dst * sina * sind ]
+                ypd = vd[1] * coskh - vd[2] * sinkh
+                zpd = vd[2] * coskh + vd[1] * sinkh
+                xpd = vd[0] * cosph - zpd * sinph
+                zqd = zpd * cosph + vd[0] * sinph
+                xqd = xpd * costh - ypd * sinth
+                yqd = ypd * costh + xpd * sinth
+                if( flg == 1 ):
+                    xrd = -zqd
+                    zqd = xqd
+                    xqd = xrd
+                coor.append( [ xqd + pa[0], yqd + pa[1], zqd + pa[2] ] )
+            # ------------------------------------------------------------------------
+            if( field["chrg"] != None ):
+                chrg.append( float( tmp[field["chrg"]] ) )
+            else:
+                chrg.append( .0 )
+        # done!
+        self.natm = natm
+        self.labl = numpy.array( labl, dtype=qm3.data.strsiz )
+        self.coor = numpy.array( coor, dtype=numpy.float64 )
+        self.chrg = numpy.array( chrg, dtype=numpy.float64 )
+        temp = [ "X" ] * self.natm
+        self.segn = numpy.array( temp, dtype=qm3.data.strsiz )
+        self.resi = numpy.ones( self.natm, dtype=numpy.int16 )
+        self.resn = numpy.array( temp, dtype=qm3.data.strsiz )
+        self.anum = numpy.zeros( self.natm, dtype=numpy.int16 )
+        self.mass = numpy.zeros( ( self.natm, 1 ), dtype=numpy.float64 )
+        self.actv = numpy.ones( ( self.natm, 1 ), dtype=numpy.bool_ )
+        self.rlim = numpy.array( [ 0, self.natm ], dtype=numpy.int32 )
+        self.indx = None
+        self.engines = {}
+
 # =================================================================================================
+# FIX? parse also the atoms types (self.type [list]) and also return a list of bonds
 
     def psf_read( self, fdsc: typing.IO ):
         init = ( self.natm == 0 )
@@ -455,6 +578,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
                 for j in range( rlim[i], rlim[i+1] ):
                     self.resi[j] = i + 1
                     self.resn[j] = resn[i]
+            self.actv = numpy.ones( ( self.natm, 1 ), dtype=numpy.bool_ )
             self.engines = {}
             self.rebuild()
 

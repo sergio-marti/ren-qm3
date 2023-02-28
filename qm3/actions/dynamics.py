@@ -41,7 +41,7 @@ def langevin_verlet( mol: object,
         current_step: typing.Optional[typing.Callable] = fake_cs ):
     """
     dynamics_langevin_verlet.F90 fDynamo module
-    Chem. Phys. v236, p243 (1998) [10.1016/S0301-0104(98)00214-6]
+    Chem. Phys. v236, p243 (1998) [doi:10.1016/S0301-0104(98)00214-6]
     """
     log_file.write( "---------------------------------------- Dynamics: Langevin-Verlet (NVT)\n\n" )
     ndeg = 3 * mol.actv.sum()
@@ -124,7 +124,7 @@ def csvr_verlet( mol: object,
         log_file: typing.Optional[typing.IO] = sys.stdout,
         current_step: typing.Optional[typing.Callable] = fake_cs ):
     """
-    J. Chem. Phys. v126, p14101 (2007) [10.1063/1.2408420]
+    J. Chem. Phys. v126, p14101 (2007) [doi:10.1063/1.2408420]
     """
     log_file.write( "---------------------------------------- Dynamics: CSVR-Verlet (NVT)\n\n" )
     ndeg = 3 * mol.actv.sum()
