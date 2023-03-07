@@ -228,7 +228,6 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             self.actv = numpy.ones( ( self.natm, 1 ), dtype=numpy.bool_ )
             self.engines = {}
             self.rebuild()
-        else:
 
 
     def pdb_write( self, fdsc: typing.IO,
