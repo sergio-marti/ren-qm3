@@ -70,7 +70,7 @@ H           4.3073218711        0.1961140585       -3.0053871356
 H           0.4716601170       -0.9743562216       -0.8834817962
 H           7.3312474567       -5.2158767640       -2.0508724605
 """ )
-mol.xyz_read( f, replace = True )
+mol.xyz_read( f )
 reac = mol.coor.copy()
 
 f = io.StringIO( """26
@@ -102,7 +102,7 @@ H           4.2673630755        0.2939605475       -3.1914133048
 H           0.7364095795       -1.0261949255       -0.9268183021
 H           7.0811023059       -5.2774478484       -1.9333607252
 """ )
-mol.xyz_read( f, replace = True )
+mol.xyz_read( f )
 prod = mol.coor.copy()
 
 gues = qm3.actions.neb.distribute( 20, [ reac, tran, prod ] )

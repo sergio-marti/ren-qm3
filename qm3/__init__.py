@@ -142,7 +142,8 @@ class molecule( object ):
 
 # =================================================================================================
 
-    def pdb_read( self, fdsc: typing.IO ):
+    def pdb_read( self, fdsc: typing.IO,
+            replace: typing.Optional[bool] = True ):
         """
           1         2         3         4         5         6         7         8
 .123456789.123456789.123456789.123456789.123456789.123456789.123456789.123456789.
@@ -164,7 +165,7 @@ ATOM   7922  H1  WAT  2632     -11.616 -10.833 -10.270  1.00  0.00
 ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         """
         try:
-            self.natm = 0
+            natm = 0
             labl = []
             coor = []
             segn = []
@@ -185,11 +186,11 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
                         else:
                             segn.append( "A" )
                     coor += [ float( l[30:38] ), float( l[38:46] ), float( l[46:54] ) ]
-                    self.natm += 1
+                    natm += 1
         except ValueError:
             print( " >> non fixed-PDB detected: trying to parse tokens..." )
             fdsc.seek( 0 )
-            self.natm = 0
+            natm = 0
             labl = []
             coor = []
             segn = []
@@ -211,18 +212,23 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
                             segn.append( tmp[10] )
                         else:
                             segn.append( "A" )
-                    self.natm += 1
-        self.labl = numpy.array( labl, dtype=qm3.data.strsiz )
-        self.coor = numpy.array( coor, dtype=numpy.float64 ).reshape( ( self.natm, 3 ) )
-        self.segn = numpy.array( segn, dtype=qm3.data.strsiz )
-        self.resi = numpy.array( resi, dtype=numpy.int32 )
-        self.resn = numpy.array( resn, dtype=qm3.data.strsiz )
-        self.anum = numpy.zeros( self.natm, dtype=numpy.int16 )
-        self.chrg = numpy.zeros( self.natm, dtype=numpy.float64 )
-        self.mass = numpy.zeros( ( self.natm, 1 ), dtype=numpy.float64 )
-        self.actv = numpy.ones( ( self.natm, 1 ), dtype=numpy.bool_ )
-        self.engines = {}
-        self.rebuild()
+                    natm += 1
+        if( replace and self.natm == natm ):
+            self.coor = numpy.array( coor, dtype=numpy.float64 ).reshape( ( self.natm, 3 ) )
+        else:
+            self.natm = natm
+            self.labl = numpy.array( labl, dtype=qm3.data.strsiz )
+            self.coor = numpy.array( coor, dtype=numpy.float64 ).reshape( ( self.natm, 3 ) )
+            self.segn = numpy.array( segn, dtype=qm3.data.strsiz )
+            self.resi = numpy.array( resi, dtype=numpy.int32 )
+            self.resn = numpy.array( resn, dtype=qm3.data.strsiz )
+            self.anum = numpy.zeros( self.natm, dtype=numpy.int16 )
+            self.chrg = numpy.zeros( self.natm, dtype=numpy.float64 )
+            self.mass = numpy.zeros( ( self.natm, 1 ), dtype=numpy.float64 )
+            self.actv = numpy.ones( ( self.natm, 1 ), dtype=numpy.bool_ )
+            self.engines = {}
+            self.rebuild()
+        else:
 
 
     def pdb_write( self, fdsc: typing.IO,
@@ -246,7 +252,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
 # =================================================================================================
 
     def xyz_read( self, fdsc: typing.IO,
-            replace: typing.Optional[bool] = False ):
+            replace: typing.Optional[bool] = True ):
         n = int( fdsc.readline().strip() )
         fdsc.readline()
         if( replace and self.natm == n ):
