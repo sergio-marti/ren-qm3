@@ -32,10 +32,14 @@ with open( "pmf_s.cnf", "wt" ) as f_cnf:
         f_cnf.write( "%8d%8d\n"%( bnd[j][0], bnd[j][1] ) )
 
 f_str = io.StringIO()
+g_str = open( "neb.path", "wt" )
 for i in range( nwin ):
     for j in range( ncrd ):
         f_str.write( "%12.4lf"%( rcrd[i,j] ) )
+        g_str.write( "%12.4lf"%( rcrd[i,j] ) )
     f_str.write( "\n" )
+    g_str.write( "\n" )
+g_str.close()
 
 f_str.seek( 0 )
 obj = qm3.engines.mmres.colvar_s( mol, .0, .0, open( "pmf_s.cnf" ), f_str, None )
@@ -64,6 +68,7 @@ for j in range( ncrd ):
     fcrd[:,j] = numpy.array( [ inte.calc( x )[0] for x in equi ] )
     plt.plot( rcrd[:,j], '-' )
     plt.plot( fcrd[:,j], 'o' )
+plt.savefig( "setup.pdf" )
 plt.show()
 
 with open( "pmf_s.str", "wt" ) as f_str:
