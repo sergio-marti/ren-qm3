@@ -50,7 +50,7 @@ numpy.random.seed()
 x = numpy.linspace( 0, 2 * numpy.pi, 100 )
 y = numpy.sin( x )
 p = y + numpy.random.random( 100 ) - 0.5
-f = qm3.utils.interpolation.savitzky_golay( x, p )
+f = qm3.utils.interpolation.savitzky_golay( p )
 plt.plot( x, y, '.' )
 plt.plot( x, p, 'o' )
 plt.plot( x, f, '-' )
