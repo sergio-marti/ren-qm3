@@ -73,9 +73,9 @@ class string( object ):
         tmp.shape = ( self.nwin, self.ncrd )
         self.rcrd = tmp[self.node,:]
         # store the masses (and their square root)
-        self.mass = mol.mass[list( self.jidx.keys() )]
-        self.mass = numpy.column_stack( ( self.mass, self.mass, self.mass ) ).reshape( self.jcol )
-        #self.mass = numpy.ones( self.jcol, dtype=numpy.float64 )
+        #self.mass = mol.mass[list( self.jidx.keys() )]
+        #self.mass = numpy.column_stack( ( self.mass, self.mass, self.mass ) ).reshape( self.jcol )
+        self.mass = numpy.ones( self.jcol, dtype=numpy.float64 )
         # initialize metrics
         self.cmet = numpy.zeros( ( self.ncrd, self.ncrd ), dtype=numpy.float64 )
 

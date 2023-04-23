@@ -4,6 +4,8 @@ import  math
 import  numpy
 import  matplotlib.pyplot as plt
 
+#10.1098/rspa.1933.0031
+
 if( len( sys.argv ) != 6 ):
     print( "%s  Er_kJ/mol  Et_kJ/mol  Ep_kJ/mol  ifreq_cm^-1  Temp_K"%( sys.argv[0] ) )
     sys.exit(1)

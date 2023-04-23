@@ -161,24 +161,22 @@ class interpolate_2d( object ):
 
 
 
-def savitzky_golay( x: numpy.array, y: numpy.array,
-        points: typing.Optional[int] = 0 ) -> numpy.array:
+def savitzky_golay( y: numpy.array, points: typing.Optional[int] = 0 ) -> numpy.array:
     """
     Savitzky-Golay cubic smoothing
     Anal. Chem. v36, p1627 (1964) [doi:10.1021/ac60214a047]
 
     points are the total fitting points (2 * m + 1)
-    >> x values must be equally spaced <<
+    WARNING: Y values for equally spaced X ones
     returns the fitted values
     """
-    n = len( x )
+    n = len( y )
     if( points < 5 ):
         t = sorted( [ ( n >= i, i ) for i in [ 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27 ] ] )[-1]
         if( t[0] ):
             points = t[1]
             print( "\n>> Savitzky-Golay smoothing total fitting points:", points )
     m  = ( points - 1 ) // 2
-    f  = numpy.zeros( n )
     wf = None
     if( points == 7 and n >= 7 ):
         wf = [ 42,42,42,21,42,42,42 ]
@@ -392,15 +390,14 @@ def savitzky_golay( x: numpy.array, y: numpy.array,
     elif( n >= 5 ):
         wf = [ 70,35,35,35,70 ]
         cf = numpy.array( [ [ 69,4,-6,4,-1 ], [ 2,27,12,-8,2 ], [ -3,12,17,12,-3 ], [ 2,-8,12,27,2 ], [ -1,4,-6,4,69 ] ] )
-    if( wf != None ):
-        k = 0
+    if( wf == None ):
+        return( numpy.zeros( n ) )
+    else:
+        f = []
         for i in range( m ):
-            f[k] = numpy.sum( cf[i] * y[0:points] ) / wf[i]
-            k += 1
+            f.append( numpy.sum( cf[i] * y[0:points]  ) / wf[i] )
         for i in range( m, n - m ):
-            f[k] = numpy.sum( cf[m] * y[i-m:i+m+1] ) / wf[m]
-            k += 1
+            f.append( numpy.sum( cf[m] * y[i-m:i+m+1] ) / wf[m] )
         for i in range( m+1, 2*m+1 ):
-            f[k] = numpy.sum( cf[i] * y[-points:] ) / wf[i]
-            k += 1
-    return( f )
+            f.append( numpy.sum( cf[i] * y[-points:]  ) / wf[i] )
+        return( numpy.array( f ) )
