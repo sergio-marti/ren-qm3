@@ -12,6 +12,7 @@
 #define max(a,b) (((a)>(b))?(a):(b))
 
 
+/*
 double r_vdw[110] = { 1.10, 1.10, 1.40, 1.81, 1.53, 1.92, 1.70, 1.55, 1.52, 1.47, 1.54, 2.27,
         1.73, 1.84, 2.10, 1.80, 1.80, 1.75, 1.88, 2.75, 2.31, 2.30, 2.15, 2.05, 2.05, 2.05,
         2.05, 2.00, 2.00, 2.00, 2.10, 1.87, 2.11, 1.85, 1.90, 1.83, 2.02, 3.03, 2.49, 2.40,
@@ -20,6 +21,7 @@ double r_vdw[110] = { 1.10, 1.10, 1.40, 1.81, 1.53, 1.92, 1.70, 1.55, 1.52, 1.47
         2.32, 2.30, 2.28, 2.27, 2.25, 2.20, 2.10, 2.05, 2.00, 2.00, 2.05, 2.10, 2.05, 1.96,
         2.02, 2.07, 1.97, 2.02, 2.20, 3.48, 2.83, 2.00, 2.40, 2.00, 2.30, 2.00, 2.00, 2.00,
         2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00 };
+*/
 
 
 typedef struct ptn_node { long i, j, k; struct ptn_node *n; } ptn_lst;
@@ -54,28 +56,28 @@ double* fibonacci_sphere( long dime, long *size ) {
 
 
 static PyObject* __molecular_surf( PyObject *self, PyObject *args ){
-    PyObject        *o_xyz, *o_num;
-    PyArrayObject   *m_xyz, *m_num;
+    PyObject        *o_xyz, *o_rad;
+    PyArrayObject   *m_xyz, *m_rad;
     long            i, j, k, l, nit = 0, *flg, i3, j3;
-    long            npt = 14, siz = 0, *ptr_l, *dim;
+    long            npt = 14, siz = 0, *dim;
     double          *sph, *ptr_f, *rad, *crd, ri2, rj2, ds2, rr2;
     srf_lst         *srf = NULL, *cur;
 
-    if( PyArg_ParseTuple( args, "OO|l", &o_num, &o_xyz, &npt ) ) {
-        m_num = (PyArrayObject*) PyArray_FROM_OT( o_num, NPY_LONG );
+    if( PyArg_ParseTuple( args, "OO|l", &o_rad, &o_xyz, &npt ) ) {
+        m_rad = (PyArrayObject*) PyArray_FROM_OT( o_rad, NPY_DOUBLE );
         m_xyz = (PyArrayObject*) PyArray_FROM_OT( o_xyz, NPY_DOUBLE );
         dim   = PyArray_SHAPE( m_xyz );
         rad   = (double*) malloc(     dim[0] * sizeof( double ) );
         crd   = (double*) malloc( 3 * dim[0] * sizeof( double ) );
         for( i = 0; i < dim[0]; i++ ) {
-            ptr_l = (long*) PyArray_GETPTR1( m_num, i );
-            rad[i] = r_vdw[*ptr_l];
+            ptr_f = (double*) PyArray_GETPTR1( m_rad, i );
+            rad[i] = *ptr_f;
             for( j = 0; j < 3; j++ ) {
                 ptr_f = (double*) PyArray_GETPTR2( m_xyz, i, j );
                 crd[3*i+j] = *ptr_f;
             }
         }
-        Py_DECREF( m_num );
+        Py_DECREF( m_rad );
         Py_DECREF( m_xyz );
 
         srf    = (srf_lst*)  malloc( sizeof( srf_lst ) );
@@ -166,15 +168,14 @@ void* __fill_atoms( void *args ) {
 
 
 static PyObject* __molecular_grid( PyObject *self, PyObject *args ){
-    PyObject        *o_xyz, *o_num, *o_cub;
-    PyArrayObject   *m_xyz, *m_num;
+    PyObject        *o_xyz, *o_rad, *o_pdb;
+    PyArrayObject   *m_xyz, *m_rad;
     long            i, j, k, l, l3, cpu, *siz, rad, rd2, *rng, nit, knd = 0;
-    double          mad, tmp, cnt, *ptr_f;
-    double          cte = 4.1887902047863905;
-    double          vol = 0.0, err = 0.0;
+    double          mad, *ptr_f;
+    double          vol = 0.0;
     double          bmax[3] = { -9999., -9999., -9999. };
     double          bmin[3] = { +9999., +9999., +9999. };
-    long            npt[3], *ptr_l;
+    long            npt[3];
     char            *grd;
     double          *crd, dsp, d3;
     sph_lst         *sph, **hsh;
@@ -185,14 +186,14 @@ static PyObject* __molecular_grid( PyObject *self, PyObject *args ){
     time_t          t0;
 
     dsp = 0.05;
-    o_cub = Py_False;
-    if( PyArg_ParseTuple( args, "lOO|dO", &cpu, &o_num, &o_xyz, &dsp, &o_cub ) ) {
+    o_pdb = Py_False;
+    if( PyArg_ParseTuple( args, "lOO|dO", &cpu, &o_rad, &o_xyz, &dsp, &o_pdb ) ) {
 
         t0    = time( NULL );
         d3    = dsp * dsp * dsp;
-        m_num = (PyArrayObject*) PyArray_FROM_OT( o_num, NPY_LONG );
+        m_rad = (PyArrayObject*) PyArray_FROM_OT( o_rad, NPY_DOUBLE );
         m_xyz = (PyArrayObject*) PyArray_FROM_OT( o_xyz, NPY_DOUBLE );
-        siz   = PyArray_SHAPE( m_num );
+        siz   = PyArray_SHAPE( m_rad );
         crd   = (double*) malloc( 3 * siz[0] * sizeof( double ) );
         if( siz[0] < cpu ) { cpu = 1; }
 fprintf(stderr,"CPU: %ld\n",cpu);
@@ -205,9 +206,9 @@ fprintf(stderr,"DSP: %lf\n",dsp);
         sph->n = NULL;
         mad = .0;
         for( l = 0; l < siz[0]; l++ ) {
-            ptr_l = (long*) PyArray_GETPTR1( m_num, l );
-            mad = max( mad, r_vdw[*ptr_l] );
-            rad = (long)( r_vdw[*ptr_l] / dsp );
+            ptr_f = (double*) PyArray_GETPTR1( m_rad, l );
+            mad = max( mad, *ptr_f );
+            rad = (long)( *ptr_f / dsp );
 
             sph_cur = sph;
             while( sph_cur != NULL && sph_cur->r != rad ) { sph_cur = sph_cur->n; }
@@ -225,7 +226,6 @@ fprintf(stderr,"DSP: %lf\n",dsp);
 
                 ptn_cur = sph_cur->n->p;
                 rd2 = rad * rad;
-                cnt = 0.0;
                 for( i = -rad; i <= rad; i++ ) {
                     for( j = -rad; j <= rad; j++ ) {
                         for( k = -rad; k <= rad; k++ ) {
@@ -236,7 +236,6 @@ fprintf(stderr,"DSP: %lf\n",dsp);
                                 ptn_cur->n->k = k;
                                 ptn_cur->n->n = NULL;
                                 ptn_cur = ptn_cur->n;    
-                                cnt += 1.0;
                             }
                         }
                     }
@@ -245,7 +244,6 @@ fprintf(stderr,"DSP: %lf\n",dsp);
                 sph_cur->n->p = sph_cur->n->p->n;
                 free( ptn_cur );
                 sph_cur = sph_cur->n;
-                err = max( err, fabs( cte * r_vdw[*ptr_l] * r_vdw[*ptr_l] * r_vdw[*ptr_l] - cnt * d3 ) );
                 knd++;
             }
             hsh[l] = sph_cur;
@@ -257,7 +255,7 @@ fprintf(stderr,"DSP: %lf\n",dsp);
                 bmax[i] = max( bmax[i], crd[l3+i] );
             }
         }
-        Py_DECREF( m_num );
+        Py_DECREF( m_rad );
         Py_DECREF( m_xyz );
         mad *= 1.1;
         for( i = 0; i < 3; i++ ) { 
@@ -269,7 +267,6 @@ fprintf(stderr,"MIN: %8.3lf%8.3lf%8.3lf\n",bmin[0],bmin[1],bmin[2]);
 fprintf(stderr,"MAX: %8.3lf%8.3lf%8.3lf\n",bmax[0],bmax[1],bmax[2]);
 fprintf(stderr,"NPT: %8ld%8ld%8ld\n",npt[0],npt[1],npt[2]);
 fprintf(stderr,"KND: %8ld\n",knd);
-fprintf(stderr,"ERR: %.3lf _A^3\n",err*siz[0]);
 
         grd = (char*) malloc( npt[0] * npt[1] * npt[2] * sizeof( char ) );
         for( l = 0; l < npt[0] * npt[1] * npt[2]; l++ ) grd[l] = 0;
@@ -295,30 +292,23 @@ fprintf(stderr,"ERR: %.3lf _A^3\n",err*siz[0]);
         }
         for( l = 0; l < cpu; l++ ) pthread_join( pid[l], NULL );
 
-        if( o_cub == Py_True ) {
-            FILE* fd = fopen( "volume.cube", "wt" );
-            fprintf( fd, "QM3:\n-- Molecular Volume --\n" );
-            tmp = 0.52917721092;
-            fprintf( fd, "%5ld%12.6lf%12.6lf%12.6lf\n", siz[0], bmin[0] / tmp, bmin[1] / tmp, bmin[2] / tmp );
-            fprintf( fd, "%5ld%12.6lf%12.6lf%12.6lf\n", npt[0], dsp / tmp, 0.0, 0.0 );
-            fprintf( fd, "%5ld%12.6lf%12.6lf%12.6lf\n", npt[1], 0.0, dsp / tmp, 0.0 );
-            fprintf( fd, "%5ld%12.6lf%12.6lf%12.6lf\n", npt[2], 0.0, 0.0, dsp / tmp );
-            for( l = 0; l < siz[0]; l++ )
-                fprintf( fd, "%5ld%12.6lf%12.6lf%12.6lf%12.6lf\n", (long)0, 0.0,
-                    crd[3*l] / tmp, crd[3*l+1] / tmp, crd[3*l+2] / tmp );
-            nit = npt[0] * npt[1];
-            for( i = 0; i < npt[0]; i++ ) {
-                for( j = 0; j < npt[1]; j++ ) {
-                    for( k = 0; k < npt[2]; k++ ) {
-                        l = i + j * npt[0] + k * nit;
-                        if( grd[l] > 0 ) { vol += 1.0; }
-                        fprintf( fd, "%13.5le", (float) grd[l] );
-                        if( k%6 == 5 ) { fprintf( fd, "\n" ); }
-                    }
-                    if( k%6 != 5 ) { fprintf( fd, "\n" ); }
-                }
-            }
-            fclose( fd );
+        if( o_pdb == Py_True ) {
+			long	n01 = npt[0] * npt[1];
+            FILE* 	fd = fopen( "volume.pdb", "wt" );
+            for( i = 1; i < npt[0] - 1; i++ )
+                for( j = 1; j < npt[1] - 1; j++ )
+                    for( k = 1; k < npt[2] - 1; k++ )
+                        if( grd[i + j * npt[0] + k * n01 ] > 0 ) { 
+                            vol += 1.0;
+                            if( ! ( grd[i-1 + j * npt[0] + k * n01] > 0 && 
+                                    grd[i+1 + j * npt[0] + k * n01] > 0 && 
+                                    grd[i + (j-1) * npt[0] + k * n01] > 0 && 
+                                    grd[i + (j+1) * npt[0] + k * n01] > 0 && 
+                                    grd[i + j * npt[0] + (k-1) * n01] > 0 && 
+                                    grd[i + j * npt[0] + (k+1) * n01] > 0 ) )
+                                fprintf( fd, "ATOM      1  H   SRF     1    %8.3lf%8.3lf%8.3lf  1.00  0.00    SRF\n",
+                                    bmin[0] + i * dsp, bmin[1] + j * dsp, bmin[2] + k * dsp );
+                        }
         } else {
             for( l = 0; l < npt[0] * npt[1] * npt[2]; l++ ) {
                 if( grd[l] > 0 ) { vol += 1.0; }
@@ -366,8 +356,9 @@ long __collide( double x, double y, double z, double prb, double dsp, long siz, 
     return( f );
 }
 
+// This function has not been still migrated to NUMPY...
 static PyObject* __cavity_grid( PyObject *self, PyObject *args ){
-    PyObject    *o_xyz, *o_rad, *o_cen, *o_pdb, *o_cub;
+    PyObject    *o_xyz, *o_rad, *o_cen, *o_pdb, *o_trn;
     long        i, j, k, l, siz, wr, w2;
     double      prb = 1.40, vol = 0.0, ri, rj, rk;
     double      bmax[3] = { -9999., -9999., -9999. };
@@ -375,13 +366,13 @@ static PyObject* __cavity_grid( PyObject *self, PyObject *args ){
     long        ci, cj, ck, wi, wj, wk;
     long        npt[3], cnt[3];
     long        cub[24] = { 1, 1, 1, 1, 1,-1, 1,-1, 1, 1,-1,-1, -1, 1, 1, -1, 1,-1, -1,-1, 1, -1,-1,-1 };
-    char        ***grd;
-    double      *crd, *rad, dsp, tmp;
+    char        ***grd, is_ok = 1;
+    double      *crd, *rad, dsp;
     time_t      t0;
 
     o_pdb = Py_False;
-    o_cub = Py_False;
-    if( PyArg_ParseTuple( args, "OOOd|dOO", &o_rad, &o_xyz, &o_cen, &dsp, &prb, &o_cub, &o_pdb ) ) {
+    o_trn = Py_False;
+    if( PyArg_ParseTuple( args, "OOOd|dOO", &o_rad, &o_xyz, &o_cen, &dsp, &prb, &o_pdb, &o_trn ) ) {
 
         t0  = time( NULL );
         siz = (long) PyList_Size( o_rad );
@@ -456,19 +447,60 @@ fprintf(stderr,"CEN: %8ld%8ld%8ld\n",cnt[0],cnt[1],cnt[2]);
             }
         }
 
+		// prune wihtin a max volume
+		if( o_trn == Py_True ) {
+			char	buf[32];
+			long	ss;
+			double	sx, sy, sz, sr;
+            FILE* 	fd = fopen( "within", "rb" );
+
+			if( fd != NULL ) {
+				fread( buf, 1, 4, fd );
+				memcpy( &ss, &buf[0], 4 );
+fprintf(stderr,"TRN: %ld\n",ss);
+				for( l = 0; l < ss; l++ ) {
+					fread( buf, 1, 32, fd );
+					memcpy( &sx,  &buf[0], 8 );
+					memcpy( &sy,  &buf[8], 8 );
+					memcpy( &sz, &buf[16], 8 );
+					memcpy( &sr, &buf[24], 8 );
+					wi = (long)( ( sx - bmin[0] ) / dsp );
+					wj = (long)( ( sy - bmin[1] ) / dsp );
+					wk = (long)( ( sz - bmin[2] ) / dsp );
+					wr = (long)( sr / dsp );
+					w2 = wr * wr;
+                    for( i = - wr - 1; i < wr + 1; i++ ) {
+                        ci = wi + i;
+                        if( ci >= 0 && ci < npt[0] )
+                            for( j = - wr - 1; j < wr + 1; j++ ) {
+                                cj = wj + j;
+                                if( cj >= 0 && cj < npt[1] )
+                                    for( k = - wr - 1; k < wr + 1; k++ ) {
+                                        ck = wk + k;
+                                        if( ck >= 0 && ck < npt[2] ) 
+                                            if( i * i + j * j + k * k <= w2 && grd[ci][cj][ck] == 1 ) grd[ci][cj][ck] = 2;
+                                    }
+                            }
+                    }
+				}
+				fclose( fd );
+				is_ok = 2;
+			}
+		}
+
         if( o_pdb == Py_True ) {
             FILE* fd = fopen( "volume.pdb", "wt" );
             for( i = 1; i < npt[0] - 1; i++ )
                 for( j = 1; j < npt[1] - 1; j++ )
                     for( k = 1; k < npt[2] - 1; k++ )
-                        if( grd[i][j][k] == 1 ) { 
+                        if( grd[i][j][k] == is_ok ) { 
                             vol += 1.0;
-                            if( ! ( grd[i-1][j][k] == 1 && 
-                                    grd[i+1][j][k] == 1 && 
-                                    grd[i][j-1][k] == 1 && 
-                                    grd[i][j+1][k] == 1 && 
-                                    grd[i][j][k-1] == 1 && 
-                                    grd[i][j][k+1] == 1 ) )
+                            if( ! ( grd[i-1][j][k] == is_ok && 
+                                    grd[i+1][j][k] == is_ok && 
+                                    grd[i][j-1][k] == is_ok && 
+                                    grd[i][j+1][k] == is_ok && 
+                                    grd[i][j][k-1] == is_ok && 
+                                    grd[i][j][k+1] == is_ok ) )
                                 fprintf( fd, "ATOM      1  H   SRF     1    %8.3lf%8.3lf%8.3lf  1.00  0.00    SRF\n",
                                     bmin[0] + i * dsp, bmin[1] + j * dsp, bmin[2] + k * dsp );
                         }
@@ -477,34 +509,11 @@ fprintf(stderr,"CEN: %8ld%8ld%8ld\n",cnt[0],cnt[1],cnt[2]);
             for( i = 0; i < npt[0]; i++ )
                 for( j = 0; j < npt[1]; j++ )
                     for( k = 0; k < npt[2]; k++ )
-                        if( grd[i][j][k] == 1 )
+                        if( grd[i][j][k] == is_ok )
                             vol += 1.0;
         }
         vol *= dsp * dsp * dsp;
 fprintf(stderr,"VOL: %lf _A^3\n",vol );
-
-        if( o_cub == Py_True ) {
-            FILE* fd = fopen( "volume.cube", "wt" );
-            fprintf( fd, "QM3:\n-- Molecular Volume --\n" );
-            tmp = 0.52917721092;
-            fprintf( fd, "%5ld%12.6lf%12.6lf%12.6lf\n", siz, bmin[0] / tmp, bmin[1] / tmp, bmin[2] / tmp );
-            fprintf( fd, "%5ld%12.6lf%12.6lf%12.6lf\n", npt[0], dsp / tmp, 0.0, 0.0 );
-            fprintf( fd, "%5ld%12.6lf%12.6lf%12.6lf\n", npt[1], 0.0, dsp / tmp, 0.0 );
-            fprintf( fd, "%5ld%12.6lf%12.6lf%12.6lf\n", npt[2], 0.0, 0.0, dsp / tmp );
-            for( l = 0; l < siz; l++ )
-                fprintf( fd, "%5ld%12.6lf%12.6lf%12.6lf%12.6lf\n", (long)0, 0.0,
-                    crd[3*l] / tmp, crd[3*l+1] / tmp, crd[3*l+2] / tmp );
-            for( i = 0; i < npt[0]; i++ ) {
-                for( j = 0; j < npt[1]; j++ ) {
-                    for( k = 0; k < npt[2]; k++ ) {
-                        fprintf( fd, "%13.5le", (float) grd[i][j][k] );
-                        if( k%6 == 5 ) { fprintf( fd, "\n" ); }
-                    }
-                    if( k%6 != 5 ) { fprintf( fd, "\n" ); }
-                }
-            }
-            fclose( fd );
-        }
 
         free( rad ); free( crd );
         for( i = 0; i < npt[0]; i++ ) {
