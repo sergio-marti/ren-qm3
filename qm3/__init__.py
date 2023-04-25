@@ -485,7 +485,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         self.engines = {}
 
 # =================================================================================================
-# FIX? parse also the atoms types (self.type [list]) and also return a list of bonds
+# TODO: parse also the atoms types (self.type [list])
 
     def psf_read( self, fdsc: typing.IO ):
         init = ( self.natm == 0 )

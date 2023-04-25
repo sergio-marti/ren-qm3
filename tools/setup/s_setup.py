@@ -11,26 +11,36 @@ import  matplotlib.pyplot as plt
 
 lst = sorted( glob.glob( "node.??" ) )
 mol = qm3.molecule()
-mol.pdb_read( open( lst[0] ) )
+mol.prmtop_read( open( "complex.prmtop", "rt" ) )
+mol.xyz_read( open( lst[0] ), replace = True )
 
-mol.guess_atomic_numbers()
+f = io.StringIO( """
+A/63/OH		A/63/H39
+A/63/H39	A/247/O
+A/247/O		A/247/H1
+A/247/H1	A/201/OG
+A/201/OG	A/201/HG
+A/201/HG	A/218/OE2
+""" )
 
-mol.labl = numpy.array(
-        [ "%s%d"%( qm3.data.symbol[mol.anum[i]], i + 1 ) for i in range( mol.natm ) ],
-        dtype = qm3.data.strsiz )
-mol.rebuild()
-
-bnd = ( ( mol.indx["X"][1]["C6"], mol.indx["X"][1]["O8"] ),
-        ( mol.indx["X"][1]["C1"], mol.indx["X"][1]["C10"] ) )
+bnd = []
+for l in f:
+    t = l.split()
+    if( len( t ) == 2 ):
+        print( t )
+        a = []
+        for b in t:
+            _s, _r, _l = b.split( "/" )
+            a.append( mol.indx[_s][int(_r)][_l] )
+        bnd.append( a )
 
 nwin = len( lst )
 ncrd = len( bnd )
 rcrd = numpy.zeros( ( nwin, ncrd ) )
-tmp = qm3.molecule()
 for i in range( nwin ):
-    tmp.pdb_read( open( lst[i] ) )
+    mol.xyz_read( open( lst[i] ), replace = True )
     for j in range( ncrd ):
-        rcrd[i,j] = qm3.utils.distance( tmp.coor[bnd[j][0]], tmp.coor[bnd[j][1]] )
+        rcrd[i,j] = qm3.utils.distance( mol.coor[bnd[j][0]], mol.coor[bnd[j][1]] )
 
 with open( "pmf_s.cnf", "wt" ) as f_cnf:
     f_cnf.write( "%d %d\n"%( ncrd, nwin ) )
@@ -48,9 +58,8 @@ obj = qm3.engines.mmres.colvar_s( mol, .0, .0, open( "pmf_s.cnf" ), f_str, None 
 
 with open( "pmf_s.met", "wt" ) as f_met:
     for i in range( nwin ):
-        tmp.pdb_read( open( lst[i] ) )
-        tmp.mass = mol.mass
-        f_met.write( "".join( [ "%8.3lf"%( i ) for i in obj.metrics( tmp ).ravel().tolist() ] ) + "\n" )
+        mol.xyz_read( open( lst[i] ), replace = True )
+        f_met.write( "".join( [ "%8.3lf"%( i ) for i in obj.metrics( mol ).ravel().tolist() ] ) + "\n" )
 
 f_str.seek( 0 )
 obj = qm3.engines.mmres.colvar_s( mol, .0, .0, open( "pmf_s.cnf" ), f_str, open( "pmf_s.met" ) )
@@ -70,6 +79,7 @@ for j in range( ncrd ):
     fcrd[:,j] = numpy.array( [ inte.calc( x )[0] for x in equi ] )
     plt.plot( rcrd[:,j], '-' )
     plt.plot( fcrd[:,j], 'o' )
+plt.savefig( "setup.pdf" )
 plt.show()
 
 with open( "pmf_s.str", "wt" ) as f_str:
@@ -80,6 +90,9 @@ with open( "pmf_s.str", "wt" ) as f_str:
 
 obj = qm3.engines.mmres.colvar_s( mol, .0, .0,
         open( "pmf_s.cnf" ), open( "pmf_s.str" ), open( "pmf_s.met" ) )
+
+with open( "pmf_s.delz", "wt" ) as f:
+    f.write( "%.6lf\n"%( obj.delz ) )
 
 plt.clf()
 plt.grid( True )

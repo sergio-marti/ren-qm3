@@ -1,0 +1,45 @@
+parmfile                complex.prmtop
+coordinates             complex.pdb
+amber                   on
+exclude                 scaled1-4
+readexclusions          yes
+1-4scaling              0.833333
+dielectric              1.0
+
+switching               on
+switchdist              12
+cutoff                  14
+pairlistdist            18
+stepspercycle           20
+
+PME                     on
+PMEGridSpacing          1.0
+
+cellBasisVector1        70.4 0 0
+cellBasisVector2        0 70.4 0
+cellBasisVector3        0 0 82.2
+cellOrigin              -0.22674293 -0.13843036 -0.05372731
+
+rigidBonds              all
+wrapWater               on
+
+timestep                1.0
+fullElectFrequency      4
+temperature             300
+
+langevinPiston          on
+langevinPistonTarget    1.01325
+langevinPistonPeriod    200
+langevinPistonDecay     100
+langevinPistonTemp      300
+
+langevin                on
+langevinDamping         5
+langevinTemp            300
+
+outputenergies          1000
+outputtiming            10000
+binaryoutput            no
+
+outputname              namd_npt
+numsteps                1000000
