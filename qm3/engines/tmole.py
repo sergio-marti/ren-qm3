@@ -15,8 +15,9 @@ class run( qm3.engines.template ):
         self.cx  = 1.0 / qm3.data.A0
         self.ce  = qm3.data.H2J
         self.cg  = self.ce * self.cx
-        self.exe_ene = "dscf 1>  tmole.log 2>> tmole.log"
-        self.exe_grd = "grad 1>> tmole.log 2>> tmole.log"
+        self.exe_ene = "ridft  1>  tmole.log 2>> tmole.log"
+        self.exe_grd = "rdgrad 1>> tmole.log 2>> tmole.log"
+#        self.exe_grd = "ricc2  1>> tmole.log 2>> tmole.log"
 
 
     def mk_input( self, mol, run ):
@@ -26,7 +27,7 @@ class run( qm3.engines.template ):
         for i in self.sel:
             f.write( "%20.10lf%20.10lf%20.10lf%4s\n"%(
                 mol.coor[i,0] * self.cx, mol.coor[i,1] * self.cx, mol.coor[i,2] * self.cx,
-                qm3.data.symbol[mol.anum[i]] )
+                qm3.data.symbol[mol.anum[i]] ) )
         if( len( self.lnk ) > 0 ):
             self.vla = []
             k = len( self.sel )
@@ -47,20 +48,24 @@ class run( qm3.engines.template ):
             f.write( "$point_charges nocheck\n" )
             for i in self.nbn:
                 tmp = ( mol.coor[i] - mol.boxl * numpy.round( mol.coor[i] / mol.boxl, 0 ) ) * self.cx
-                f.write( "%20.10lf%20.10lf%20.10lf%12.4lf\n"%( tmp[0], tmp[1], tmp[2], mol.chrg[i] + dq[i] )
+                f.write( "%20.10lf%20.10lf%20.10lf%12.4lf\n"%( tmp[0], tmp[1], tmp[2], mol.chrg[i] + dq[i] ) )
             f.write( "$end" )
             f.close()
 
 
     def parse_log( self, mol, run ):
-        with open( "energy", "rt" ) as f:
-            f.readline()
-            out = float( f.readline().split()[1] ) * self.ce
-            mol.func += out
+#        with open( "energy", "rt" ) as f:
+#            f.readline()
+#            out = float( f.readline().split()[1] ) * self.ce
+#            mol.func += out
         os.unlink( "energy" )
         if( run == "grad" ):
             f = open( "gradient", "rt" )
-            for i in range( 2 + len( self.sel ) + len( self.lnk ) ):
+            f.readline()
+            out = float( f.readline().split()[-4] ) * self.ce
+            mol.func += out
+#            for i in range( 2 + len( self.sel ) + len( self.lnk ) ):
+            for i in range( len( self.sel ) + len( self.lnk ) ):
                 f.readline()
             g = []
             for i in range( len( self.sel ) + len( self.lnk ) ):
@@ -96,37 +101,96 @@ class run( qm3.engines.template ):
 
 
 
-"""
-# >> system setup (previous to any calculation)
-
-x2t xyz > coord
+ri_dft = """
 define << EOD
 
 slave
 a coord
 *
 no
-b all def2-TZVP      << BASIS SET
+b all def2-TZVP
 *
 eht
 y
-0                   << MOLECULAR CHARGE
+[MOLECULAR_CHARGE]
 y
+ri
+on
+*
 dft
-func wb97x-d        << FUNCTIONAL
+func wb97x-d
 on
 *
 *
 EOD
+"""
 
+ri_mp2 = """
+define << EOD
 
+slave
+a coord
+*
+no
+b all def2-TZVP
+*
+eht
+y
+[MOLECULAR_CHARGE]
+y
+ri
+on
+*
+cc
+cbas
+*
+ricc2
+mp2
+geoopt mp2
+*
+*
+*
+EOD
+"""
 
-# >> modify "control" file for QM/MM calculations
-
-$drvopt
-   point charges
+fix_qmmm = """
+# >> modify "control" file for QM/MM calculations:
+$scfiterlimit 200
 
 $point_charges file=charges
 $point_charge_gradients file=charges.gradient
-$end
 """
+
+
+ri_cc2_es = """
+define << EOD
+
+slave
+a coord
+*
+no
+b all def2-TZVP
+*
+eht
+y
+[MOLECULAR_CHARGE]
+y
+ri
+on
+*
+cc
+cbas
+*
+ricc2
+cc2
+geoopt cc2 (a 1)
+*
+exci
+irrep=a nexc=5
+spectrum states=all operators=diplen,qudlen,angmom,dipvel
+*
+*
+*
+EOD
+"""
+
