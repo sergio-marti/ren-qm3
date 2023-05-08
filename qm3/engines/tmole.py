@@ -31,7 +31,7 @@ class run( qm3.engines.template ):
         if( len( self.lnk ) > 0 ):
             self.vla = []
             k = len( self.sel )
-            for i,j in range( len( self.lnk ) ):
+            for i in range( len( self.lnk ) ):
                 c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
                 f.write( "%20.10lf%20.10lf%20.10lf   H\n"%( c[0] * self.cx, c[1] * self.cx, c[2] * self.cx ) )
                 self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
@@ -157,8 +157,17 @@ fix_qmmm = """
 # >> modify "control" file for QM/MM calculations:
 $scfiterlimit 200
 
+$drvopt         
+   point charges
+
 $point_charges file=charges
 $point_charge_gradients file=charges.gradient
+"""
+
+fix_smp = """
+# >> modify "control" file for SMP calculations:
+
+$smp_cpus 64
 """
 
 
