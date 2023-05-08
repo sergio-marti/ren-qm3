@@ -7,11 +7,9 @@ import  qm3.utils._grids
 
 try:
     import  matplotlib.pyplot
-    from mplot3d import axes3d
-    from mplot3d import proj3d
-    has_mplot3d = True
+    has_pyplot = True
 except:
-    has_mplot3d = False
+    has_pyplot = False
 
 
 class grid( object ):
@@ -133,33 +131,16 @@ class grid( object ):
 
         export MPLBACKEND=Agg
         """
-        if( has_mplot3d ):
-            def __orthogonal_proj(zfront, zback):
-                a = (zfront+zback)/(zfront-zback)
-                b = -2*(zfront*zback)/(zfront-zback)
-                return numpy.array([[1,0,0,0], [0,1,0,0], [0,0,a,b], [0,0,-0.0001,zback]])
-            proj3d.persp_transformation = __orthogonal_proj
-            fig = matplotlib.pyplot.figure()
-            axs = fig.gca( projection = "3d" )
-#            axs = axes3d.Axes3D( matplotlib.pyplot.figure() )
-            rz  = self.rotate()
-            nx  = len( self.x )
-            ny  = len( self.y )
-            lx  = []
-            ly  = []
-            lz  = []
-            for i in range( ny ):
-                lx.append( self.x[:] )
-                ly.append( nx * [ self.y[i] ] )
-                lz.append( rz[i*nx:(i+1)*nx][:] )
+        if( has_pyplot ):
+            ly, lx = numpy.meshgrid( self.y, self.x )
+            lz = self.z.reshape( ( self.x.shape[0], self.y.shape[0] ) )
             z_min = min( self.z )
             z_max = max( self.z )
             z_lvl = [ z_min + ( z_max - z_min ) / float( levels ) * float( i ) for i in range( levels + 1 ) ]
-            lz = numpy.array( lz, dtype=numpy.float64 )
+            axs = matplotlib.pyplot.axes( projection = "3d" )
             axs.plot_surface( lx, ly, lz, rstride = 1, cstride = 1, cmap = "coolwarm", linewidths = 0.1 )
-#            axs.contour( lx, ly, lz, zdir = "z", levels = z_lvl, linewidths = 2, cmap = "coolwarm" )
             axs.contour( lx, ly, lz, zdir = "z", offset = z_min, levels = z_lvl, linewidths = 2, cmap = "coolwarm" )
-            axs.view_init( 90, -89 )
+            axs.view_init( 90, -90 )
             matplotlib.pyplot.show()
         else:
             return
@@ -171,17 +152,9 @@ class grid( object ):
 
         export MPLBACKEND=Agg
         """
-        if( has_mplot3d ):
-            rz  = self.rotate()
-            nx  = len( self.x )
-            ny  = len( self.y )
-            lx  = []
-            ly  = []
-            lz  = []
-            for i in range( ny ):
-                lx.append( self.x[:] )
-                ly.append( nx * [ self.y[i] ] )
-                lz.append( rz[i*nx:(i+1)*nx][:] )
+        if( has_pyplot ):
+            ly, lx = numpy.meshgrid( self.y, self.x )
+            lz = self.z.reshape( ( self.x.shape[0], self.y.shape[0] ) )
             z_min = min( self.z )
             z_max = max( self.z )
             z_lvl = [ z_min + ( z_max - z_min ) / float( levels ) * float( i ) for i in range( levels + 1 ) ]
