@@ -8,139 +8,11 @@
 #include <pthread.h>
 
 
-/*
- * Sample of engine using a neuronal network model trained with the correction energies
- *
-
-class mlcor( object ):
-    def __init__( self, mol ):
-        with open( "data.pk", "rb" ) as f:
-            inp   = pickle.load( f )
-            l_ene = pickle.load( f )
-            h_ene = pickle.load( f )
-        out        = h_ene - l_ene
-        self.e_min = float( numpy.min( out, axis = 0 ) )
-        self.e_dsp = float( numpy.max( out, axis = 0 ) ) - self.e_min
-        self.ener  = tf.keras.models.load_model( "ener.h5" )
-        self.ones  = numpy.ones( mol.natm )
-
-    def get_grad( self, mol ):
-        inp = qm3.engines._ml_info.coul_info( self.ones, mol.coor )
-#        inp = qm3.engines._ml_info.acsf_info( 4.0, [1.0], 1.0, [0.1], mol.coor )
-        inp = tf.convert_to_tensor( inp.reshape( ( 1, len( inp ) ) ) )
-        # ------------------------------------------------
-        with tf.GradientTape() as grd:
-            grd.watch( inp )
-            lss = self.ener( inp )
-        ene = float( self.ener( inp, training = False ) )
-        grd = grd.gradient( lss, inp ).numpy().ravel()
-        # ------------------------------------------------
-        mol.func += ene * self.e_dsp + self.e_min
-        grd = numpy.dot( grd.T, qm3.engines._ml_info.coul_jaco( self.ones, mol.coor ) )
-#        grd = numpy.dot( grd.T, qm3.engines._ml_info.acsf_jaco( 4.0, [1.0], 1.0, [0.1], mol.coor ) )
-        grd.shape = ( mol.natm, 3 )
-        mol.grad += grd * self.e_dsp
-
-*/
-
-
 double __dist( long i3, long j3, double *xyz ) {
     return( sqrt(
             ( xyz[j3]   - xyz[i3]   ) * ( xyz[j3]   - xyz[i3]   ) +
             ( xyz[j3+1] - xyz[i3+1] ) * ( xyz[j3+1] - xyz[i3+1] ) +
             ( xyz[j3+2] - xyz[i3+2] ) * ( xyz[j3+2] - xyz[i3+2] ) ) );
-}
-
-
-static PyObject* _Coul_info( PyObject *self, PyObject *args ) {
-    PyObject		*ocrd, *onum;
-	PyArrayObject	*mcrd, *mnum, *out;
-	long			*siz, dim[1], i, j, k, ww;
-	double			*num, *xyz, *itm;
-
-    if( PyArg_ParseTuple( args, "OO", &onum, &ocrd ) ) {
-		mcrd = (PyArrayObject*) PyArray_FROM_OT( ocrd, NPY_DOUBLE );
-		siz = PyArray_SHAPE( mcrd );
-		mnum = (PyArrayObject*) PyArray_FROM_OT( onum, NPY_DOUBLE );
-		num = (double*) malloc( siz[0] * sizeof( double ) );
-		xyz = (double*) malloc( siz[0] * siz[1] * sizeof( double ) );
-		for( k = 0, i = 0; i < siz[0]; i++ ) {
-				itm = (double*) PyArray_GETPTR1( mnum, i );
-				num[k++] = *itm;
-		}
-		for( k = 0, i = 0; i < siz[0]; i++ ) {
-			for( j = 0; j < siz[1]; j++ ) {
-				itm = (double*) PyArray_GETPTR2( mcrd, i, j );
-				xyz[k++] = *itm;
-			}
-		}
-		dim[0] = siz[0] * ( siz[0] + 1 ) / 2;
-		out = (PyArrayObject*) PyArray_ZEROS( 1, dim, NPY_DOUBLE, 0 );
-		for( i = 0; i < siz[0]; i++ ) {
-			k    = i * 3;
-			ww   = i * siz[0] - ( ( i - 1 ) * i ) / 2;
-			itm  = (double*) PyArray_GETPTR1( out, ww );
-			*itm = 0.5 * pow( num[i], 2.4 );
-			for( j = i + 1; j < siz[0]; j++ ) {
-				itm  = (double*) PyArray_GETPTR1( out, ww+j-i );
-				*itm = num[i] * num[j] / __dist( k, j * 3, xyz );
-			}
-		}
-		free( num ); free( xyz );
-		return( (PyObject*) out );
-    } else { Py_INCREF( Py_None ); return( Py_None ); }
-}
-
-
-static PyObject* _Coul_jaco( PyObject *self, PyObject *args ) {
-    PyObject		*ocrd, *onum;
-	PyArrayObject	*mcrd, *mnum, *out;
-	long			*siz, dim[2], i, j, k, i3, j3, row;
-	double			*num, *xyz, dr[3], r2, zz, *itm;
-
-    if( PyArg_ParseTuple( args, "OO", &onum, &ocrd ) ) {
-		mcrd = (PyArrayObject*) PyArray_FROM_OT( ocrd, NPY_DOUBLE );
-		siz = PyArray_SHAPE( mcrd );
-		mnum = (PyArrayObject*) PyArray_FROM_OT( onum, NPY_DOUBLE );
-		num = (double*) malloc( siz[0] * sizeof( double ) );
-		xyz = (double*) malloc( siz[0] * siz[1] * sizeof( double ) );
-		for( k = 0, i = 0; i < siz[0]; i++ ) {
-				itm = (double*) PyArray_GETPTR1( mnum, i );
-				num[k++] = *itm;
-		}
-		for( k = 0, i = 0; i < siz[0]; i++ ) {
-			for( j = 0; j < siz[1]; j++ ) {
-				itm = (double*) PyArray_GETPTR2( mcrd, i, j );
-				xyz[k++] = *itm;
-			}
-		}
-		dim[0] = siz[0] * ( siz[0] + 1 ) / 2;
-		dim[1] = siz[0] * 3;
-		out = (PyArrayObject*) PyArray_ZEROS( 2, dim, NPY_DOUBLE, 0 );
-		row = 0;
-		for( i = 0; i < siz[0]; i++ ) {
-			i3 = i * 3;
-			for( j = i; j < siz[0]; j++ ) {
-				if( j != i ) {
-					j3 = j * 3;
-					dr[0] = xyz[i3]   - xyz[j3];
-					dr[1] = xyz[i3+1] - xyz[j3+1];
-					dr[2] = xyz[i3+2] - xyz[j3+2];
-					r2 = dr[0] * dr[0] + dr[1] * dr[1] + dr[2] * dr[2];
-					zz = num[i] * num[j] / ( r2 * sqrt( r2 ) );
-					for( k = 0; k < 3; k ++ ) {
-						itm  = (double*) PyArray_GETPTR2( out, row, i3+k );
-						*itm = - dr[k] * zz;
-						itm  = (double*) PyArray_GETPTR2( out, row, j3+k );
-						*itm =   dr[k] * zz;
-					}
-				}
-				row++;
-			}
-		}
-		free( num ); free( xyz );
-		return( (PyObject*) out );
-    } else { Py_INCREF( Py_None ); return( Py_None ); }
 }
 
 
@@ -231,6 +103,82 @@ static PyObject* _coul_jaco( PyObject *self, PyObject *args ) {
             }
         }
         free( num ); free( xyz );
+        return( (PyObject*) out );
+    } else { Py_INCREF( Py_None ); return( Py_None ); }
+}
+
+
+static PyObject* _bbnd_info( PyObject *self, PyObject *args ) {
+    PyObject        *ocrd, *obag;
+    PyArrayObject   *mcrd, *out;
+    long            *siz, dim[1], i, j, k;
+    double          *xyz, *itm;
+
+    if( PyArg_ParseTuple( args, "OO", &obag, &ocrd ) ) {
+        mcrd = (PyArrayObject*) PyArray_FROM_OT( ocrd, NPY_DOUBLE );
+        siz = PyArray_SHAPE( mcrd );
+        xyz = (double*) malloc( siz[0] * siz[1] * sizeof( double ) );
+        for( k = 0, i = 0; i < siz[0]; i++ ) {
+            for( j = 0; j < siz[1]; j++ ) {
+                itm = (double*) PyArray_GETPTR2( mcrd, i, j );
+                xyz[k++] = *itm;
+            }
+        }
+        Py_DECREF( mcrd );
+
+		dim[0] = (long)( PyList_Size( obag ) / 2 );
+        out = (PyArrayObject*) PyArray_ZEROS( 1, dim, NPY_DOUBLE, 0 );
+		for( i = 0; i < dim[0]; i++ ) {
+			j = PyLong_AsLong( PyList_GetItem( obag, 2 * i     ) ) * 3;
+			k = PyLong_AsLong( PyList_GetItem( obag, 2 * i + 1 ) ) * 3;
+            itm  = (double*) PyArray_GETPTR1( out, i );
+            *itm = 1.0 / __dist( k, j, xyz );
+		}
+
+        free( xyz );
+        return( (PyObject*) out );
+    } else { Py_INCREF( Py_None ); return( Py_None ); }
+}
+
+
+static PyObject* _bbnd_jaco( PyObject *self, PyObject *args ) {
+    PyObject        *ocrd, *obag;
+    PyArrayObject   *mcrd, *out;
+    long            *siz, dim[2], i, j, k, l;
+    double          *xyz, dr[3], r2, zz, *itm;
+
+    if( PyArg_ParseTuple( args, "OO", &obag, &ocrd ) ) {
+        mcrd = (PyArrayObject*) PyArray_FROM_OT( ocrd, NPY_DOUBLE );
+        siz = PyArray_SHAPE( mcrd );
+        xyz = (double*) malloc( siz[0] * siz[1] * sizeof( double ) );
+        for( k = 0, i = 0; i < siz[0]; i++ ) {
+            for( j = 0; j < siz[1]; j++ ) {
+                itm = (double*) PyArray_GETPTR2( mcrd, i, j );
+                xyz[k++] = *itm;
+            }
+        }
+        Py_DECREF( mcrd );
+
+		dim[0] = (long)( PyList_Size( obag ) / 2 );
+        dim[1] = siz[0] * 3;
+        out = (PyArrayObject*) PyArray_ZEROS( 2, dim, NPY_DOUBLE, 0 );
+		for( i = 0; i < dim[0]; i++ ) {
+			j = PyLong_AsLong( PyList_GetItem( obag, 2 * i     ) ) * 3;
+			k = PyLong_AsLong( PyList_GetItem( obag, 2 * i + 1 ) ) * 3;
+            dr[0] = xyz[j]   - xyz[k];
+            dr[1] = xyz[j+1] - xyz[k+1];
+            dr[2] = xyz[j+2] - xyz[k+2];
+            r2 = dr[0] * dr[0] + dr[1] * dr[1] + dr[2] * dr[2];
+            zz = 1.0 / ( r2 * sqrt( r2 ) );
+            for( l = 0; l < 3; l ++ ) {
+                itm  = (double*) PyArray_GETPTR2( out, i, j+l );
+                *itm =   dr[l] * zz;
+                itm  = (double*) PyArray_GETPTR2( out, i, k+l );
+                *itm = - dr[l] * zz;
+            }
+		}
+
+        free( xyz );
         return( (PyObject*) out );
     } else { Py_INCREF( Py_None ); return( Py_None ); }
 }
@@ -525,11 +473,12 @@ static PyObject* _acsf_pinf( PyObject *self, PyObject *args ) {
 
 
 static struct PyMethodDef methods [] = {
-    { "Coul_info", (PyCFunction)_Coul_info, METH_VARARGS },
-    { "Coul_jaco", (PyCFunction)_Coul_jaco, METH_VARARGS },
-
     { "coul_info", (PyCFunction)_coul_info, METH_VARARGS },
     { "coul_jaco", (PyCFunction)_coul_jaco, METH_VARARGS },
+
+    { "bbnd_info", (PyCFunction)_bbnd_info, METH_VARARGS },
+    { "bbnd_jaco", (PyCFunction)_bbnd_jaco, METH_VARARGS },
+
     { "acsf_info", (PyCFunction)_acsf_info, METH_VARARGS },
     { "acsf_pinf", (PyCFunction)_acsf_pinf, METH_VARARGS },
     { "acsf_jaco", (PyCFunction)_acsf_jaco, METH_VARARGS },
