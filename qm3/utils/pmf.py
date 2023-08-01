@@ -24,14 +24,22 @@ def wham( data_lst: list,
     xref = numpy.zeros( nwin, dtype=numpy.float64 )
     ndat = numpy.zeros( nwin, dtype=numpy.float64 )
     for k in range( nwin ):
-        with open( data_lst[k], "rt" ) as f:
-            kumb[k], xref[k] = ( float( i ) for i in f.readline().strip().split() )
-            i = 0
-            for l in f:
-                if( i >= nskip ):
-                    data.append( float( l.strip() ) )
-                    ndat[k] += 1.0
-                i += 1
+#        with open( data_lst[k], "rt" ) as f:
+#            kumb[k], xref[k] = ( float( i ) for i in f.readline().strip().split() )
+#            i = 0
+#            for l in f:
+#                if( i >= nskip ):
+#                    data.append( float( l.strip() ) )
+#                    ndat[k] += 1.0
+#                i += 1
+    # ---------------------------------------------
+        kumb[k], xref[k] = ( float( i ) for i in data_lst[k].readline().strip().split() )
+        i = 0
+        for l in data_lst[k]:
+            if( i >= nskip ):
+                data.append( float( l.strip() ) )
+                ndat[k] += 1.0
+            i += 1
     data = numpy.array( data, dtype=numpy.float64 )
     # ---------------------------------------------
     if( nbins < nwin ):
@@ -111,34 +119,62 @@ def umbint( data_lst: list,
     minx = None
     maxx = None
     for k in range( nwin ):
-        with open( data_lst[k], "rt" ) as f:
-            kumb[k], xref[k] = ( float( i ) for i in f.readline().strip().split() )
-            s3 = 0.0
-            s4 = 0.0
-            i  = 0
-            for l in f:
-                if( i >= nskip ):
-                    t = float( l.strip() )
-                    if( minx == None ):
-                        minx = t
-                        maxx = t
-                    else:
-                        minx = min( minx, t )
-                        maxx = max( maxx, t )
-                    ndat[k] += 1.0
-                    aver[k] += t
-                    sdev[k] += t * t
-                    t2       = t * t
-                    s3      += t2 * t
-                    s4      += t2 * t2
-                i += 1
-            aver[k] /= ndat[k]
-            s2       = sdev[k] / ndat[k]
-            sdev[k]  = math.sqrt( math.fabs( sdev[k] / ndat[k] - aver[k] * aver[k] ) )
-            s3      /= ndat[k]
-            s4      /= ndat[k]
-            m2       = aver[k] * aver[k]
-            vsig[k]  = s4 + 3.0 * m2 * ( 2.0 * s2 - m2 ) - 4.0 * aver[k] * s3
+#        with open( data_lst[k], "rt" ) as f:
+#            kumb[k], xref[k] = ( float( i ) for i in f.readline().strip().split() )
+#            s3 = 0.0
+#            s4 = 0.0
+#            i  = 0
+#            for l in f:
+#                if( i >= nskip ):
+#                    t = float( l.strip() )
+#                    if( minx == None ):
+#                        minx = t
+#                        maxx = t
+#                    else:
+#                        minx = min( minx, t )
+#                        maxx = max( maxx, t )
+#                    ndat[k] += 1.0
+#                    aver[k] += t
+#                    sdev[k] += t * t
+#                    t2       = t * t
+#                    s3      += t2 * t
+#                    s4      += t2 * t2
+#                i += 1
+#            aver[k] /= ndat[k]
+#            s2       = sdev[k] / ndat[k]
+#            sdev[k]  = math.sqrt( math.fabs( sdev[k] / ndat[k] - aver[k] * aver[k] ) )
+#            s3      /= ndat[k]
+#            s4      /= ndat[k]
+#            m2       = aver[k] * aver[k]
+#            vsig[k]  = s4 + 3.0 * m2 * ( 2.0 * s2 - m2 ) - 4.0 * aver[k] * s3
+    # ---------------------------------------------
+        kumb[k], xref[k] = ( float( i ) for i in data_lst[k].readline().strip().split() )
+        s3 = 0.0
+        s4 = 0.0
+        i  = 0
+        for l in data_lst[k]:
+            if( i >= nskip ):
+                t = float( l.strip() )
+                if( minx == None ):
+                    minx = t
+                    maxx = t
+                else:
+                    minx = min( minx, t )
+                    maxx = max( maxx, t )
+                ndat[k] += 1.0
+                aver[k] += t
+                sdev[k] += t * t
+                t2       = t * t
+                s3      += t2 * t
+                s4      += t2 * t2
+            i += 1
+        aver[k] /= ndat[k]
+        s2       = sdev[k] / ndat[k]
+        sdev[k]  = math.sqrt( math.fabs( sdev[k] / ndat[k] - aver[k] * aver[k] ) )
+        s3      /= ndat[k]
+        s4      /= ndat[k]
+        m2       = aver[k] * aver[k]
+        vsig[k]  = s4 + 3.0 * m2 * ( 2.0 * s2 - m2 ) - 4.0 * aver[k] * s3
     # ---------------------------------------------
     if( nbins < nwin ):
         bins = nwin * 2

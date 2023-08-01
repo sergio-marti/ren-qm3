@@ -182,6 +182,13 @@ class PCA( object ):
                 out[i,:] += self.med[i]
         return( out )
 
+
+def autocorrelation( vec ):
+    avr = numpy.mean( vec )
+    tmp  = vec - avr
+    out = sum( [ tmp[i] * ( vec[i+1] - avr ) for i in range( vec.shape[0] - 1 ) ] )
+    return( out / numpy.sum( numpy.square( tmp ) ) )
+
 # =================================================================================================
 
 def integ_Simpson( x, y ):

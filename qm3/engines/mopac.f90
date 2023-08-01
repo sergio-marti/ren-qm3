@@ -118,7 +118,7 @@ REAL*8 :: CUTOFFB = 0.0D0, CUTONB = 0.0D0, GAMMAB = 1.0D0, R2OFFB = 0.0D0, R2ONB
 REAL*8, ALLOCATABLE, DIMENSION(:)   :: DXE1BA, DYE1BA, DZE1BA
 REAL*8, ALLOCATABLE, DIMENSION(:,:) :: DXE1BB, DYE1BB, DZE1BB
 INTEGER            :: IEXTRP    = 15,         NDIIS = 19,     NDIISP = 20 ! = NDIIS + 1
-LOGICAL            :: QFORCEUHF = .FALSE., QSCFBOMB = .TRUE.
+LOGICAL            :: QFORCEUHF = .FALSE., QSCFBOMB = .FALSE.
 REAL*8 :: ACURCY    = 1.0D-8,  DAMPF = 0.0D0, DAMP0 = 0.0D0, SHIFTO = 0.0D0, SHIFTV = 0.0D0
 INTEGER                                         :: MATNUM
 INTEGER,            ALLOCATABLE, DIMENSION(:)   :: MATIND
@@ -2743,7 +2743,8 @@ CONTAINS
    END DO
    IF( QPRINT ) WRITE( *, "(80('-'))" )
    IF ( .NOT. CVGED ) THEN
-       WRITE( *, *) ">> Excessive number of SCF iterations"
+       EHF = 0.0D0
+!       WRITE( *, * ) ">> Excessive number of SCF iterations"
        IF ( QSCFBOMB ) STOP
    END IF
    DEALLOCATE ( FOCK1, ERRMAT1, FCKDMP1, FCKOLD1 )
@@ -6065,23 +6066,26 @@ subroutine qm3_mopac_calc( mxit, siz, dat )
     call mopac_gradients( atmder )
     call mopac_charges( chg )
 
+    dat = 0.0d0
+    if( scf /= 0.0d0 ) then
     dat(0) = ev_to_kj * ( scf + nuc ) + atheat
-    ! 1 + 3 * nQM [QM_crd/grd] + nQM [QM_mul] + nMM [MM_chg] + 3 * nMM [MM_crd/grd]
-    do i = 1, naqm
-        k        = 1 + 3 * ( i - 1 )
-        dat(k)   = atmder(1,i)
-        dat(k+1) = atmder(2,i)
-        dat(k+2) = atmder(3,i)
-        j        = 3 * naqm + i
-        dat(j)   = chg(i)
-    end do
-    do i = 1, natm - naqm
-        k = naqm + i
-        j = 1 + 4 * naqm + ( natm - naqm ) + 3 * ( i - 1 )
-        dat(j)   = atmder(1,k)
-        dat(j+1) = atmder(2,k)
-        dat(j+2) = atmder(3,k)
-    end do
+        ! 1 + 3 * nQM [QM_crd/grd] + nQM [QM_mul] + nMM [MM_chg] + 3 * nMM [MM_crd/grd]
+        do i = 1, naqm
+            k        = 1 + 3 * ( i - 1 )
+            dat(k)   = atmder(1,i)
+            dat(k+1) = atmder(2,i)
+            dat(k+2) = atmder(3,i)
+            j        = 3 * naqm + i
+            dat(j)   = chg(i)
+        end do
+        do i = 1, natm - naqm
+            k = naqm + i
+            j = 1 + 4 * naqm + ( natm - naqm ) + 3 * ( i - 1 )
+            dat(j)   = atmder(1,k)
+            dat(j+1) = atmder(2,k)
+            dat(j+2) = atmder(3,k)
+        end do
+    end if
 end subroutine qm3_mopac_calc
 
 

@@ -164,13 +164,6 @@ $point_charges file=charges
 $point_charge_gradients file=charges.gradient
 """
 
-fix_smp = """
-# >> modify "control" file for SMP calculations:
-
-$smp_cpus 64
-"""
-
-
 ri_cc2_es = """
 define << EOD
 

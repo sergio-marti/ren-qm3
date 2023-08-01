@@ -91,8 +91,8 @@ _dftd4.so:
 	gfortran $(SHD) -o qm3/engines/_dftd4.so qm3/engines/dftd4.f90 -Jbuild -Ibuild \
                 -fPIC -I$(DFTD4)/include \
                 $(DFTD4)/libdftd4.a \
-                $(DFTD4)/_deps/multicharge-build/libmulticharge.a \
-                $(DFTD4)/_deps/mctc-lib-build/libmctc-lib.a \
+                $(DFTD4)/subprojects/multicharge/libmulticharge.a \
+                $(DFTD4)/subprojects/mctc-lib/libmctc-lib.a \
                 -fopenmp $(MLB)
 
 

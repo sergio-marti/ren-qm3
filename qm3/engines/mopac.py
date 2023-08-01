@@ -82,6 +82,8 @@ class run( qm3.engines.template ):
     def get_func( self, mol: object, maxit: typing.Optional[int] = 200 ):
         self.update_coor( mol )
         self.lib.qm3_mopac_calc_( ctypes.c_int( maxit ), ctypes.c_int( self.siz ), self.vec )
+        if( self.vec[0]  == 0.0 ):
+            raise ValueError( ">> Excessive number of SCF iterations" )
         mol.func += self.vec[0]
         l = 1 + 3 * self.nQM
         for i in self.sel:
@@ -93,6 +95,8 @@ class run( qm3.engines.template ):
     def get_grad( self, mol: object, maxit: typing.Optional[int] = 200 ):
         self.update_coor( mol )
         self.lib.qm3_mopac_calc_( ctypes.c_int( maxit ), ctypes.c_int( self.siz ), self.vec )
+        if( self.vec[0]  == 0.0 ):
+            raise ValueError( ">> Excessive number of SCF iterations" )
         mol.func += self.vec[0]
         l = 1 + 3 * self.nQM
         for i in self.sel:

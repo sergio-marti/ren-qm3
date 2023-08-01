@@ -295,7 +295,7 @@ def lbfgsb( mol: object,
             ctypes.c_double( 1.e3 ), ctypes.c_double( gradient_tolerance ),
             wrk, iwa, tsk, ctypes.c_int( -1 ), csv, lsv, isv, dsv )
         if( tsk.raw[0:4] in [ b"CONV", b"STOP", b"ERRO", b"ABNO" ] ):
-            it = mx + 1
+            it = step_number + 1
         elif( tsk.raw[0:2] == b"FG" ):
             k = 0
             for i in sele:
