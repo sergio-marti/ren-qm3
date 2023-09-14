@@ -356,45 +356,53 @@ long __collide( double x, double y, double z, double prb, double dsp, long siz, 
     return( f );
 }
 
-// This function has not been still migrated to NUMPY...
 static PyObject* __cavity_grid( PyObject *self, PyObject *args ){
-    PyObject    *o_xyz, *o_rad, *o_cen, *o_pdb, *o_trn;
-    long        i, j, k, l, siz, wr, w2;
-    double      prb = 1.40, vol = 0.0, ri, rj, rk;
-    double      bmax[3] = { -9999., -9999., -9999. };
-    double      bmin[3] = { +9999., +9999., +9999. };
-    long        ci, cj, ck, wi, wj, wk;
-    long        npt[3], cnt[3];
-    long        cub[24] = { 1, 1, 1, 1, 1,-1, 1,-1, 1, 1,-1,-1, -1, 1, 1, -1, 1,-1, -1,-1, 1, -1,-1,-1 };
-    char        ***grd, is_ok = 1;
-    double      *crd, *rad, dsp;
-    time_t      t0;
+    PyObject    	*o_xyz, *o_rad, *o_cen, *o_pdb, *o_trn;
+    PyArrayObject   *m_xyz, *m_rad;
+    long        	i, j, k, l, wr, w2;
+    double      	prb = 1.40, vol = 0.0, ri, rj, rk;
+    double      	bmax[3] = { -9999., -9999., -9999. };
+    double      	bmin[3] = { +9999., +9999., +9999. };
+    long        	ci, cj, ck, wi, wj, wk;
+    long        	npt[3], cnt[3], *dim;
+    long        	cub[24] = { 1, 1, 1, 1, 1,-1, 1,-1, 1, 1,-1,-1, -1, 1, 1, -1, 1,-1, -1,-1, 1, -1,-1,-1 };
+    char        	***grd, is_ok = 1;
+    double      	*crd, *rad, dsp, *ptr_f;
+    time_t      	t0;
 
     o_pdb = Py_False;
     o_trn = Py_False;
     if( PyArg_ParseTuple( args, "OOOd|dOO", &o_rad, &o_xyz, &o_cen, &dsp, &prb, &o_pdb, &o_trn ) ) {
 
         t0  = time( NULL );
-        siz = (long) PyList_Size( o_rad );
-        rad = (double*) malloc( siz * sizeof( double ) );
-        crd = (double*) malloc( 3 * siz * sizeof( double ) );
-fprintf(stderr,"SIZ: %ld\n",siz);
+        m_rad = (PyArrayObject*) PyArray_FROM_OT( o_rad, NPY_DOUBLE );
+        m_xyz = (PyArrayObject*) PyArray_FROM_OT( o_xyz, NPY_DOUBLE );
+        dim   = PyArray_SHAPE( m_xyz );
+        rad = (double*) malloc(     dim[0] * sizeof( double ) );
+        crd = (double*) malloc( 3 * dim[0] * sizeof( double ) );
+fprintf(stderr,"SIZ: %ld\n",dim[0]);
 fprintf(stderr,"DSP: %lf\n",dsp);
 fprintf(stderr,"PRB: %lf\n",prb);
-
-        for( l = 0; l < siz; l++ ) {
-            rad[l] = PyFloat_AsDouble( PyList_GetItem( o_rad, l ) );
-            for( i = 0; i < 3; i++ ) {
-                crd[l*3+i] = PyFloat_AsDouble( PyList_GetItem( o_xyz, l*3+i ) );
-                bmin[i] = min( bmin[i], crd[l*3+i] );
-                bmax[i] = max( bmax[i], crd[l*3+i] );
+        for( i = 0; i < dim[0]; i++ ) {
+            ptr_f = (double*) PyArray_GETPTR1( m_rad, i );
+            rad[i] = *ptr_f;
+            for( j = 0; j < 3; j++ ) {
+                ptr_f = (double*) PyArray_GETPTR2( m_xyz, i, j );
+                crd[3*i+j] = *ptr_f;
+                bmin[j] = min( bmin[j], *ptr_f );
+                bmax[j] = max( bmax[j], *ptr_f );
             }
         }
+        Py_DECREF( m_rad );
+        Py_DECREF( m_xyz );
 
-        for( i = 0; i < 3; i++ ) { 
-            npt[i] = (long)( ( bmax[i] - bmin[i] ) / dsp );
-            cnt[i] = (long)( ( PyFloat_AsDouble( PyList_GetItem( o_cen, i ) ) - bmin[i] ) / dsp );
+        m_xyz = (PyArrayObject*) PyArray_FROM_OT( o_cen, NPY_DOUBLE );
+        for( j = 0; j < 3; j++ ) { 
+            ptr_f = (double*) PyArray_GETPTR1( m_xyz, j );
+            npt[j] = (long)( ( bmax[j] - bmin[j] ) / dsp );
+            cnt[j] = (long)( ( *ptr_f - bmin[j] ) / dsp );
         }
+        Py_DECREF( m_xyz );
 fprintf(stderr,"MIN: %8.3lf%8.3lf%8.3lf\n",bmin[0],bmin[1],bmin[2]);
 fprintf(stderr,"MAX: %8.3lf%8.3lf%8.3lf\n",bmax[0],bmax[1],bmax[2]);
 fprintf(stderr,"NPT: %8ld%8ld%8ld\n",npt[0],npt[1],npt[2]);
@@ -426,7 +434,7 @@ fprintf(stderr,"CEN: %8ld%8ld%8ld\n",cnt[0],cnt[1],cnt[2]);
                     for( wk = cnt[2]; wk > 0 && wk < npt[2]; wk += cub[l+2] ) {
                         if( grd[wi][wj][wk] == 1 ) {
                             rk = bmin[2] + wk * dsp;
-                            if( __collide( ri, rj, rk, prb, dsp, siz, rad, crd ) == 0 ) {
+                            if( __collide( ri, rj, rk, prb, dsp, dim[0], rad, crd ) == 0 ) {
                                 for( i = - wr - 1; i < wr + 1; i++ ) {
                                     ci = wi + i;
                                     if( ci >= 0 && ci < npt[0] )
