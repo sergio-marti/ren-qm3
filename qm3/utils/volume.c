@@ -293,8 +293,8 @@ fprintf(stderr,"KND: %8ld\n",knd);
         for( l = 0; l < cpu; l++ ) pthread_join( pid[l], NULL );
 
         if( o_pdb == Py_True ) {
-			long	n01 = npt[0] * npt[1];
-            FILE* 	fd = fopen( "volume.pdb", "wt" );
+            long    n01 = npt[0] * npt[1];
+            FILE*     fd = fopen( "volume.pdb", "wt" );
             for( i = 1; i < npt[0] - 1; i++ )
                 for( j = 1; j < npt[1] - 1; j++ )
                     for( k = 1; k < npt[2] - 1; k++ )
@@ -356,19 +356,20 @@ long __collide( double x, double y, double z, double prb, double dsp, long siz, 
     return( f );
 }
 
+
 static PyObject* __cavity_grid( PyObject *self, PyObject *args ){
-    PyObject    	*o_xyz, *o_rad, *o_cen, *o_pdb, *o_trn;
+    PyObject        *o_xyz, *o_rad, *o_cen, *o_pdb, *o_trn;
     PyArrayObject   *m_xyz, *m_rad;
-    long        	i, j, k, l, wr, w2;
-    double      	prb = 1.40, vol = 0.0, ri, rj, rk;
-    double      	bmax[3] = { -9999., -9999., -9999. };
-    double      	bmin[3] = { +9999., +9999., +9999. };
-    long        	ci, cj, ck, wi, wj, wk;
-    long        	npt[3], cnt[3], *dim;
-    long        	cub[24] = { 1, 1, 1, 1, 1,-1, 1,-1, 1, 1,-1,-1, -1, 1, 1, -1, 1,-1, -1,-1, 1, -1,-1,-1 };
-    char        	***grd, is_ok = 1;
-    double      	*crd, *rad, dsp, *ptr_f;
-    time_t      	t0;
+    long            i, j, k, l, wr, w2;
+    double          prb = 1.40, vol = 0.0, ri, rj, rk;
+    double          bmax[3] = { -9999., -9999., -9999. };
+    double          bmin[3] = { +9999., +9999., +9999. };
+    long            ci, cj, ck, wi, wj, wk;
+    long            npt[3], cnt[3], *dim;
+    long            cub[24] = { 1, 1, 1, 1, 1,-1, 1,-1, 1, 1,-1,-1, -1, 1, 1, -1, 1,-1, -1,-1, 1, -1,-1,-1 };
+    char            ***grd, is_ok = 1;
+    double          *crd, *rad, dsp, *ptr_f;
+    time_t          t0;
 
     o_pdb = Py_False;
     o_trn = Py_False;
@@ -455,28 +456,28 @@ fprintf(stderr,"CEN: %8ld%8ld%8ld\n",cnt[0],cnt[1],cnt[2]);
             }
         }
 
-		// prune wihtin a max volume
-		if( o_trn == Py_True ) {
-			char	buf[32];
-			long	ss;
-			double	sx, sy, sz, sr;
-            FILE* 	fd = fopen( "within", "rb" );
+        // prune wihtin a max volume
+        if( o_trn == Py_True ) {
+            char    buf[32];
+            long    ss;
+            double  sx, sy, sz, sr;
+            FILE*   fd = fopen( "within", "rb" );
 
-			if( fd != NULL ) {
-				fread( buf, 1, 4, fd );
-				memcpy( &ss, &buf[0], 4 );
+            if( fd != NULL ) {
+                fread( buf, 1, 4, fd );
+                memcpy( &ss, &buf[0], 4 );
 fprintf(stderr,"TRN: %ld\n",ss);
-				for( l = 0; l < ss; l++ ) {
-					fread( buf, 1, 32, fd );
-					memcpy( &sx,  &buf[0], 8 );
-					memcpy( &sy,  &buf[8], 8 );
-					memcpy( &sz, &buf[16], 8 );
-					memcpy( &sr, &buf[24], 8 );
-					wi = (long)( ( sx - bmin[0] ) / dsp );
-					wj = (long)( ( sy - bmin[1] ) / dsp );
-					wk = (long)( ( sz - bmin[2] ) / dsp );
-					wr = (long)( sr / dsp );
-					w2 = wr * wr;
+                for( l = 0; l < ss; l++ ) {
+                    fread( buf, 1, 32, fd );
+                    memcpy( &sx,  &buf[0], 8 );
+                    memcpy( &sy,  &buf[8], 8 );
+                    memcpy( &sz, &buf[16], 8 );
+                    memcpy( &sr, &buf[24], 8 );
+                    wi = (long)( ( sx - bmin[0] ) / dsp );
+                    wj = (long)( ( sy - bmin[1] ) / dsp );
+                    wk = (long)( ( sz - bmin[2] ) / dsp );
+                    wr = (long)( sr / dsp );
+                    w2 = wr * wr;
                     for( i = - wr - 1; i < wr + 1; i++ ) {
                         ci = wi + i;
                         if( ci >= 0 && ci < npt[0] )
@@ -490,11 +491,11 @@ fprintf(stderr,"TRN: %ld\n",ss);
                                     }
                             }
                     }
-				}
-				fclose( fd );
-				is_ok = 2;
-			}
-		}
+                }
+                fclose( fd );
+                is_ok = 2;
+            }
+        }
 
         if( o_pdb == Py_True ) {
             FILE* fd = fopen( "volume.pdb", "wt" );
