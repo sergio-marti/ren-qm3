@@ -29,6 +29,18 @@ def assign_velocities( mol: object, temperature: float, proj: numpy.array, ndeg:
     cur, kin = current_temperature( mol, ndeg )
     mol.velo *= math.sqrt( temperature / cur )
 
+
+def get_projector( mol:object )  -> ( int, numpy.array ):
+    actv = mol.actv.sum()
+    if( actv < mol.natm ):
+        ndeg = 3 * actv
+        proj = numpy.zeros( ( mol.natm, 1 ) )
+    else:
+        ndeg = 3 * actv - 3
+        proj = numpy.sqrt( mol.mass / numpy.sum( mol.mass * mol.actv.astype( numpy.float64 ) ) ) * mol.actv.astype( numpy.float64 )
+    return( ndeg, proj )
+
+
 # =================================================================================================
 
 def langevin_verlet( mol: object,
@@ -46,7 +58,7 @@ def langevin_verlet( mol: object,
     log_file.write( "---------------------------------------- Dynamics: Langevin-Verlet (NVT)\n\n" )
     ndeg = 3 * mol.actv.sum()
     if( mol.actv.sum() < mol.natm ):
-        proj = numpy.zeros( ( mol.natm, 3 ) )
+        proj = numpy.zeros( ( mol.natm, 1 ) )
         log_file.write( "Degrees of Freedom: %20ld\n"%( ndeg ) )
     else:
         ndeg -= 3
@@ -97,7 +109,7 @@ def langevin_verlet( mol: object,
         cacc = - mol.grad / mol.mass * 100.0
         cacc -= numpy.sum( cacc * proj, axis = 0 ) * proj
         mol.velo = oacc + fv2 * cacc
-        mol.velo -= numpy.sum( mol.velo * proj, axis = 0 ) * proj
+#        mol.velo -= numpy.sum( mol.velo * proj, axis = 0 ) * proj
         temp, kine = current_temperature( mol, ndeg )
         xtmp = numpy.array( [ mol.func, kine, mol.func + kine, temp ], dtype=numpy.float64 )
         xavr += xtmp
@@ -129,11 +141,12 @@ def csvr_verlet( mol: object,
     log_file.write( "---------------------------------------- Dynamics: CSVR-Verlet (NVT)\n\n" )
     ndeg = 3 * mol.actv.sum()
     if( mol.actv.sum() < mol.natm ):
-        proj = numpy.zeros( ( mol.natm, 3 ) )
+        proj = numpy.zeros( ( mol.natm, 1 ) )
+        log_file.write( "Degrees of Freedom: %20ld\n"%( ndeg ) )
     else:
         ndeg -= 3
         proj = numpy.sqrt( mol.mass / numpy.sum( mol.mass * mol.actv.astype( numpy.float64 ) ) ) * mol.actv.astype( numpy.float64 )
-    log_file.write( "Degrees of Freedom: %20ld\n"%( ndeg ) )
+        log_file.write( "Degrees of Freedom: %20ld [removing COM]\n"%( ndeg ) )
     log_file.write( "Step Size:          %20.10lg (ps)\n"%( step_size ) )
     log_file.write( "Temperature:        %20.10lg (K)\n"%( temperature ) )
     log_file.write( "Temp. coupling:     %20.10lg (ps)\n"%( temperature_coupling ) )
