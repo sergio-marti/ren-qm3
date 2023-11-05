@@ -204,3 +204,86 @@ def umbint( data_lst: list,
         l       = e
     # ---------------------------------------------
     return( coor, func - numpy.max( func ), numpy.sqrt( ferr ) )
+
+# =================================================================================================
+
+def average_force_integration( data_lst: list,
+        nskip: typing.Optional[int] = 0,
+        use_sampling_ratio: typing.Optional[bool] = False ) -> tuple:
+    """
+    J. Comput. Chem. v33, p435 (2012) [doi:10.1002/jcc.21989]
+
+
+∆G_{ i rightarrow i+1 } approx { 1 over 2 } left lbrace k_{i+1} ( r_{i+1} - langle x_{i+1} rangle ) + k_i ( r_i - langle x_i rangle ) right rbrace cdot left( langle x_{i+1} rangle - langle x_i rangle  right )
+newline newline
+J_{i,i+1} = left( {partial ∆G_{ i rightarrow i+1 }} over{partial langle x_i rangle}, {∆G_{ i rightarrow i+1 }}over{partial langle x_{i+1} rangle} right )_{ 1x2 }
+newline newline
+C_{ i,i+1 } = left(
+matrix{
+{1+ 2%tau_i} over N_i sum{ (x_i - langle x_i rangle )^2} #
+sqrt{(1+ 2%tau_i)(1+ 2%tau_{i+1})} over sqrt{N_i N_{i+1}} sum{ (x_i - langle x_i rangle ) (x_{i+1} - langle x_{i+1} rangle )} ##
+dotsup #
+{1+ 2%tau_{i+1}} over N_{i+1} sum{ (x_{i+1} - langle x_{i+1} rangle )^2}
+} right )_{ 2x2 }
+newline newline
+s^2( ∆G_{ i rightarrow i+1 } ) = J_{i,i+1} cdot C_{ i,i+1 } cdot J_{i,i+1}^T
+newline newline
+1 + 2 %tau = { 1 + r_1 } over { 1 - r_1 }
+~~~~~~~~
+r_1 =  sum from{2} to{N}{ (x_i - langle x_i rangle ) (x_{i-1} - langle x_i rangle ) } over sum{ (x_i - langle x_i rangle )^2 }
+    """
+    # ---------------------------------------------
+    nwin = len( data_lst )
+    kumb = numpy.zeros( nwin, dtype=numpy.float64 )
+    xref = numpy.zeros( nwin, dtype=numpy.float64 )
+    aver = numpy.zeros( nwin, dtype=numpy.float64 )
+    vari = numpy.zeros( nwin, dtype=numpy.float64 )
+    srat = numpy.zeros( nwin, dtype=numpy.float64 )
+    data = []
+    for k in range( nwin ):
+        kumb[k], xref[k] = ( float( i ) for i in data_lst[k].readline().strip().split() )
+        data.append( [] )
+        i  = 0
+        for l in data_lst[k]:
+            if( i >= nskip ):
+                data[-1].append( float( l.strip() ) )
+            i += 1
+        data[-1] = numpy.array( data[-1] )
+        aver[k]  = data[-1].mean()
+        vari[k]  = data[-1].var() * data[-1].shape[0]
+        tmp      = data[-1] - aver[k]
+        cor      = sum( [ tmp[i] * ( data[-1][i+1] - aver[k] ) for i in range( data[-1].shape[0] - 1 ) ] ) / vari[k] 
+        srat[k]  = ( 1.0 + cor ) / ( 1.0 - cor )
+    # ---------------------------------------------
+    if( not use_sampling_ratio ):
+        srat = numpy.ones( nwin, dtype=numpy.float64 )
+    indx = numpy.argsort( xref )
+    coor = numpy.zeros( nwin - 1 )
+    func = numpy.zeros( nwin - 1 )
+    ferr = numpy.zeros( nwin - 1 )
+    for i in range( indx.shape[0] - 1 ):
+        coor[i] = 0.5 * ( aver[indx[i]] + aver[indx[i+1]] )
+        # ---------------------------------------------
+        # averages instead of the references in eq. 28 (it also affects the jacobian)
+        #func[i] = kumb[indx[i+1]] * ( xref[indx[i+1]] - aver[indx[i+1]] ) + kumb[indx[i]] * ( xref[indx[i]] - aver[indx[i]] )
+        #func[i] *= 0.5 * ( aver[indx[i+1]] - aver[indx[i]] )
+        #jaco = [ .0, .0 ]
+        #jaco[0] = - 0.5 * ( kumb[indx[i]] * xref[indx[i]] + kumb[indx[i+1]] * xref[indx[i+1]] )
+        #jaco[0] +=   kumb[indx[i]]   * aver[indx[i]]   + 0.5 * aver[indx[i+1]] * ( kumb[indx[i+1]] - kumb[indx[i]] )
+        #jaco[1] =   0.5 * ( kumb[indx[i]] * xref[indx[i]] + kumb[indx[i+1]] * xref[indx[i+1]] )
+        #jaco[1] += - kumb[indx[i+1]] * aver[indx[i+1]] + 0.5 * aver[indx[i]]   * ( kumb[indx[i+1]] - kumb[indx[i]] )
+        # ---------------------------------------------
+        func[i] = kumb[indx[i+1]] * ( xref[indx[i+1]] - aver[indx[i+1]] ) + kumb[indx[i]] * ( xref[indx[i]] - aver[indx[i]] )
+        func[i] *= 0.5 * ( xref[indx[i+1]] - xref[indx[i]] )
+        jaco = [ 0.5 * kumb[indx[i]] * ( xref[indx[i]] - xref[indx[i+1]] ),
+                 0.5 * kumb[indx[i+1]] * ( xref[indx[i]] - xref[indx[i+1]] ) ]
+        # ---------------------------------------------
+        ndat = min( data[indx[i]].shape[0], data[indx[i+1]].shape[0] )
+        mcov = [ vari[indx[i]] * srat[indx[i]] / ndat, 0.0, vari[indx[i+1]] * srat[indx[i+1]] / ndat ]
+        for j in range( ndat ):
+            mcov[1] += ( data[indx[i]][j] - aver[indx[i]] ) * ( data[indx[i+1]][j] - aver[indx[i+1]] )
+        mcov[1] *= math.sqrt( srat[indx[i]] * srat[indx[i+1]] ) / ndat
+        ferr[i] = math.sqrt( jaco[0] * ( mcov[0] * jaco[0] + mcov[1] * jaco[1] ) + jaco[1] * ( mcov[1] * jaco[0] + mcov[2] * jaco[1] ) )
+    # ---------------------------------------------
+    func = numpy.cumsum( func )
+    return( coor, func - numpy.max( func ), ferr )
