@@ -269,9 +269,11 @@ if( __name__ == "__main__" ):
 
     import  scipy.optimize
     print( 80 * "=" )
-    print( scipy.optimize.differential_evolution( func_muller_brown, [ ( -0.75, -0.25 ), ( 1.2, 1.6 ) ], strategy = "rand1bin" ) )
+    print( scipy.optimize.differential_evolution( func_muller_brown, [ ( -0.75, -0.25 ), ( 1.2, 1.6 ) ],
+                strategy = "rand1bin" ) )
     print( 80 * "=" )
-    print( scipy.optimize.minimize( func_muller_brown, [ -0.75, 1.2 ], method = "BFGS", jac = lambda x: grad_muller_brown( x )[1] ) )
+    print( scipy.optimize.minimize( func_muller_brown, [ -0.75, 1.2 ], method = "BFGS",
+                jac = lambda x: grad_muller_brown( x )[1] ) )
     print( 80 * "=" )
     print( scipy.optimize.minimize( func_muller_brown, [ -0.75, 1.2 ], method = "Newton-CG",
                 jac = lambda x: grad_muller_brown( x )[1], hess = lambda x: hess_muller_brown(x)[2] ) )
