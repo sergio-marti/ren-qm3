@@ -257,18 +257,6 @@ if( __name__ == "__main__" ):
         return( ff, gg, hh )
 
 
-# --------------------------------------------------
-#    import io
-#    import qm3.utils.grids
-#    g = qm3.utils.grids.grid()
-#    f = io.StringIO()
-#    for i in numpy.linspace( -1.5, 0.5, 200 ):
-#        for j in numpy.linspace( 0.2, 1.6, 200 ):
-#            f.write( "%12.6lf%12.6lf%12.6lf\n"%( i, j, func_muller_brown( numpy.array( [ i, j ] ) ) ) )
-#    f.seek( 0 )
-#    g.parse( f )
-#    g.plot2d()
-# --------------------------------------------------
 
     fun, crd = differential_evolution( func_muller_brown, 2, [ numpy.array( [ -0.75, 1.2 ] ), numpy.array( [ -0.25, 1.6 ] ) ] )
     print( crd, fun, numpy.linalg.norm( grad_muller_brown( crd )[1] ) )
