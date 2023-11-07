@@ -275,3 +275,5 @@ if( __name__ == "__main__" ):
     print( 80 * "=" )
     print( scipy.optimize.minimize( func_muller_brown, [ -0.75, 1.2 ], method = "Newton-CG",
                 jac = lambda x: grad_muller_brown( x )[1], hess = lambda x: hess_muller_brown(x)[2] ) )
+
+
