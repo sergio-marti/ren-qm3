@@ -6,16 +6,16 @@ import  sys
 
 
 def differential_evolution( function: typing.Callable,
-        dimension: int,
         boundaries: list,
         step_number: typing.Optional[int] = 1000,
-        step_tolerance: typing.Optional[float] = 1.0e-4,
+        step_tolerance: typing.Optional[float] = 1.0e-6,
         population_size: typing.Optional[int] = 20,
         mutation_factor: typing.Optional[float] = 0.8,
         crossover_probability: typing.Optional[float] = 0.75,
         log_file: typing.Optional[typing.IO] = sys.stdout,
         checkpointing: typing.Optional[bool] = False ) -> tuple:
     # -------------------------------------------------------------------------
+    dimension = boundaries[0].shape[0]
     population_size = max( population_size, dimension * 2 )
     mutation_factor = min( max( mutation_factor, 0.1 ), 1.0 )
     crossover_probability = min( max( crossover_probability, 0.1 ), 1.0 )
@@ -258,7 +258,7 @@ if( __name__ == "__main__" ):
 
 
 
-    fun, crd = differential_evolution( func_muller_brown, 2, [ numpy.array( [ -0.75, 1.2 ] ), numpy.array( [ -0.25, 1.6 ] ) ] )
+    fun, crd = differential_evolution( func_muller_brown, [ numpy.array( [ -0.75, 1.2 ] ), numpy.array( [ -0.25, 1.6 ] ) ] )
     print( crd, fun, numpy.linalg.norm( grad_muller_brown( crd )[1] ) )
 
     fun, crd = fire( grad_muller_brown, numpy.array( [ -0.75, 1.2 ] ) )
@@ -266,3 +266,12 @@ if( __name__ == "__main__" ):
 
     fun, crd = rfo( hess_muller_brown, numpy.array( [ -0.75, 1.2 ] ) )
     print( crd, fun, numpy.linalg.norm( grad_muller_brown( crd )[1] ) )
+
+    import  scipy.optimize
+    print( 80 * "=" )
+    print( scipy.optimize.differential_evolution( func_muller_brown, [ ( -0.75, -0.25 ), ( 1.2, 1.6 ) ], strategy = "rand1bin" ) )
+    print( 80 * "=" )
+    print( scipy.optimize.minimize( func_muller_brown, [ -0.75, 1.2 ], method = "BFGS", jac = lambda x: grad_muller_brown( x )[1] ) )
+    print( 80 * "=" )
+    print( scipy.optimize.minimize( func_muller_brown, [ -0.75, 1.2 ], method = "Newton-CG",
+                jac = lambda x: grad_muller_brown( x )[1], hess = lambda x: hess_muller_brown(x)[2] ) )
