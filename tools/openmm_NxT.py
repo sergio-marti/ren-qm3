@@ -74,6 +74,10 @@ _sim.context.setPositions( openmm.app.pdbfile.PDBFile( "start.pdb" ).getPosition
 #_sim.context.setPositions( crd.tolist() )
 # -------------------------------------------------------------------------------------
 
+
+#_sim.minimizeEnergy()
+
+
 #>> 100 ps NPT
 #_sim.reporters.append( openmm.app.dcdreporter.DCDReporter( "last.dcd", 100, enforcePeriodicBox = True ) )
 #_sim.reporters.append( openmm.app.statedatareporter.StateDataReporter( sys.stdout, 100,

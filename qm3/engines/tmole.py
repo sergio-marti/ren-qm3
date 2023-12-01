@@ -18,10 +18,15 @@ class run( qm3.engines.template ):
         self.exe_ene = "ridft  1>  tmole.log 2>> tmole.log"
         self.exe_grd = "rdgrad 1>> tmole.log 2>> tmole.log"
 #        self.exe_grd = "ricc2  1>> tmole.log 2>> tmole.log"
+        self.__dq = numpy.zeros( mol.natm )
+        # redistribute MM-charge on the remaining atoms of the group
+        for i,j in self.lnk:
+            if( j in self.grp ):
+                self.__dq[self.grp[j]] += mol.chrg[j] / len( self.grp[j] )
+        # ----------------------------------------------------------
 
 
     def mk_input( self, mol, run ):
-        dq = numpy.zeros( mol.natm )
         f = open( "coord", "wt" )
         f.write( "$coord\n" )
         for i in self.sel:
@@ -36,11 +41,6 @@ class run( qm3.engines.template ):
                 f.write( "%20.10lf%20.10lf%20.10lf   H\n"%( c[0] * self.cx, c[1] * self.cx, c[2] * self.cx ) )
                 self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
                 k += 1
-            # redistribute MM-charge on the remaining atoms of the group
-            for i,j in self.lnk:
-                if( j in self.grp ):
-                    dq[self.grp[j]] += mol.chrg[j] / len( self.grp[j] )
-            # ----------------------------------------------------------
         f.write( "$user-defined bonds\n$end" )
         f.close()
         if( len( self.nbn ) > 0 ):
@@ -48,7 +48,7 @@ class run( qm3.engines.template ):
             f.write( "$point_charges nocheck\n" )
             for i in self.nbn:
                 tmp = ( mol.coor[i] - mol.boxl * numpy.round( mol.coor[i] / mol.boxl, 0 ) ) * self.cx
-                f.write( "%20.10lf%20.10lf%20.10lf%12.4lf\n"%( tmp[0], tmp[1], tmp[2], mol.chrg[i] + dq[i] ) )
+                f.write( "%20.10lf%20.10lf%20.10lf%12.4lf\n"%( tmp[0], tmp[1], tmp[2], mol.chrg[i] + self.__dq[i] ) )
             f.write( "$end" )
             f.close()
 

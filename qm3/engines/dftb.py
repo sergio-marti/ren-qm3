@@ -33,6 +33,12 @@ class run( qm3.engines.template ):
         self.inp = fdsc.read()
         self.mk_input( mol, "grad" )
         self.lib.qm3_dftb_init_()
+        # redistribute MM-charge on the remaining atoms of the group
+        self.__dq = numpy.zeros( mol.natm )
+        for i,j in self.lnk:
+            if( j in self.grp ):
+                self.__dq[self.grp[j]] += mol.chrg[j] / len( self.grp[j] )
+        # ----------------------------------------------------------
 
 
     def mk_input( self, mol, run ):
@@ -90,18 +96,12 @@ class run( qm3.engines.template ):
                 l += 1
             self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
             k += 1
-        # redistribute MM-charge on the remaining atoms of the group
-        dq = numpy.zeros( mol.natm )
-        for i,j in self.lnk:
-            if( j in self.grp ):
-                dq[self.grp[j]] += mol.chrg[j] / len( self.grp[j] )
-        # ----------------------------------------------------------
         k = 3 * ( self.nQM + self.nMM )
         for i in self.nbn:
             for j in [0, 1, 2]:
                 self.vec[l] = mol.coor[i,j] - mol.boxl[j] * numpy.round( mol.coor[i,j] / mol.boxl[j], 0 )
                 l += 1
-            self.vec[k] = mol.chrg[i] + dq[i]
+            self.vec[k] = mol.chrg[i] + self.__dq[i]
             k += 1
 
 

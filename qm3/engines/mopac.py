@@ -45,6 +45,12 @@ class run( qm3.engines.template ):
                 ctypes.c_int( mult ),
                 ctypes.c_int( self.siz ), self.vec,
                 ctypes.c_double( con ), ctypes.c_double( cof ) )
+        # redistribute MM-charge on the remaining atoms of the group
+        self.__dq = numpy.zeros( mol.natm )
+        for i,j in self.lnk:
+            if( j in self.grp ):
+                self.__dq[self.grp[j]] += mol.chrg[j] / len( self.grp[j] )
+        # ----------------------------------------------------------
 
 
     def update_coor( self, mol: object ):
@@ -67,15 +73,9 @@ class run( qm3.engines.template ):
             for j in [0, 1, 2]:
                 self.vec[l] = mol.coor[i,j] - mol.boxl[j] * numpy.round( mol.coor[i,j] / mol.boxl[j], 0 )
                 l += 1
-        # redistribute MM-charge on the remaining atoms of the group
-        dq = numpy.zeros( mol.natm )
-        for i,j in self.lnk:
-            if( j in self.grp ):
-                dq[self.grp[j]] += mol.chrg[j] / len( self.grp[j] )
-        # ----------------------------------------------------------
         l  = 1 + 4 * self.nQM
         for i in self.nbn:
-            self.vec[l] = mol.chrg[i] + dq[i]
+            self.vec[l] = mol.chrg[i] + self.__dq[i]
             l += 1
 
 
