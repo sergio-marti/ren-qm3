@@ -11,14 +11,24 @@ class run( qm3.engines.template ):
             sel_QM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
             sel_MM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
             link: typing.Optional[list] = [],
-            library: typing.Optional[str] = "libquick.so" ):
+            library: typing.Optional[str] = "libquick.so",
+            info_mpi: typing.Optional[tuple] = () ):
         qm3.engines.template.__init__( self, mol, sel_QM, sel_MM, link )
         self.ce  = qm3.data.H2J
         self.cg  = self.ce / qm3.data.A0
         self.nQM = len( self.sel ) + len( self.lnk )
         self.nMM = len( self.nbn )
         # ------------------------------------------------------------------------
+        self.__err = ( ctypes.c_int )()
         self.lib = ctypes.CDLL( library )
+        if( info_mpi != () ):
+            self.lib_fixmpi = self.lib["__quick_api_module_MOD_set_quick_mpi"]
+            self.lib_fixmpi.argtypes = [ 
+                ctypes.POINTER( ctypes.c_int ),
+                ctypes.POINTER( ctypes.c_int ),
+                ctypes.POINTER( ctypes.c_int ) ]
+            self.lib_fixmpi.restype = None
+            self.lib_fixmpi( ctypes.c_int( info_mpi[0] ), ctypes.c_int( info_mpi[1] ), self.__err )
         self.lib_setup = self.lib["__quick_api_module_MOD_set_quick_job"]
         self.lib_setup.argtypes = [ 
             ctypes.POINTER( ctypes.c_char ),
@@ -45,8 +55,7 @@ class run( qm3.engines.template ):
         if( self.nMM > 0 ):
             self.__cmd.value = keys.encode( "utf-8" ) + b" gradient dipole extcharges "
         else:
-            self.__cmd.value = keys.encode( "utf-8" ) + b" "
-        self.__err = ( ctypes.c_int )()
+            self.__cmd.value = keys.encode( "utf-8" ) + b" gradient dipole "
         anum = ( ctypes.c_int * self.nQM )()
         l = 0
         for i in self.sel:
