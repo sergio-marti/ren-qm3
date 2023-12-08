@@ -112,11 +112,11 @@ gues = qm3.actions.neb.distribute( 20, [ reac, tran, prod ] )
 ncpu = 4
 
 # mpirun -n 4 python3 test_pneb.py
-#opar = qm3.utils.parallel.client_mpi()
+opar = qm3.utils.parallel.client_mpi()
 
 # python3 -c "import qm3.utils.parallel; qm3.utils.parallel.server_msi( 4, unix = '/tmp/qm3_socket' )"
 # for i in {0..3}; do python3 test_pneb.py $i &; done
-opar = qm3.utils.parallel.client_msi( int( sys.argv[1] ), unix = "/tmp/qm3_socket" )
+#opar = qm3.utils.parallel.client_msi( int( sys.argv[1] ), unix = "/tmp/qm3_socket" )
 
 chnk = [ [] for i in range( ncpu ) ]
 for i in range( len( gues ) ):

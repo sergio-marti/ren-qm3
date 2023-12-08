@@ -87,9 +87,11 @@ def neb_path( igrd: object, node: int, gues: list, kumb: float ):
         coor += step
 
         obj = qm3.utils.interpolation.gaussian( refs, coor[:,0], 0.5 )
-        coor[:,0] = numpy.array( [ obj.calc( i )[0] for i in refs ], dtype=numpy.float64 )
+#        coor[:,0] = numpy.array( [ obj.calc( i )[0] for i in refs ], dtype=numpy.float64 )
+        coor[:,0] = numpy.array( [ min( max( obj.calc( i )[0], igrd.x[0] ), igrd.x[-1] ) for i in refs ], dtype=numpy.float64 )
         obj = qm3.utils.interpolation.gaussian( refs, coor[:,1], 0.5 )
-        coor[:,1] = numpy.array( [ obj.calc( i )[0] for i in refs ], dtype=numpy.float64 )
+#        coor[:,1] = numpy.array( [ obj.calc( i )[0] for i in refs ], dtype=numpy.float64 )
+        coor[:,1] = numpy.array( [ min( max( obj.calc( i )[0], igrd.y[0] ), igrd.y[-1] ) for i in refs ], dtype=numpy.float64 )
 
         func = numpy.zeros( dime, dtype=numpy.float64 )
         grad = numpy.zeros( ( dime, 2 ), dtype=numpy.float64 )
