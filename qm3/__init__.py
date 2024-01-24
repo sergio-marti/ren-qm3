@@ -217,6 +217,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             self.coor = numpy.array( coor, dtype=numpy.float64 ).reshape( ( self.natm, 3 ) )
         else:
             self.natm = natm
+            self.boxl = numpy.array( [ qm3.data.MXLAT, qm3.data.MXLAT, qm3.data.MXLAT ] )
             self.labl = numpy.array( labl, dtype=qm3.data.strsiz )
             self.coor = numpy.array( coor, dtype=numpy.float64 ).reshape( ( self.natm, 3 ) )
             self.segn = numpy.array( segn, dtype=qm3.data.strsiz )
@@ -268,6 +269,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
                 labl.append( temp[0] )
                 coor += [ float( temp[1] ), float( temp[2] ), float( temp[3] ) ]
                 self.natm += 1
+            self.boxl = numpy.array( [ qm3.data.MXLAT, qm3.data.MXLAT, qm3.data.MXLAT ] )
             self.labl = numpy.array( labl, dtype=qm3.data.strsiz )
             self.coor = numpy.array( coor, dtype=numpy.float64 ).reshape( ( self.natm, 3 ) )
             temp = [ "X" ] * self.natm
@@ -314,6 +316,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             temp = fdsc.readline().strip().split()
             labl.append( temp[3] )
             coor += [ float( j ) for j in temp[0:3] ]
+        self.boxl = numpy.array( [ qm3.data.MXLAT, qm3.data.MXLAT, qm3.data.MXLAT ] )
         self.labl = numpy.array( labl, dtype=qm3.data.strsiz )
         self.coor = numpy.array( coor, dtype=numpy.float64 ).reshape( ( self.natm, 3 ) )
         temp = [ "X" ] * self.natm
@@ -351,6 +354,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
                     chrg.append( float( temp[8] ) )
                     segn.append( "X" )
             l = fdsc.readline()
+        self.boxl = numpy.array( [ qm3.data.MXLAT, qm3.data.MXLAT, qm3.data.MXLAT ] )
         self.labl = numpy.array( labl, dtype=qm3.data.strsiz )
         self.coor = numpy.array( coor, dtype=numpy.float64 ).reshape( ( self.natm, 3 ) )
         self.segn = numpy.array( segn, dtype=qm3.data.strsiz )
@@ -470,6 +474,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
                 chrg.append( .0 )
         # done!
         self.natm = natm
+        self.boxl = numpy.array( [ qm3.data.MXLAT, qm3.data.MXLAT, qm3.data.MXLAT ] )
         self.labl = numpy.array( labl, dtype=qm3.data.strsiz )
         self.coor = numpy.array( coor, dtype=numpy.float64 )
         self.chrg = numpy.array( chrg, dtype=numpy.float64 )
@@ -483,6 +488,68 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         self.rlim = numpy.array( [ 0, self.natm ], dtype=numpy.int32 )
         self.indx = None
         self.engines = {}
+
+
+    def fdynamo_read( self, fdsc ):
+        """
+Subsystem     1  A
+   452 ! # of residues.
+!===============================================================================
+Residue     1  SER
+    11 ! # of atoms.
+     1   N             7       -5.0950000000     27.6770000000    -14.8700000000
+     2   H             1       -4.2860000000     28.3550000000    -14.8320000000
+     3   CA            6       -6.1260000000     27.5020000000    -13.9140000000
+        """
+        natm = 0
+        boxl = [ qm3.data.MXLAT, qm3.data.MXLAT, qm3.data.MXLAT ]
+        labl = []
+        anum = []
+        coor = []
+        segn = []
+        resi = []
+        resn = []
+        tmp = fdsc.readline().strip().split()
+        while( tmp != [] ):
+            if( tmp[0].lower() == "subsystem" ):
+                sgn = tmp[2]
+            if( tmp[0].lower() == "orthorhombic" ):
+                boxl = [ float( tmp[1] ), float( tmp[2] ), float( tmp[3] ) ]
+            if( tmp[0].lower() == "cubic" ):
+                boxl = [ float( tmp[1] ), float( tmp[1] ), float( tmp[1] ) ]
+            if( tmp[0].lower() == "residue" ):
+                rsi = int( tmp[1] )
+                rsn = tmp[2]
+                tmp = fdsc.readline().split()
+                while( tmp[0][0] == "!" ):
+                    tmp = fdsc.readline().split()
+                for i in range( int( tmp[0] ) ):
+                    tmp = fdsc.readline().split()
+                    while( tmp[0][0] == "!" ):
+                        tmp = fdsc.readline().split()
+                    segn.append( sgn )
+                    resn.append( rsn )
+                    resi.append( rsi )
+                    labl.append( tmp[1] )
+                    anum.append( int( tmp[2] ) )
+                    coor.append( float( tmp[3] ) )
+                    coor.append( float( tmp[4] ) )
+                    coor.append( float( tmp[5] ) )
+                    natm += 1
+            tmp = fdsc.readline().split()
+        self.natm = natm
+        self.boxl = numpy.array( boxl )
+        self.labl = numpy.array( labl, dtype=qm3.data.strsiz )
+        self.coor = numpy.array( coor, dtype=numpy.float64 ).reshape( ( self.natm, 3 ) )
+        self.segn = numpy.array( segn, dtype=qm3.data.strsiz )
+        self.resi = numpy.array( resi, dtype=numpy.int32 )
+        self.resn = numpy.array( resn, dtype=qm3.data.strsiz )
+        self.anum = numpy.array( anum, dtype=numpy.int16 )
+        self.mass = qm3.data.mass[self.anum]
+        self.chrg = numpy.zeros( self.natm, dtype=numpy.float64 )
+        self.actv = numpy.ones( ( self.natm, 1 ), dtype=numpy.bool_ )
+        self.engines = {}
+        self.rebuild()
 
 # =================================================================================================
 # TODO: parse also the atoms types (self.type [list])

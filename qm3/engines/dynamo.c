@@ -251,7 +251,7 @@ PyMODINIT_FUNC PyInit__dynamo( void ) {
     my_module = PyModule_Create( &moddef );
     PyType_Ready( &tDynamo );
     Py_INCREF( &tDynamo );
-    PyModule_AddObject( my_module, "dynamo", (PyObject *) &tDynamo );
+    PyModule_AddObject( my_module, "run", (PyObject *) &tDynamo );
     import_array();
     return( my_module );
 }

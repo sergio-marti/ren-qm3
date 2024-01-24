@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-import  os
-os.environ["OPENMM_CPU_THREADS"] = "32"
-os.environ["OMP_NUM_THREADS"] = "32"
 import	sys
 import  openmm
 import  openmm.app
@@ -13,11 +10,15 @@ box  = [ 42.320, 47.736, 43.057 ]
 _top = openmm.app.amberprmtopfile.AmberPrmtopFile( "start.prmtop" )
 
 _sys = _top.createSystem(
-    nonbondedMethod = openmm.app.CutoffPeriodic,
-    nonbondedCutoff = 16.5 * openmm.unit.angstrom,
-    switchDistance = 14.0 * openmm.unit.angstrom,
+    nonbondedMethod = openmm.app.PME,
+    nonbondedCutoff = 14 * openmm.unit.angstrom,
+    switchDistance = 12 * openmm.unit.angstrom,
+#>> 2 fs
+#    constraints = openmm.app.HBonds,
     rigidWater = False,
     implicitSolvent = None )
+#    implicitSolvent = openmm.app.HCT, soluteDielectric = 4.0, solventDielectric = 80.0 )
+
 
 #>> fix prmtop box size (based on VDW radii)
 _sys.setDefaultPeriodicBoxVectors(
@@ -31,16 +32,18 @@ _sys.setDefaultPeriodicBoxVectors(
 #    _sys.setParticleMass( i, 0.0 )
 
 
-#>> add harmonic restraint
+#>> add harmonic restraint (remove non-bonding)
 #for i in range( _sys.getNumForces() ):
 #    cur = _sys.getForce( i )
 #    if( type( cur ) == openmm.HarmonicBondForce ):
 #        cur.addBond( 35194, 35123,
 #            2.0 * openmm.unit.angstrom,
 #            400.0 * openmm.unit.kilojoule / ( openmm.unit.angstrom ** 2 * openmm.unit.mole ) )
+#    if( type( cur ) == openmm.NonbondedForce ):
+#        cur.addException( 35194, 35123, 0.0, 0.0, 0.0, replace = True )
 
 
-_int = openmm.LangevinIntegrator( 300.0, 50.0, 0.001 )
+_int = openmm.LangevinIntegrator( 300.0, 5.0, 0.001 )
 
 #>> NPT [http://docs.openmm.org/latest/userguide/theory/02_standard_forces.html#montecarlobarostat]
 #_sys.addForce( openmm.openmm.MonteCarloBarostat( 1.0 * openmm.unit.atmosphere, 300.0, 25 ) )
@@ -54,7 +57,7 @@ _sim = openmm.app.Simulation( _top.topology, _sys, _int, openmm.Platform.getPlat
 #    openmm.Platform.getPlatformByName( "CUDA" ), { "CudaDeviceIndex": "0,1" } )
 
 
-#>> load PDB
+#>> load PDB (should be centered at the edge...)
 _sim.context.setPositions( openmm.app.pdbfile.PDBFile( "start.pdb" ).getPositions() )
 
 #>> parse XYZ: OpenMM expects the origin at one of the edges...
@@ -92,6 +95,9 @@ _sim.reporters.append( openmm.app.statedatareporter.StateDataReporter( sys.stdou
     time = True, potentialEnergy = True, temperature = True ) )
 _sim.step( 10000000 )
 
+#>> make a context checkpoint for restarting: _sim.context.loadCheckpoint( f.read() )
+with open( "last.chk", "wb" ) as f:
+    f.write( _sim.context.createCheckpoint() )
 
 #>> save coordinates (OpenMM: PDB)
 with open( "last.pdb", "wt" ) as f:

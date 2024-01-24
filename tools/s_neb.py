@@ -28,7 +28,7 @@ def calc_tau( kumb, potm, poti, potp, crdm, crdi, crdp ):
     return( tau, gum )
 
 
-def neb_path( igrd: object, node: int, gues: list, kumb: float ):
+def neb_path( igrd: object, node: int, gues: list, kumb: float, gtol: float ):
     delt = []
     for i in range( 1, len( gues ) ):
         delt.append( numpy.linalg.norm( gues[i] - gues[i-1] ) )
@@ -49,7 +49,7 @@ def neb_path( igrd: object, node: int, gues: list, kumb: float ):
     snum = 1000
     pfrq = 10
     ssiz = 0.1
-    gtol = 0.1 * dime
+#    gtol = 0.1 * dime
     nstp = 0
     alph = 0.1
     velo = numpy.zeros( ( dime, 2 ), dtype=numpy.float64 )
@@ -116,12 +116,29 @@ def neb_path( igrd: object, node: int, gues: list, kumb: float ):
     return( coor, func )
 
 
+import  os
+try:
+    dime = int( os.environ["NEB_DIME"] )
+except:
+    dime = 50
+try:
+    kumb = float( os.environ["NEB_KUMB"] )
+except:
+    kumb = 400
+try:
+    gtol = float( os.environ["NEB_GTOL"] )
+except:
+    gtol = 0.1 * dime
+print( dime, kumb, gtol )
+
+
 grd = qm3.utils.grids.grid()
 grd.parse( open( sys.argv[1], "rt" ) )
 obj = qm3.utils.interpolation.interpolate_2d( grd.x, grd.y, grd.z )
 gue = numpy.array( [ float( i ) for i in sys.argv[2:] ], dtype=numpy.float64 )
 gue.shape = ( len( gue ) // 2, 2 )
-pth, ene = neb_path( obj, 50, gue, 400 )
+#pth, ene = neb_path( obj, 50, gue, 400, 0.1 * 50 )
+pth, ene = neb_path( obj, dime, gue, kumb, gtol )
 with open( "path.log", "wt" ) as f:
     for i in range( len( ene ) ):
         f.write( "%20.10lf%20.10lf%20.10lf\n"%( pth[i,0], pth[i,1], ene[i] ) )
