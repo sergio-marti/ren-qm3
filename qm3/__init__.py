@@ -776,3 +776,18 @@ Residue     1  SER
         for i in numpy.flatnonzero( self.actv.ravel() ):
             self.coor[i] = numpy.dot( rot, numpy.dot( mcb,
                 ( self.coor[i] - center ).reshape( ( 3, 1 ) ) ) ).ravel() + center
+
+
+    def unwrap( self ):
+        """
+        re-center the system on the active selection (by residue)
+        """
+        cen = numpy.mean( self.coor[self.actv.ravel()], axis = 0 )
+        self.coor -= cen
+        print( cen, numpy.mean( self.coor[self.actv.ravel()], axis = 0 ) )
+        for i in range( len( self.rlim ) - 1 ):
+            if( not self.actv[self.rlim[i]] ):
+                tmp = numpy.round( numpy.mean( self.coor[self.rlim[i]:self.rlim[i+1]], axis = 0 ) / self.boxl, 0 )
+                for j in [0, 1, 2]:
+                    if( tmp[j] != 0 ):
+                        self.coor[self.rlim[i]:self.rlim[i+1],j] -= self.boxl[j] * numpy.round( self.coor[self.rlim[i]:self.rlim[i+1],j] / self.boxl[j], 0 )

@@ -11,6 +11,7 @@ switchdist              12
 cutoff                  14
 pairlistdist            18
 stepspercycle           20
+#CUDASOAintegrate        on
 
 PME                     on
 PMEGridSpacing          1.0

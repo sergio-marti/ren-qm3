@@ -131,8 +131,9 @@ rm -f view.vmd
 for ff in inp_????; do
 	gg=`echo $ff | cut -c5-`
 	$vina --cpu 4 --config $ff | tee log_$gg
+	grep -E "MODEL|ATOM|ENDMDL" out_$gg > out_$gg.pdb  
 	cat >> view.vmd << EOD
-mol new out_$gg type pdb first 0 last -1 step 1 filebonds 1 autobonds 1 waitfor all
+mol new out_$gg.pdb type pdb first 0 last -1 step 1 filebonds 1 autobonds 1 waitfor all
 mol delrep 0 top
 mol representation Licorice 0.100000 12.000000 12.000000
 mol color Name
@@ -140,7 +141,7 @@ mol selection {all}
 mol material Opaque
 mol addrep top
 EOD
-	echo "load out_$gg, format=pdbqt" >> view.pml
+	echo "load out_$gg.pdb, format=pdb" >> view.pml
 done
 
 cat >> view.vmd << EOD

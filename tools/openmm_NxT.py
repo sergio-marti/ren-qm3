@@ -6,6 +6,12 @@ import  openmm.unit
 import  numpy
 
 box  = [ 42.320, 47.736, 43.057 ]
+# >> parse namd crystal information...
+#with open( "namd_npt.xsc", "rt" ) as f:
+#    f.readline(); f.readline()
+#    t = f.readline().split()
+#    box = [ float( t[1] ), float( t[5] ), float( t[9] ) ]
+print( box )
 
 _top = openmm.app.amberprmtopfile.AmberPrmtopFile( "start.prmtop" )
 
@@ -19,18 +25,15 @@ _sys = _top.createSystem(
     implicitSolvent = None )
 #    implicitSolvent = openmm.app.HCT, soluteDielectric = 4.0, solventDielectric = 80.0 )
 
-
 #>> fix prmtop box size (based on VDW radii)
 _sys.setDefaultPeriodicBoxVectors(
     openmm.Vec3( box[0], 0.0, 0.0 ) * openmm.unit.angstrom,
     openmm.Vec3( 0.0, box[1], 0.0 ) * openmm.unit.angstrom,
     openmm.Vec3( 0.0, 0.0, box[2] ) * openmm.unit.angstrom )
 
-
 #>> frezee atoms
 #for i in range( 55 ):
 #    _sys.setParticleMass( i, 0.0 )
-
 
 #>> add harmonic restraint (remove non-bonding)
 #for i in range( _sys.getNumForces() ):
@@ -42,12 +45,10 @@ _sys.setDefaultPeriodicBoxVectors(
 #    if( type( cur ) == openmm.NonbondedForce ):
 #        cur.addException( 35194, 35123, 0.0, 0.0, 0.0, replace = True )
 
-
 _int = openmm.LangevinIntegrator( 300.0, 5.0, 0.001 )
 
 #>> NPT [http://docs.openmm.org/latest/userguide/theory/02_standard_forces.html#montecarlobarostat]
 #_sys.addForce( openmm.openmm.MonteCarloBarostat( 1.0 * openmm.unit.atmosphere, 300.0, 25 ) )
-
 
 #>> OpenCL
 _sim = openmm.app.Simulation( _top.topology, _sys, _int, openmm.Platform.getPlatformByName( "OpenCL" ) )
@@ -56,9 +57,13 @@ _sim = openmm.app.Simulation( _top.topology, _sys, _int, openmm.Platform.getPlat
 #_sim = openmm.app.Simulation( _top.topology, _sys, _int,
 #    openmm.Platform.getPlatformByName( "CUDA" ), { "CudaDeviceIndex": "0,1" } )
 
-
 #>> load PDB (should be centered at the edge...)
 _sim.context.setPositions( openmm.app.pdbfile.PDBFile( "start.pdb" ).getPositions() )
+
+#>> load PDB (not centered)
+#crd = openmm.app.pdbfile.PDBFile( "namd_npt.coor" ).getPositions( asNumpy = True )
+#crd -= numpy.min( crd, axis = 0 )
+#_sim.context.setPositions( crd.tolist() )
 
 #>> parse XYZ: OpenMM expects the origin at one of the edges...
 #crd = []
@@ -66,10 +71,6 @@ _sim.context.setPositions( openmm.app.pdbfile.PDBFile( "start.pdb" ).getPosition
 #    f.readline(); f.readline()
 #    for l in f:
 #        t = l.split()
-# -------------------------------------------------------------------------------------
-#        crd.append( openmm.Vec3( float( t[1] ), float( t[2] ), float( t[3] ) ) )
-#_sim.context.setPositions( openmm.unit.quantity.Quantity( crd, openmm.unit.angstrom ) )
-# -------------------------------------------------------------------------------------
 #        crd.append( [ float( t[1] ), float( t[2] ), float( t[3] ) ] ) 
 #crd = numpy.array( crd )
 #crd -= numpy.min( crd, axis = 0 )
@@ -77,9 +78,7 @@ _sim.context.setPositions( openmm.app.pdbfile.PDBFile( "start.pdb" ).getPosition
 #_sim.context.setPositions( crd.tolist() )
 # -------------------------------------------------------------------------------------
 
-
-#_sim.minimizeEnergy()
-
+#_sim.minimizeEnergy( tolerance = 5 * openmm.unit.kilojoule / openmm.unit.mole, maxIterations = 100 )
 
 #>> 100 ps NPT
 #_sim.reporters.append( openmm.app.dcdreporter.DCDReporter( "last.dcd", 100, enforcePeriodicBox = True ) )
@@ -87,7 +86,6 @@ _sim.context.setPositions( openmm.app.pdbfile.PDBFile( "start.pdb" ).getPosition
 #    time = True, potentialEnergy = True, temperature = True, density = True ) )
 #_sim.step( 100000 )
 #print( _sim.context.getState().getPeriodicBoxVectors() )
-
 
 #>> 10 ns NVT
 _sim.reporters.append( openmm.app.dcdreporter.DCDReporter( "last.dcd", 1000, enforcePeriodicBox = True ) )
