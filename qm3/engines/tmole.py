@@ -47,7 +47,8 @@ class run( qm3.engines.template ):
             f = open( "charges", "wt" )
             f.write( "$point_charges nocheck\n" )
             for i in self.nbn:
-                tmp = ( mol.coor[i] - mol.boxl * numpy.round( mol.coor[i] / mol.boxl, 0 ) ) * self.cx
+                #tmp = ( mol.coor[i] - mol.boxl * numpy.round( mol.coor[i] / mol.boxl, 0 ) ) * self.cx
+                tmp = mol.coor[i] * self.cx
                 f.write( "%20.10lf%20.10lf%20.10lf%12.4lf\n"%( tmp[0], tmp[1], tmp[2], mol.chrg[i] + self.__dq[i] ) )
             f.write( "$end" )
             f.close()

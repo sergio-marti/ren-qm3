@@ -42,7 +42,7 @@ class run( qm3.engines.template ):
         s_mm = ""
         s_nq = ""
         for i in self.nbn:
-            tmp = mol.coor[i] - mol.boxl * numpy.round( mol.coor[i] / mol.boxl, 0 )
+            tmp = mol.coor[i] #- mol.boxl * numpy.round( mol.coor[i] / mol.boxl, 0 )
             s_mm += "%20.10lf%20.10lf%20.10lf%12.4lf\n"%( tmp[0], tmp[1], tmp[2], mol.chrg[i] + self.__dq[i] )
             s_nq += "%20.10lf%20.10lf%20.10lf\n"%( tmp[0], tmp[1], tmp[2] )
         s_rn = ""

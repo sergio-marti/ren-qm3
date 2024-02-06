@@ -69,7 +69,7 @@ class run( qm3.engines.template ):
             s_nq = str( len( self.nbn ) )
             g = open( "charges.dat", "wt" )
             for i in self.nbn:
-                tmp = mol.coor[i] - mol.boxl * numpy.round( mol.coor[i] / mol.boxl, 0 )
+                tmp = mol.coor[i] #- mol.boxl * numpy.round( mol.coor[i] / mol.boxl, 0 )
                 g.write( "%20.10lf%20.10lf%20.10lf%12.6lf\n"%( tmp[0], tmp[1], tmp[2], mol.chrg[i] ) )
             g.close()
         f = open( "dftb_in.hsd", "wt" )
@@ -99,7 +99,7 @@ class run( qm3.engines.template ):
         k = 3 * ( self.nQM + self.nMM )
         for i in self.nbn:
             for j in [0, 1, 2]:
-                self.vec[l] = mol.coor[i,j] - mol.boxl[j] * numpy.round( mol.coor[i,j] / mol.boxl[j], 0 )
+                self.vec[l] = mol.coor[i,j] #- mol.boxl[j] * numpy.round( mol.coor[i,j] / mol.boxl[j], 0 )
                 l += 1
             self.vec[k] = mol.chrg[i] + self.__dq[i]
             k += 1

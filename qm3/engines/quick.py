@@ -95,7 +95,7 @@ class run( qm3.engines.template ):
             k += 1
         l = 0
         for i in self.nbn:
-            mcrd[l,0:3] = mol.coor[i] - mol.boxl * numpy.round( mol.coor[i] / mol.boxl, 0 )
+            mcrd[l,0:3] = mol.coor[i] #- mol.boxl * numpy.round( mol.coor[i] / mol.boxl, 0 )
             mcrd[l,3] = mol.chrg[i] + self.__dq[i]
             l += 1
         self.lib_calc( 

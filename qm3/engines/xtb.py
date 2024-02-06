@@ -65,7 +65,7 @@ class run( qm3.engines.template ):
         l = 3 + 5 * self.nQM + self.nMM
         for i in self.nbn:
             for j in [0, 1, 2]:
-                self.vec[l] = mol.coor[i,j] - mol.boxl[j] * numpy.round( mol.coor[i,j] / mol.boxl[j], 0 )
+                self.vec[l] = mol.coor[i,j] #- mol.boxl[j] * numpy.round( mol.coor[i,j] / mol.boxl[j], 0 )
                 l += 1
         l  = 3 + 5 * self.nQM
         for i in self.nbn:
