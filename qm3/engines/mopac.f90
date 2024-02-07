@@ -48,7 +48,7 @@ PRIVATE
 PUBLIC :: NATM, NAQM, ATMCHG, ATMCRD, ATMDER, ATHEAT, EV_TO_KJ, &
           MOPAC_INTEGRALS, MOPAC_SETUP, MOPAC_SCF_OPTIONS, MOPAC_SCF, &
           MOPAC_GRADIENTS, MOPAC_CHARGES, MOPAC_DATA_INITIALIZE, &
-          DENSITY_WRITE, DENSITY_READ, CUT_OFF, CUT_ON
+          DENSITY_WRITE, DENSITY_READ, CUT_OFF, CUT_ON, BOXL
 SAVE
 
 REAL*8, PARAMETER :: AU_TO_EV = 27.21D0
@@ -123,6 +123,7 @@ REAL*8 :: ACURCY    = 1.0D-8,  DAMPF = 0.0D0, DAMP0 = 0.0D0, SHIFTO = 0.0D0, SHI
 INTEGER                                         :: MATNUM
 INTEGER,            ALLOCATABLE, DIMENSION(:)   :: MATIND
 REAL*8, ALLOCATABLE, DIMENSION(:,:) :: BCOEFF
+REAL*8, DIMENSION(1:3) :: BOXL = (/ 1.d300, 1.d300, 1.d300 /)
 
 CONTAINS
 
@@ -1389,6 +1390,11 @@ CONTAINS
             XQM = ( XQ - ATMCRD(1,MATOM) )
             YQM = ( YQ - ATMCRD(2,MATOM) )
             ZQM = ( ZQ - ATMCRD(3,MATOM) )
+            ! ----------------------------------------------
+            XQM = XQM - BOXL(1) * ANINT( XQM / BOXL(1), 8 )
+            YQM = YQM - BOXL(2) * ANINT( YQM / BOXL(2), 8 )
+            ZQM = ZQM - BOXL(3) * ANINT( ZQM / BOXL(3), 8 )
+            ! ----------------------------------------------
             RQM2 = XQM * XQM + YQM * YQM + ZQM * ZQM
             IINT = IINT + 1
             IF ( NATORB(NQM) > 1 ) NINTQ = NINTQ + 1
@@ -6006,11 +6012,11 @@ CONTAINS
 END MODULE MOPAC
 
 
-subroutine qm3_mopac_setup( nqm, nmm, met, chg, mul, siz, dat, con, cof )
+subroutine qm3_mopac_setup( nqm, nmm, met, chg, mul, siz, dat, con, cof, box_x, box_y, box_z )
     use mopac 
     implicit none
     integer, intent( in ) :: nqm, nmm, met, chg, mul, siz
-    real*8, intent( in ) :: con, cof
+    real*8, intent( in ) :: con, cof, box_x, box_y, box_z
     real*8, dimension(0:siz-1), intent( in ) :: dat
     integer :: i, j
 
@@ -6032,6 +6038,7 @@ subroutine qm3_mopac_setup( nqm, nmm, met, chg, mul, siz, dat, con, cof )
         case( 3 ) ; call mopac_setup(  "PM3", chg, mul )
         case( 4 ) ; call mopac_setup( "PDDG", chg, mul )
     end select
+    boxl = (/ box_x, box_y, box_z /)
 end subroutine qm3_mopac_setup
 
 

@@ -14,7 +14,8 @@ class run( qm3.engines.template ):
             sel_MM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
             link: typing.Optional[list] = [],
             con: typing.Optional[float] = -1,
-            cof: typing.Optional[float] = -1 ):
+            cof: typing.Optional[float] = -1,
+            box: typing.Optional[numpy.array] = numpy.array( [ qm3.data.MXLAT, qm3.data.MXLAT, qm3.data.MXLAT ], dtype=numpy.float64 ) ):
         qm3.engines.template.__init__( self, mol, sel_QM, sel_MM, link )
         hami = { "MNDO": 0, "AM1": 1, "RM1": 2, "PM3": 3, "PDDG": 4 }
         self.nQM = len( self.sel ) + len( self.lnk )
@@ -27,7 +28,8 @@ class run( qm3.engines.template ):
             ctypes.POINTER( ctypes.c_int ), ctypes.POINTER( ctypes.c_int ),
             ctypes.POINTER( ctypes.c_int ), ctypes.POINTER( ctypes.c_int ),
             ctypes.POINTER( ctypes.c_int ), ctypes.POINTER( ctypes.c_double ),
-            ctypes.POINTER( ctypes.c_double ), ctypes.POINTER( ctypes.c_double ) ]
+            ctypes.POINTER( ctypes.c_double ), ctypes.POINTER( ctypes.c_double ),
+            ctypes.POINTER( ctypes.c_double ), ctypes.POINTER( ctypes.c_double ), ctypes.POINTER( ctypes.c_double ) ]
         self.lib.qm3_mopac_setup_.restype = None
         self.lib.qm3_mopac_calc_.argtypes = [ ctypes.POINTER( ctypes.c_int ),
             ctypes.POINTER( ctypes.c_int ), ctypes.POINTER( ctypes.c_double ) ]
@@ -44,7 +46,8 @@ class run( qm3.engines.template ):
                 ctypes.c_int( chrg ),
                 ctypes.c_int( mult ),
                 ctypes.c_int( self.siz ), self.vec,
-                ctypes.c_double( con ), ctypes.c_double( cof ) )
+                ctypes.c_double( con ), ctypes.c_double( cof ),
+                ctypes.c_double( box[0] ), ctypes.c_double( box[1] ), ctypes.c_double( box[2] ) )
         # redistribute MM-charge on the remaining atoms of the group
         self.__dq = numpy.zeros( mol.natm )
         for i,j in self.lnk:
