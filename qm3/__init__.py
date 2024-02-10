@@ -238,7 +238,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             lsel = sele
         else:
             lsel = numpy.ones( self.natm, dtype=numpy.bool_ )
-        fdsc.write( "REMARK %12.4le %12.4le %12.4le\n"%( self.boxl[0], self.boxl[1], self.boxl[2] ) )
+        fdsc.write( "REMARK %12.4lf%12.4lf%12.4lf\n"%( self.boxl[0], self.boxl[1], self.boxl[2] ) )
         j = 0
         for i in range( self.natm ):
             if( lsel[i] ):
@@ -297,7 +297,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         siz = lsel.sum()
         fdsc.write( "%d\n"%( siz ) )
         if( comm == "" ):
-            fdsc.write( "%12.4le %12.4le %12.4le\n"%( self.boxl[0], self.boxl[1], self.boxl[2] ) )
+            fdsc.write( "%12.4lf%12.4lf%12.4lf\n"%( self.boxl[0], self.boxl[1], self.boxl[2] ) )
         else:
             fdsc.write( comm.strip() + "\n" )
         for i in range( self.natm ):

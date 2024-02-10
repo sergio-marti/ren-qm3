@@ -35,15 +35,19 @@ _sys.setDefaultPeriodicBoxVectors(
 #for i in range( 55 ):
 #    _sys.setParticleMass( i, 0.0 )
 
-#>> add harmonic restraint (remove non-bonding)
-#for i in range( _sys.getNumForces() ):
-#    cur = _sys.getForce( i )
+#>> add harmonic restraint (remove non-bonding for bonding distances...)
+#bnd = []
+#bnd.append( [ who_i, who_j, dst, kmb ] )
+#for I in range( _sys.getNumForces() ):
+#    cur = _sys.getForce( I )
 #    if( type( cur ) == openmm.HarmonicBondForce ):
-#        cur.addBond( 35194, 35123,
-#            2.0 * openmm.unit.angstrom,
-#            400.0 * openmm.unit.kilojoule / ( openmm.unit.angstrom ** 2 * openmm.unit.mole ) )
+#    for i,j,r,k in bnd:
+#        cur.addBond( i, j,
+#            r * openmm.unit.angstrom,
+#            k * openmm.unit.kilojoule / ( openmm.unit.angstrom ** 2 * openmm.unit.mole ) )
 #    if( type( cur ) == openmm.NonbondedForce ):
-#        cur.addException( 35194, 35123, 0.0, 0.0, 0.0, replace = True )
+#        for i,j,r,k in bnd:
+#            cur.addException( i, j, 0.0, 0.0, 0.0, replace = True )
 
 _int = openmm.LangevinIntegrator( 300.0, 5.0, 0.001 )
 
@@ -57,8 +61,12 @@ _sim = openmm.app.Simulation( _top.topology, _sys, _int, openmm.Platform.getPlat
 #_sim = openmm.app.Simulation( _top.topology, _sys, _int,
 #    openmm.Platform.getPlatformByName( "CUDA" ), { "CudaDeviceIndex": "0,1" } )
 
+# -------------------------------------------------------------------------------------
+#>> load XML state
+#_sim.loadState( "start.xml" )
+
 #>> load PDB (should be centered at the edge...)
-_sim.context.setPositions( openmm.app.pdbfile.PDBFile( "start.pdb" ).getPositions() )
+#_sim.context.setPositions( openmm.app.pdbfile.PDBFile( "start.pdb" ).getPositions() )
 
 #>> load PDB (not centered)
 #crd = openmm.app.pdbfile.PDBFile( "namd_npt.coor" ).getPositions( asNumpy = True )
@@ -93,14 +101,12 @@ _sim.reporters.append( openmm.app.statedatareporter.StateDataReporter( sys.stdou
     time = True, potentialEnergy = True, temperature = True ) )
 _sim.step( 10000000 )
 
-#>> make a context checkpoint for restarting: _sim.context.loadCheckpoint( f.read() )
-with open( "last.chk", "wb" ) as f:
-    f.write( _sim.context.createCheckpoint() )
+_sim.saveState( "last.xml" )
 
 #>> save coordinates (OpenMM: PDB)
-with open( "last.pdb", "wt" ) as f:
-    openmm.app.pdbfile.PDBFile.writeFile( _sim.topology,
-        _sim.context.getState( getPositions = True, enforcePeriodicBox = True ).getPositions(), f )
+#with open( "last.pdb", "wt" ) as f:
+#    openmm.app.pdbfile.PDBFile.writeFile( _sim.topology,
+#        _sim.context.getState( getPositions = True, enforcePeriodicBox = True ).getPositions(), f )
 
 #>> save coordinates (XYZ)
 tmp = _sim.context.getState( getPositions = True, enforcePeriodicBox = True ).getPositions()
