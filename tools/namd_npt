@@ -41,6 +41,8 @@ langevinTemp            300
 outputenergies          1000
 outputtiming            10000
 binaryoutput            no
+#dcdfile                 namd_npt.dcd
+#dcdfreq                 4000
 
 outputname              namd_npt
 numsteps                1000000

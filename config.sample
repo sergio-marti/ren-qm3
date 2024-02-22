@@ -1,8 +1,7 @@
 # ------------------------------------------------------------------
 # Python
 
-PYX = python3.10
-#PYL = -L/usr/local/Cellar/python@3.9/3.9.10/Frameworks/Python.framework/Versions/3.9/lib -lpython3.9
+PYX = python3
 
 # ------------------------------------------------------------------
 # Linker
@@ -33,10 +32,9 @@ MPI = CC=mpicc
 # Linux
 #MPI = CC=mpicc LDSHARED="mpicc -shared"
 
-
 # ------------------------------------------------------------------
-# External programs
-DFTB = PATH_TO_DFTB_BUILD
-XTB = PATH_TO_XTB_BUILD
-AMBER = PATH_TO_AMBER_BUILD
-DFTD4 = PATH_TO_DFTD4_BUILD
+# CONDA env
+
+CONDA_CC  = x86_64-apple-darwin13.4.0-clang
+CONDA_FC  = x86_64-apple-darwin13.4.0-gfortran
+CONDA_ENV = /Users/smarti/Applications/miniconda3/envs/chem

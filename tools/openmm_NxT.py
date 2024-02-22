@@ -16,11 +16,13 @@ print( box )
 _top = openmm.app.amberprmtopfile.AmberPrmtopFile( "start.prmtop" )
 
 _sys = _top.createSystem(
+#    nonbondedMethod = openmm.app.CutoffNonPeriodic, # change "enforcePeriodicBox"
     nonbondedMethod = openmm.app.PME,
     nonbondedCutoff = 14 * openmm.unit.angstrom,
     switchDistance = 12 * openmm.unit.angstrom,
-#>> 2 fs
-#    constraints = openmm.app.HBonds,
+    constraints = None,
+#    constraints = openmm.app.HBonds, # 2 fs
+#    constraints = openmm.app.AllBonds, # 3 fs
     rigidWater = False,
     implicitSolvent = None )
 #    implicitSolvent = openmm.app.HCT, soluteDielectric = 4.0, solventDielectric = 80.0 )
@@ -35,16 +37,17 @@ _sys.setDefaultPeriodicBoxVectors(
 #for i in range( 55 ):
 #    _sys.setParticleMass( i, 0.0 )
 
-#>> add harmonic restraint (remove non-bonding for bonding distances...)
+#>> add harmonic restraint
 #bnd = []
 #bnd.append( [ who_i, who_j, dst, kmb ] )
 #for I in range( _sys.getNumForces() ):
 #    cur = _sys.getForce( I )
 #    if( type( cur ) == openmm.HarmonicBondForce ):
-#    for i,j,r,k in bnd:
-#        cur.addBond( i, j,
-#            r * openmm.unit.angstrom,
-#            k * openmm.unit.kilojoule / ( openmm.unit.angstrom ** 2 * openmm.unit.mole ) )
+#        for i,j,r,k in bnd:
+#            cur.addBond( i, j,
+#                r * openmm.unit.angstrom,
+#                k * openmm.unit.kilojoule / ( openmm.unit.angstrom ** 2 * openmm.unit.mole ) )
+#    # remove non-bonding for close (almost bonding) distances...
 #    if( type( cur ) == openmm.NonbondedForce ):
 #        for i,j,r,k in bnd:
 #            cur.addException( i, j, 0.0, 0.0, 0.0, replace = True )
@@ -88,18 +91,22 @@ _sim = openmm.app.Simulation( _top.topology, _sys, _int, openmm.Platform.getPlat
 
 #_sim.minimizeEnergy( tolerance = 5 * openmm.unit.kilojoule / openmm.unit.mole, maxIterations = 100 )
 
-#>> 100 ps NPT
+
+#>> 1 ns NPT
 #_sim.reporters.append( openmm.app.dcdreporter.DCDReporter( "last.dcd", 100, enforcePeriodicBox = True ) )
 #_sim.reporters.append( openmm.app.statedatareporter.StateDataReporter( sys.stdout, 100,
 #    time = True, potentialEnergy = True, temperature = True, density = True ) )
-#_sim.step( 100000 )
+#_sim.step( 1000000 )
 #print( _sim.context.getState().getPeriodicBoxVectors() )
 
-#>> 10 ns NVT
-_sim.reporters.append( openmm.app.dcdreporter.DCDReporter( "last.dcd", 1000, enforcePeriodicBox = True ) )
-_sim.reporters.append( openmm.app.statedatareporter.StateDataReporter( sys.stdout, 1000,
-    time = True, potentialEnergy = True, temperature = True ) )
-_sim.step( 10000000 )
+#>> 100 ns NVT
+_sim.context.setStepCount( 0 )
+n = 100000000
+_sim.reporters.append( openmm.app.dcdreporter.DCDReporter( "last.dcd", 40000, enforcePeriodicBox = True ) )
+_sim.reporters.append( openmm.app.statedatareporter.StateDataReporter( sys.stdout, 10000,
+    time = True, potentialEnergy = True, temperature = True,
+    remainingTime = True, totalSteps = n ) )
+_sim.step( n )
 
 _sim.saveState( "last.xml" )
 

@@ -58,33 +58,52 @@ class molecule( object ):
                 self.indx[self.segn[self.rlim[i]]][self.resi[self.rlim[i]]][self.labl[j]] = j
 
 
+#    def sph_sel( self, sele: numpy.array, radius: float ) -> numpy.array:
+#        out = numpy.zeros( self.natm, dtype=numpy.bool_ )
+#        siz = sele.sum()
+#        idx = numpy.flatnonzero( sele )
+#        cen = numpy.sum( self.coor[sele], axis = 0 ) / siz
+#        dsp = max( map( lambda c: qm3.utils.distanceSQ( cen, c ), self.coor[sele] ) )
+#        cut = numpy.power( radius + math.sqrt( dsp ) + 0.1, 2.0 )
+#        rad = radius * radius
+#        res = []
+#        for k0 in range( len( self.rlim ) - 1 ):
+#            k1 = self.rlim[k0]
+#            kn = self.rlim[k0+1]
+#            kf = False
+#            while( k1 < kn and not kf ):
+#                kf |= qm3.utils.distanceSQ( cen, self.coor[k1], self.boxl ) <= cut
+#                k1 += 1
+#            if( kf ):
+#                k1 = self.rlim[k0]
+#                kf = False
+#                while( k1 < kn and not kf ):
+#                    i1 = 0
+#                    while( i1 < siz and not kf ):
+#                        kf |= qm3.utils.distanceSQ( self.coor[k1], self.coor[idx[i1]], self.boxl ) <= rad
+#                        i1 += 1
+#                    k1 += 1
+#                if( kf ):
+#                    out[self.rlim[k0]:kn] = True
+#        return( out )
+
+
     def sph_sel( self, sele: numpy.array, radius: float ) -> numpy.array:
+        """
+        quicker brute-force version based on numpy
+            (paradoxically the non-sqrt version lasts almost the same...)
+        """
         out = numpy.zeros( self.natm, dtype=numpy.bool_ )
-        siz = sele.sum()
-        idx = numpy.flatnonzero( sele )
-        cen = numpy.sum( self.coor[sele], axis = 0 ) / siz
-        dsp = max( map( lambda c: qm3.utils.distanceSQ( cen, c ), self.coor[sele] ) )
-        cut = numpy.power( radius + math.sqrt( dsp ) + 0.1, 2.0 )
-        rad = radius * radius
-        res = []
-        for k0 in range( len( self.rlim ) - 1 ):
-            k1 = self.rlim[k0]
-            kn = self.rlim[k0+1]
-            kf = False
-            while( k1 < kn and not kf ):
-                kf |= qm3.utils.distanceSQ( cen, self.coor[k1], self.boxl ) <= cut
-                k1 += 1
-            if( kf ):
-                k1 = self.rlim[k0]
-                kf = False
-                while( k1 < kn and not kf ):
-                    i1 = 0
-                    while( i1 < siz and not kf ):
-                        kf |= qm3.utils.distanceSQ( self.coor[k1], self.coor[idx[i1]], self.boxl ) <= rad
-                        i1 += 1
-                    k1 += 1
-                if( kf ):
-                    out[self.rlim[k0]:kn] = True
+        #cut = radius * radius
+        for i in range( len( self.rlim ) - 1 ):
+            if( numpy.sum( sele[self.rlim[i]:self.rlim[i+1]] ) > 0 ):
+                out[self.rlim[i]:self.rlim[i+1]] = True
+            else:
+                for j in range( self.rlim[i], self.rlim[i+1] ):
+                    if( sorted( numpy.linalg.norm( self.coor[sele] - self.coor[j], axis = 1 ) )[0] <= radius ):
+                    #if( sorted( numpy.sum( numpy.square( self.coor[sele] - self.coor[j] ), axis = 1 ) )[0] <= cut ):
+                        out[self.rlim[i]:self.rlim[i+1]] = True
+                        break
         return( out )
 
 
@@ -238,7 +257,8 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             lsel = sele
         else:
             lsel = numpy.ones( self.natm, dtype=numpy.bool_ )
-        fdsc.write( "REMARK %12.4lf%12.4lf%12.4lf\n"%( self.boxl[0], self.boxl[1], self.boxl[2] ) )
+        if( numpy.max( self.boxl ) < 1e4 ):
+            fdsc.write( "REMARK %12.4lf%12.4lf%12.4lf\n"%( self.boxl[0], self.boxl[1], self.boxl[2] ) )
         j = 0
         for i in range( self.natm ):
             if( lsel[i] ):
@@ -297,7 +317,10 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         siz = lsel.sum()
         fdsc.write( "%d\n"%( siz ) )
         if( comm == "" ):
-            fdsc.write( "%12.4lf%12.4lf%12.4lf\n"%( self.boxl[0], self.boxl[1], self.boxl[2] ) )
+            if( numpy.max( self.boxl ) < 1e4 ):
+                fdsc.write( "%12.4lf%12.4lf%12.4lf\n"%( self.boxl[0], self.boxl[1], self.boxl[2] ) )
+            else:
+                fdsc.write( "\n" )
         else:
             fdsc.write( comm.strip() + "\n" )
         for i in range( self.natm ):
@@ -780,7 +803,7 @@ Residue     1  SER
 
     def wrap( self ):
         """
-        center the system on the active selection
+        geometrically center the system on the active selection
         and wrap the rest of molecules (by residue)
         """
         self.coor -= numpy.mean( self.coor[self.actv.ravel()], axis = 0 )
