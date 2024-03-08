@@ -19,7 +19,7 @@ def f_distance( mol: object, kumb: float, xref: float, a_i: int, a_j: int,
     vv = numpy.linalg.norm( dr )
     df = kumb * ( vv - xref )
     oo = 0.0
-    if( vv >= skip_LE and vv <= skip_BE ):
+    if( vv > skip_LE and vv < skip_BE ):
         oo = 0.5 * df * ( vv - xref )
         mol.func += oo
         if( grad ):

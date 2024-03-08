@@ -18,6 +18,7 @@ def steepest_descent( mol: object,
         step_size: typing.Optional[float] = 0.1,
         print_frequency: typing.Optional[int] = 10,
         gradient_tolerance: typing.Optional[float] = 15.,
+        use_maxgrad: typing.Optional[bool] = False,
         log_file: typing.Optional[typing.IO] = sys.stdout,
         current_step: typing.Optional[typing.Callable] = fake_cs ):
     log_file.write( "---------------------------------------- Minimization (SD)\n\n" )
@@ -27,7 +28,11 @@ def steepest_descent( mol: object,
     log_file.write( "Step Size:          %20.10lg\n"%( step_size ) )
     log_file.write( "Print Frequency:    %20d\n"%( print_frequency ) )
     log_file.write( "Gradient Tolerance: %20.10lg\n\n"%( gradient_tolerance ) )
-    ndf = math.sqrt( ndf )
+    log_file.write( "Use Maxgradient:    %20s\n"%( use_maxgrad ) )
+    if( use_maxgrad ):
+        ndf = math.sqrt( 3.0 )
+    else:
+        ndf = math.sqrt( ndf )
     mol.get_grad()
     norm = numpy.linalg.norm( mol.grad )
     if( norm > step_size ):
@@ -36,7 +41,10 @@ def steepest_descent( mol: object,
         ssiz = norm
     else:
         ssiz = gradient_tolerance
-    grms = norm / ndf
+    if( use_maxgrad ):
+        grms = numpy.max( numpy.linalg.norm( mol.grad, axis = 1 ) ) / ndf
+    else:
+        grms = norm / ndf
     log_file.write( "%10s%20s%20s%20s\n"%( "Step", "Function", "Gradient", "Displacement" ) )
     log_file.write( "-" * 70 + "\n" )
     log_file.write( "%30.5lf%20.8lf%20.10lf\n"%( mol.func, grms, ssiz ) )
@@ -51,7 +59,10 @@ def steepest_descent( mol: object,
             ssiz = norm
         else:
             ssiz = gradient_tolerance
-        grms = norm / ndf
+        if( use_maxgrad ):
+            grms = numpy.max( numpy.linalg.norm( mol.grad, axis = 1 ) ) / ndf
+        else:
+            grms = norm / ndf
         itr += 1
         if( itr % print_frequency == 0 ):
             log_file.write( "%10d%20.5lf%20.10lf%20.10lf\n"%( itr, mol.func, grms, ssiz ) )
@@ -70,6 +81,7 @@ def fire( mol: object,
         mixing_alpha: typing.Optional[float] = 0.1,
         delay_step: typing.Optional[int] = 5,
         exit_uphill: typing.Optional[bool] = False,
+        use_maxgrad: typing.Optional[bool] = False,
         log_file: typing.Optional[typing.IO] = sys.stdout,
         current_step: typing.Optional[typing.Callable] = fake_cs ):
     """
@@ -83,18 +95,25 @@ def fire( mol: object,
     log_file.write( "Print Frequency:    %20d\n"%( print_frequency ) )
     log_file.write( "Gradient Tolerance: %20.10lg\n"%( gradient_tolerance ) )
     log_file.write( "Checking UpHill:    %20s\n"%( exit_uphill ) )
+    log_file.write( "Use Maxgradient:    %20s\n"%( use_maxgrad ) )
     log_file.write( "Mixing Alpha:       %20.10lg\n"%( mixing_alpha ) )
     log_file.write( "Delay Step:         %20d\n\n"%( delay_step ) )
     log_file.write( "%10s%20s%20s%20s\n"%( "Step", "Function", "Gradient", "Displacement" ) )
     log_file.write( "-" * 70 + "\n" )
-    ndeg = math.sqrt( ndeg )
+    if( use_maxgrad ):
+        ndeg = math.sqrt( 3.0 )
+    else:
+        ndeg = math.sqrt( ndeg )
     nstp = 0
     ssiz = step_size
     alph = mixing_alpha
     velo = numpy.zeros( ( mol.natm, 3 ), dtype=numpy.float64 )
     mol.get_grad()
     qfun = True
-    norm = numpy.linalg.norm( mol.grad )
+    if( use_maxgrad ):
+        norm = numpy.max( numpy.linalg.norm( mol.grad, axis = 1 ) )
+    else:
+        norm = numpy.linalg.norm( mol.grad )
     grms = norm / ndeg
     log_file.write( "%30.5lf%20.10lf\n"%( mol.func, grms ) )
     itr  = 0
@@ -120,7 +139,10 @@ def fire( mol: object,
 
         lfun = mol.func
         mol.get_grad()
-        norm = numpy.linalg.norm( mol.grad )
+        if( use_maxgrad ):
+            norm = numpy.max( numpy.linalg.norm( mol.grad, axis = 1 ) )
+        else:
+            norm = numpy.linalg.norm( mol.grad )
         grms = norm / ndeg
         if( exit_uphill ):
             if( lfun < mol.func ):
@@ -144,6 +166,7 @@ def cgplus( mol: object,
         gradient_tolerance: typing.Optional[float] = 1.5,
         method: typing.Optional[str] = "Polak-Ribiere", 
         restart: typing.Optional[bool] = True,
+        use_maxgrad: typing.Optional[bool] = False,
         log_file: typing.Optional[typing.IO] = sys.stdout,
         current_step: typing.Optional[typing.Callable] = fake_cs ):
     global  cwd
@@ -154,6 +177,7 @@ def cgplus( mol: object,
     log_file.write( "Step Number:          %20d\n"%( step_number ) )
     log_file.write( "Print Frequency:      %20d\n"%( print_frequency ) )
     log_file.write( "Gradient Tolerance:   %20.10lg\n"%( gradient_tolerance ) )
+    log_file.write( "Use Maxgradient:      %20s\n"%( use_maxgrad ) )
     log_file.write( "Method:             %22s\n\n"%( method ) )
     log_file.write( "%10s%20s%20s\n"%( "Step", "Function", "Gradient" ) )
     log_file.write( "-" * 50 + "\n" )
@@ -176,10 +200,16 @@ def cgplus( mol: object,
         ctypes.POINTER( ctypes.c_int ),
         ctypes.POINTER( ctypes.c_int ) ]
     dlib.cgp_cgfam_.restype = None
-    ndeg = math.sqrt( size )
+    if( use_maxgrad ):
+        ndeg = math.sqrt( 3.0 )
+    else:
+        ndeg = math.sqrt( size )
     sele = numpy.flatnonzero( mol.actv.ravel() )
     mol.get_grad()
-    grms = numpy.linalg.norm( mol.grad ) / ndeg
+    if( use_maxgrad ):
+        grms = numpy.max( numpy.linalg.norm( mol.grad, axis = 1 ) ) / ndeg
+    else:
+        grms = numpy.linalg.norm( mol.grad ) / ndeg
     coor = mol.coor[sele].ravel().ctypes.data_as( ctypes.POINTER( ctypes.c_double ) )
     grad = mol.grad[sele].ravel().ctypes.data_as( ctypes.POINTER( ctypes.c_double ) )
     dire = ( ctypes.c_double * size )()
@@ -210,7 +240,10 @@ def cgplus( mol: object,
                     mol.coor[i,j] = coor[l]
                     l += 1
             mol.get_grad()
-            grms = numpy.linalg.norm( mol.grad ) / ndeg
+            if( use_maxgrad ):
+                grms = numpy.max( numpy.linalg.norm( mol.grad, axis = 1 ) ) / ndeg
+            else:
+                grms = numpy.linalg.norm( mol.grad ) / ndeg
             grad = mol.grad[sele].ravel().ctypes.data_as( ctypes.POINTER( ctypes.c_double ) )
         itr += 1
         if( itr % print_frequency == 0 ):
@@ -226,6 +259,7 @@ def lbfgsb( mol: object,
         step_number: typing.Optional[int] = 1000,
         print_frequency: typing.Optional[int] = 10,
         gradient_tolerance: typing.Optional[float] = 1.5,
+        use_maxgrad: typing.Optional[bool] = False,
         log_file: typing.Optional[typing.IO] = sys.stdout,
         current_step: typing.Optional[typing.Callable] = fake_cs ):
     global  cwd
@@ -274,10 +308,16 @@ def lbfgsb( mol: object,
     lsv = ( ctypes.c_bool * 4 )()
     isv = ( ctypes.c_int * 44 )()
     dsv = ( ctypes.c_double * 29 )()
-    ndeg = math.sqrt( size )
+    if( use_maxgrad ):
+        ndeg = math.sqrt( 3.0 )
+    else:
+        ndeg = math.sqrt( size )
     sele = numpy.flatnonzero( mol.actv.ravel() )
     mol.get_grad()
-    grms = numpy.linalg.norm( mol.grad ) / ndeg
+    if( use_maxgrad ):
+        grms = numpy.max( numpy.linalg.norm( mol.grad, axis = 1 ) ) / ndeg
+    else:
+        grms = numpy.linalg.norm( mol.grad ) / ndeg
     k = 0
     for i in sele:
         for j in [0, 1, 2]:
@@ -308,7 +348,10 @@ def lbfgsb( mol: object,
                 for j in [0, 1, 2]:
                     grd[k] = mol.grad[i,j]
                     k += 1
-            grms = numpy.linalg.norm( mol.grad ) / ndeg
+            if( use_maxgrad ):
+                grms = numpy.max( numpy.linalg.norm( mol.grad, axis = 1 ) ) / ndeg
+            else:
+                grms = numpy.linalg.norm( mol.grad ) / ndeg
             itr += 1
             if( itr % print_frequency == 0 ):
                 log_file.write( "%10d%20.5lf%20.10lf\n"%( itr, mol.func, grms ) )
@@ -326,6 +369,7 @@ def baker( mol: object,
         print_frequency: typing.Optional[int] = 10,
         gradient_tolerance: typing.Optional[float] = 1.5,
         follow_mode: typing.Optional[int] = -1,
+        use_maxgrad: typing.Optional[bool] = False,
         log_file: typing.Optional[typing.IO] = sys.stdout,
         current_step: typing.Optional[typing.Callable] = fake_cs ):
     """
@@ -357,6 +401,7 @@ def baker( mol: object,
     log_file.write( "Step Size:          %20.10lg\n"%( step_size ) )
     log_file.write( "Print Frequency:    %20d\n"%( print_frequency ) )
     log_file.write( "Gradient Tolerance: %20.10lg\n\n"%( gradient_tolerance ) )
+    log_file.write( "Use Maxgradient:    %20s\n"%( use_maxgrad ) )
     if( follow_mode > -1 ):
         log_file.write( "%10s%20s%20s%20s\n"%( "Step", "Function", "Gradient", "Nneg,Fmode,Eval" ) )
         log_file.write( "-" * 70 + "\n" )
@@ -371,7 +416,10 @@ def baker( mol: object,
     emax = 1.0e5
     emin = 1.0e-3
     mxit = 999
-    ndeg = math.sqrt( size )
+    if( use_maxgrad ):
+        ndeg = math.sqrt( 3.0 )
+    else:
+        ndeg = math.sqrt( size )
     sele = numpy.flatnonzero( mol.actv.ravel() )
     grms = gradient_tolerance * 2.0
     crd  = numpy.zeros( ( actv, 3 ), dtype=numpy.float64 )
@@ -460,7 +508,10 @@ def baker( mol: object,
             crd *= step_size / tmp
 
         itr += 1
-        grms = numpy.linalg.norm( mol.grad ) / ndeg
+        if( use_maxgrad ):
+            grms = numpy.max( numpy.linalg.norm( mol.grad, axis = 1 ) )
+        else:
+            grms = numpy.linalg.norm( mol.grad ) / ndeg
         if( itr % print_frequency == 0 or itr == 1 ):
             if( follow_mode < 0 ):
                 log_file.write( "%10ld%20.5lf%20.10lf%5ld%10.2le\n"%( itr, mol.func, grms, nneg, tmp ) )
@@ -487,6 +538,7 @@ def rfo( mol: object,
         print_frequency: typing.Optional[int] = 10,
         gradient_tolerance: typing.Optional[float] = 1.5,
         follow_mode: typing.Optional[int] = -1,
+        use_maxgrad: typing.Optional[bool] = False,
         log_file: typing.Optional[typing.IO] = sys.stdout,
         current_step: typing.Optional[typing.Callable] = fake_cs ):
     """
@@ -516,10 +568,14 @@ def rfo( mol: object,
     log_file.write( "Step Size:          %20.10lg\n"%( step_size ) )
     log_file.write( "Print Frequency:    %20d\n"%( print_frequency ) )
     log_file.write( "Gradient Tolerance: %20.10lg\n\n"%( gradient_tolerance ) )
+    log_file.write( "Use Maxgradient:    %20s\n"%( use_maxgrad ) )
     log_file.write( "%10s%20s%20s\n"%( "Step", "Function", "Gradient" ) )
     log_file.write( "-" * 50 + "\n" )
     tol2 = 1.0e-8
-    ndeg = math.sqrt( size )
+    if( use_maxgrad ):
+        ndeg = math.sqrt( 3.0 )
+    else:
+        ndeg = math.sqrt( size )
     sele = numpy.flatnonzero( mol.actv.ravel() )
     grms = gradient_tolerance * 2.0
     crd  = numpy.zeros( ( actv, 3 ), dtype=numpy.float64 )
@@ -543,7 +599,10 @@ def rfo( mol: object,
         if( tmp > step_size ):
             crd *= step_size / tmp
         itr += 1
-        grms = numpy.linalg.norm( mol.grad ) / ndeg
+        if( use_maxgrad ):
+            grms = numpy.max( numpy.linalg.norm( mol.grad, axis = 1 ) ) / ndeg
+        else:
+            grms = numpy.linalg.norm( mol.grad ) / ndeg
         if( itr % print_frequency == 0 or itr == 1 ):
                 log_file.write( "%10ld%20.5lf%20.10lf%10.2le\n"%( itr, mol.func, grms, tmp ) )
         current_step( mol, itr )
