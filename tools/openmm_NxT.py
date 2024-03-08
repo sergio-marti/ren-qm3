@@ -101,9 +101,9 @@ _sim = openmm.app.Simulation( _top.topology, _sys, _int, openmm.Platform.getPlat
 
 #>> 100 ns NVT
 _sim.context.setStepCount( 0 )
-n = 100000000
-_sim.reporters.append( openmm.app.dcdreporter.DCDReporter( "last.dcd", 40000, enforcePeriodicBox = True ) )
-_sim.reporters.append( openmm.app.statedatareporter.StateDataReporter( sys.stdout, 10000,
+n = 100_000_000
+_sim.reporters.append( openmm.app.dcdreporter.DCDReporter( "last.dcd", 40_000, enforcePeriodicBox = True ) )
+_sim.reporters.append( openmm.app.statedatareporter.StateDataReporter( sys.stdout, 10_000,
     time = True, potentialEnergy = True, temperature = True,
     remainingTime = True, totalSteps = n ) )
 _sim.step( n )

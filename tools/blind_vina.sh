@@ -2,10 +2,7 @@
 
 prt=enzyme.pdb
 lig=ligand.mol2
-
-source ~/Devel/amber/rc
-source ~/Devel/openbabel/rc
-vina=~/Devel/docking/AutoDock-Vina/build/mac/release/vina
+box=30
 
 obabel -imol2 $lig -opdbqt -partialcharges eem | grep -E -v "^USER|^TER" > lig.x
 
@@ -52,7 +49,8 @@ def d_indx( w ):
         del o[o.index( 0 )]
     return( o )
 
-cent = ( np.max( coor, axis = 0 ) - np.min( coor, axis = 0 ) ) // 30 + 1
+cent = ( np.max( coor, axis = 0 ) - np.min( coor, axis = 0 ) ) // $box + 1
+hbox = $box * 0.5
 print( cent )
 c = 0
 for i in d_indx( int( cent[0] ) ):
@@ -64,13 +62,13 @@ ligand = lig.x
 center_x = %.1lf
 center_y = %.1lf
 center_z = %.1lf
-size_x = 30.
-size_y = 30.
-size_z = 30.
+size_x = %.1lf
+size_y = %.1lf
+size_z = %.1lf
 energy_range = 10
 num_modes = 20
 out = out_%04d
-"""%( 15.0 * i, 15.0 * j, 15.0 * k, c ) )
+"""%( hbox * i, hbox * j, hbox * k, $box, $box, $box, c ) )
             c += 1
 EOD
 
