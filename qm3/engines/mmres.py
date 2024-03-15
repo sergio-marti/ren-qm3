@@ -440,7 +440,7 @@ class colvar_s( object ):
             for j in [0, 1, 2]:
                 jaco[i,3*self.jidx[ai]+j] -= rr[j] / ccrd[i]
                 jaco[i,3*self.jidx[aj]+j] += rr[j] / ccrd[i]
-        return( ccrd, jaco )
+        return( ( ccrd, jaco ) )
 
 
     def metrics( self, mol: object ) -> numpy.array:
@@ -458,7 +458,7 @@ class colvar_s( object ):
         return( cmet )
 
 
-    def get_func( self, mol: object ) -> numpy.array:
+    def get_func( self, mol: object ) -> tuple:
         ccrd, jaco = self.get_jaco( mol )
         cdst = numpy.zeros( self.nwin, dtype=numpy.float64 )
         for i in range( self.nwin ):
@@ -474,7 +474,7 @@ class colvar_s( object ):
         return( ( out, cval, ccrd ) )
 
 
-    def get_grad( self, mol: object ) -> numpy.array:
+    def get_grad( self, mol: object ) -> tuple:
         ccrd, jaco = self.get_jaco( mol )
         cdst = numpy.zeros( self.nwin, dtype=numpy.float64 )
         jder = numpy.zeros( ( self.nwin, self.jcol ), dtype=numpy.float64 )
@@ -506,3 +506,74 @@ class colvar_s( object ):
         sder.shape = ( self.jcol // 3, 3 )
         mol.grad[list( self.jidx.keys() ),:] += sder * self.sqms
         return( ( out, cval, ccrd ) )
+
+
+class colvar_path( object ):
+    """
+    x( %zeta  ) approx {sum from{i=0} to{N-1} {i %delta_z e^{-{{lline %zeta - z_i rline}over %delta_z}}}} over
+    {sum from{i=0} to{N-1} { e^{-{{lline %zeta - z_i rline}over %delta_z}}}}
+    ~~~~
+    %delta_z = langle lline x_{i+1} - x_{i} rline rangle = L over{N - 1}
+    newline
+    lline %zeta - z_i rline = sqrt{{1 over M}sum from{k=1} to{3M} {left( %zeta_k - z^i_k right)^2}}
+    """
+    @staticmethod
+    def get_rmsd( ref: numpy.array, crd: numpy.array ) -> tuple:
+        tmp = crd - numpy.mean( crd, axis = 0 )
+        cov = numpy.dot( tmp.T, ref )
+        r1, s, r2 = numpy.linalg.svd( cov )
+        if( numpy.linalg.det( cov ) < 0 ):
+            r2[2,:] *= -1.0
+        mat = numpy.dot( r1, r2 )
+        tmp = numpy.dot( tmp, mat )
+        #return( numpy.sqrt( numpy.mean( numpy.sum( numpy.square( ref - tmp ), axis = 1 ) ) ), mat )
+        return( ref - tmp, mat )
+
+
+    def __init__( self, kumb: float, xref: float, sele: numpy.array, path: str ):
+        self.xref = xref
+        self.kumb = kumb
+        self.sele = numpy.flatnonzero( sele )
+        self.refs = numpy.loadtxt( path, dtype=numpy.float64 )
+        self.nwin = self.refs.shape[0]
+        self.refs = self.refs.reshape( ( self.nwin, self.refs.shape[1] // 3, 3 ) )
+        # -----------------------------------------------------------------------
+        self.arcl = numpy.zeros( self.nwin, dtype=numpy.float64 )
+        for i in range( 1, self.nwin ):
+            self.arcl[i] = numpy.sqrt( numpy.mean( numpy.sum( numpy.square( self.get_rmsd( self.refs[i-1], self.refs[i] )[0] ), axis = 1 ) ) )
+        self.delz = self.arcl.sum() / float( self.nwin - 1.0 )
+        print( "Colective variable path range: [%.3lf - %.3lf: %.6lf] _Ang"%( 0.0, self.arcl.sum(), self.delz ) )
+
+
+    def get_func( self, mol: object ) -> tuple:
+        cdst = numpy.zeros( self.nwin, dtype=numpy.float64 )
+        for i in range( self.nwin ):
+            cdst[i] = numpy.sqrt( numpy.mean( numpy.sum( numpy.square( self.get_rmsd( self.refs[i], mol.coor[self.sele] )[0] ), axis = 1 ) ) )
+        cexp = numpy.exp( - cdst / self.delz )
+        cval = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp ) / cexp.sum()
+        umbr = 0.5 * self.kumb * math.pow( cval - self.xref, 2.0 )
+        mol.func += umbr
+        return( ( umbr, cval ) )
+
+
+    def get_grad( self, mol: object ) -> tuple:
+        cdst = numpy.zeros( self.nwin, dtype=numpy.float64 )
+        dime = self.sele.shape[0]
+        dist = numpy.zeros( ( self.nwin, dime, 3 ) )
+        for i in range( self.nwin ):
+            dist[i], rmat = self.get_rmsd( self.refs[i], mol.coor[self.sele] )
+            cdst[i] = numpy.sqrt( numpy.mean( numpy.sum( numpy.square( dist[i] ), axis = 1 ) ) )
+            dist[i] = numpy.dot( dist[i], numpy.linalg.inv( rmat ) )
+        cexp = numpy.exp( - cdst / self.delz )
+        sumn = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp )
+        sumd = cexp.sum()
+        cval = sumn / sumd
+        diff = self.kumb * ( cval - self.xref )
+        umbr = 0.5 * diff * ( cval - self.xref )
+        mol.func += umbr
+        grad = numpy.zeros( ( dime, 3 ) )
+        for i in range( self.nwin ):
+            if( numpy.abs( cdst[i] ) > .0 ):
+                grad += cexp[i] / ( sumd * dime * cdst[i] ) * ( cval / self.delz - i ) * dist[i]
+        mol.grad[self.sele] -= diff * grad
+        return( ( umbr, cval ) )

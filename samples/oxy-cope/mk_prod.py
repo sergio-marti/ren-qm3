@@ -35,7 +35,7 @@ _sys = _psf.createSystem( _prm,
 sqm = mol.resn == "COP"
 smm = mol.sph_sel( sqm, 14 )
 print( sqm.sum(), smm.sum() )
-mol.engines["mm"] = qm3.engines.openmm.run( _sys, _psf.topology, sel_QM = sqm, platform = "OpenCL" )
+mol.engines["mm"] = qm3.engines.openmm.run( _sys, _psf.topology, sel_QM = sqm, platform = "CPU" )
 mol.engines["qm"] = qm3.engines.xtb.run( mol, 0, 0, sel_QM = sqm, sel_MM = smm )
 mol.engines["dst1"] = qm3.engines.mmres.distance( 2500, 3.08, [ mol.indx["A"][1]["C2"], mol.indx["A"][1]["C3"] ] )
 mol.engines["dst2"] = qm3.engines.mmres.distance( 2500, 1.55, [ mol.indx["A"][1]["C5"], mol.indx["A"][1]["C6"] ] )

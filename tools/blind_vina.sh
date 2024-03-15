@@ -76,7 +76,7 @@ echo "load prt.x, format=pdbqt" > view.pml
 rm -f view.vmd
 for ff in inp_????; do
     gg=`echo $ff | cut -c5-`
-    $vina --cpu 4 --config $ff | tee log_$gg
+    vina --cpu 4 --config $ff | tee log_$gg
     grep -E "MODEL|ATOM|ENDMDL" out_$gg > out_$gg.pdb  
     cat >> view.vmd << EOD
 mol new out_$gg.pdb type pdb first 0 last -1 step 1 filebonds 1 autobonds 1 waitfor all

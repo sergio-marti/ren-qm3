@@ -55,7 +55,7 @@ if( who == 0 ):
 
     log = open( "borra_log.mm", "wt" )
 
-    emm = qm3.engines.openmm.run( _sys, _psf.topology, sel_QM = sqm, platform = "OpenCL" )
+    emm = qm3.engines.openmm.run( _sys, _psf.topology, sel_QM = sqm, platform = "CPU" )
     mol.engines["mm"] = emm
 
     eqm = qm3.engines.xtb.run( mol, 0, 0, sel_QM = sqm, sel_MM = smm )

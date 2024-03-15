@@ -33,7 +33,7 @@ _sys = _psf.createSystem( _prm,
 sqm = mol.resn == "COP"
 smm = mol.sph_sel( sqm, 14 )
 
-emm = qm3.engines.openmm.run( _sys, _psf.topology, sel_QM = sqm, platform = "OpenCL" )
+emm = qm3.engines.openmm.run( _sys, _psf.topology, sel_QM = sqm, platform = "CPU" )
 eqm = qm3.engines.xtb.run( mol, 0, 0, sel_QM = sqm, sel_MM = smm )
 
 mol.engines["mm"] = emm

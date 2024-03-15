@@ -36,7 +36,7 @@ print( sqm.sum(), smm.sum(), end = " " )
 smm = numpy.logical_and( smm, numpy.logical_not( sqm ) )
 print( smm.sum() )
 
-emm = qm3.engines.openmm.run( _sys, _psf.topology, sel_QM = sqm, platform = "OpenCL" )
+emm = qm3.engines.openmm.run( _sys, _psf.topology, sel_QM = sqm, platform = "CPU" )
 eqm = qm3.engines.xtb.run( mol, 0, 0, sel_QM = sqm, sel_MM = smm )
 
 mol.engines["mm"] = emm
