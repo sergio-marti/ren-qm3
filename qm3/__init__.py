@@ -635,7 +635,7 @@ Residue     1  SER
                 dsp = int( __frmt.findall( fdsc.readline() )[0] )
                 while( len( anum ) < self.natm ):
                     l = fdsc.readline()
-                    anum += [ abs( int( l[i:i+dsp] ) ) for i in range( 0, len( l ) - 1, dsp ) ]
+                    anum += [ int( l[i:i+dsp] ) for i in range( 0, len( l ) - 1, dsp ) ]
                 self.anum = numpy.array( anum, dtype=numpy.int16 )
             elif( l[0:10].upper() == "%FLAG MASS" ):
                 mass = []

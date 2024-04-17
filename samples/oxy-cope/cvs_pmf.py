@@ -13,7 +13,7 @@ import  os
 
 cwd = os.path.abspath( os.path.dirname( sys.argv[0] ) ) + os.sep
 
-who = int( sys.argv[1].split( "." )[-1] )
+who = int( sys.argv[1] )
 
 mol = qm3.molecule()
 mol.pdb_read( open( "node.%02d"%( who ) ) )
@@ -40,8 +40,9 @@ print( smm.sum() )
 
 mol.engines["mm"] = qm3.engines.openmm.run( _sys, _psf.topology, sel_QM = sqm, platform = "CPU" )
 mol.engines["qm"] = qm3.engines.xtb.run( mol, 0, 0, sel_QM = sqm, sel_MM = smm )
-kmb = 1400.
-ref = who * 0.137036
+kmb = 5000.
+with open( "pmf_s.delz" ) as f:
+    ref = who * float( f.readline().strip() )
 mol.engines["cv"] = qm3.engines.mmres.colvar_s( mol, kmb, ref,
         open( "pmf_s.cnf" ), open( "pmf_s.str" ), open( "pmf_s.met" ) )
 

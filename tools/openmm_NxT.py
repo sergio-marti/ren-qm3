@@ -91,12 +91,13 @@ _sim = openmm.app.Simulation( _top.topology, _sys, _int, openmm.Platform.getPlat
 
 #_sim.minimizeEnergy( tolerance = 5 * openmm.unit.kilojoule / openmm.unit.mole, maxIterations = 100 )
 
+#_sim.context.setVelocitiesToTemperature( 300.0 )
 
 #>> 1 ns NPT
-#_sim.reporters.append( openmm.app.dcdreporter.DCDReporter( "last.dcd", 100, enforcePeriodicBox = True ) )
-#_sim.reporters.append( openmm.app.statedatareporter.StateDataReporter( sys.stdout, 100,
+#_sim.reporters.append( openmm.app.dcdreporter.DCDReporter( "last.dcd", 4_000, enforcePeriodicBox = True ) )
+#_sim.reporters.append( openmm.app.statedatareporter.StateDataReporter( sys.stdout, 1_000,
 #    time = True, potentialEnergy = True, temperature = True, density = True ) )
-#_sim.step( 1000000 )
+#_sim.step( 1_000_000 )
 #print( _sim.context.getState().getPeriodicBoxVectors() )
 
 #>> 100 ns NVT

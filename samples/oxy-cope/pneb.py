@@ -45,9 +45,8 @@ tmp.pdb_read( open( cwd + "prod.pdb" ) )
 
 gues = qm3.actions.neb.distribute( 40, [ mol.coor[sqm], tmp.coor[sqm] ] )
 
-ncpu = 5
-# mpirun -n 5 python3 pneb.py
 opar = qm3.utils.parallel.client_mpi()
+ncpu = opar.ncpu
 
 ncpu -= 1
 chnk = [ [] for i in range( ncpu ) ]

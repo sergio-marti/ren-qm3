@@ -78,7 +78,7 @@ def cstep( obj, stp ):
 
 
 #qm3.actions.minimize.fire( mol, print_frequency = 1, current_step = cstep, step_number = 100, gradient_tolerance = 0 )
-qm3.actions.dynamics.langevin_verlet( mol, print_frequency = 1, current_step = cstep, step_number = 1000 )
+qm3.actions.dynamics.langevin_verlet( mol, print_frequency = 1, current_step = cstep, step_number = 2000 )
 
 mol.engines.pop( "mm" )
 mol.engines.pop( "ss" )

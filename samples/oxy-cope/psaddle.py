@@ -121,7 +121,7 @@ else:
     os.mkdir( "par.%02d"%( who ) )
     os.chdir( "par.%02d"%( who ) )
 
-    mol.engines["mm"] = qm3.engines.openmm.run( _sys, _psf.topology, sel_QM = sqm, platform = "OpenCL" )
+    mol.engines["mm"] = qm3.engines.openmm.run( _sys, _psf.topology, sel_QM = sqm, platform = "CPU" )
     mol.engines["qm"] = qm3.engines.xtb.run( mol, 0, 0, sel_QM = sqm, sel_MM = smm )
 
     while( True ):

@@ -64,6 +64,7 @@ class run( qm3.engines.template ):
         s_rn = "  CalculateForces = No"
         if( run == "grad" ):
             s_rn = "  CalculateForces = Yes"
+            s_rn = "  PrintForces = Yes"
         s_nq = ""
         if( len( self.nbn ) > 0 ):
             s_nq = str( len( self.nbn ) )
