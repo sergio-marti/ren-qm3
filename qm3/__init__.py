@@ -264,7 +264,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             if( lsel[i] ):
                 fdsc.write( "ATOM  %5d %-5s%-5s%4d    %8.3lf%8.3lf%8.3lf%6.2lf%6.2lf      %-4s\n"%( ( j % 99999 ) + 1, 
                     " " * ( len( self.labl[i] ) < 4 ) + self.labl[i],
-                    self.resn[i], self.resi[i], self.coor[i,0], self.coor[i,1], self.coor[i,2], 
+                    self.resn[i], self.resi[i] % 10000, self.coor[i,0], self.coor[i,1], self.coor[i,2], 
                     0.0, 0.0, self.segn[i] ) )
                 j += 1
         fdsc.write( endl )

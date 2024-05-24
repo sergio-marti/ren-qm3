@@ -32,6 +32,10 @@ mpi:
 	$(MPI) $(PYX) setup/mpi build_ext --build-lib qm3/utils
 
 
+qmlj:
+	$(PYX) setup/qmlj build_ext --build-lib qm3/engines
+
+
 ml_info:
 	$(PYX) setup/ml_info build_ext --build-lib qm3/engines
 

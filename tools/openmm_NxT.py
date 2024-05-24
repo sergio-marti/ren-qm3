@@ -89,7 +89,7 @@ _sim = openmm.app.Simulation( _top.topology, _sys, _int, openmm.Platform.getPlat
 #_sim.context.setPositions( crd.tolist() )
 # -------------------------------------------------------------------------------------
 
-#_sim.minimizeEnergy( tolerance = 5 * openmm.unit.kilojoule / openmm.unit.mole, maxIterations = 100 )
+#_sim.minimizeEnergy( tolerance = 5 * openmm.unit.kilojoule / ( openmm.unit.angstrom * openmm.unit.mole ), maxIterations = 100 )
 
 #_sim.context.setVelocitiesToTemperature( 300.0 )
 

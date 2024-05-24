@@ -7,6 +7,9 @@ import  openmm.app
 import  openmm.unit
 
 
+# OPENMM_CPU_THREADS
+
+
 class run( object ):
     def __init__( self, omm_sys: object, omm_top: object,
             sel_QM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),

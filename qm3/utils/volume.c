@@ -422,7 +422,7 @@ fprintf(stderr,"CEN: %8ld%8ld%8ld\n",cnt[0],cnt[1],cnt[2]);
         }
 
         // init
-        grd[cnt[0]][cnt[1]][cnt[2]] = 1;
+        grd[cnt[0]][cnt[1]][cnt[2]] = is_ok;
 
         // search
         wr = (long)( ( prb + dsp ) / dsp );
@@ -433,7 +433,7 @@ fprintf(stderr,"CEN: %8ld%8ld%8ld\n",cnt[0],cnt[1],cnt[2]);
                 for( wj = cnt[1]; wj > 0 && wj < npt[1]; wj += cub[l+1] ) {
                     rj = bmin[1] + wj * dsp;
                     for( wk = cnt[2]; wk > 0 && wk < npt[2]; wk += cub[l+2] ) {
-                        if( grd[wi][wj][wk] == 1 ) {
+                        if( grd[wi][wj][wk] == is_ok ) {
                             rk = bmin[2] + wk * dsp;
                             if( __collide( ri, rj, rk, prb, dsp, dim[0], rad, crd ) == 0 ) {
                                 for( i = - wr - 1; i < wr + 1; i++ ) {
@@ -445,7 +445,7 @@ fprintf(stderr,"CEN: %8ld%8ld%8ld\n",cnt[0],cnt[1],cnt[2]);
                                         for( k = - wr - 1; k < wr + 1; k++ ) {
                                             ck = wk + k;
                                             if( ck >= 0 && ck < npt[2] ) 
-                                                if( i * i + j * j + k * k <= w2 ) grd[ci][cj][ck] = 1;
+                                                if( i * i + j * j + k * k <= w2 ) grd[ci][cj][ck] = is_ok;
                                         }
                                     }
                                 }

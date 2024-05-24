@@ -52,7 +52,7 @@ class run( qm3.engines.template ):
         if( run == "grad" ):
             s_rn = "engrad"
         elif( run == "hess" ):
-            s_rn = "numfreq"
+            s_rn = "engrad freq"
         f = open( "orca.inp", "wt" )
         buf = self.inp.replace( "qm3_atoms", s_qm[:-1] )
         buf = buf.replace( "qm3_job", s_rn )
