@@ -356,12 +356,12 @@ class colvar_s( object ):
     met_nw,(1,1)  met_nw,(nc,nc)
     -------------------------------------
 
-    x( %zeta  ) approx {sum from{i=0} to{N-1} {i %delta_z e^{-{{lline %zeta - z rline}over %delta_z}}}} over
-    {sum from{i=0} to{N-1} { e^{-{{lline %zeta - z rline}over %delta_z}}}}
+    x( %zeta  ) approx {sum from{i=0} to{N-1} {i %delta_z e^{-{{lline %zeta - z_i rline}over %delta_z}}}} over
+    {sum from{i=0} to{N-1} { e^{-{{lline %zeta - z_i rline}over %delta_z}}}}
     ~~~~
-    %delta_z = langle lline x_{i+1} - x_{i} rline rangle = L over{N - 1}
+    %delta_z = langle lline z_{i+1} - z_{i} rline rangle = L over{N - 1}
     newline
-    lline %zeta - z rline = left[ (%zeta - z)^T M^{-1} (%zeta - z) right]^{1 over 2}
+    lline %zeta - z_i rline = left[ (%zeta - z_i)^T M^{-1} (%zeta - z_i) right]^{1 over 2}
     ~~~~
     M_{i,j}=sum from{k=1} to{3n} {{partial %zeta_i}over{partial x_k} 1 over m_k {partial %zeta_j}over{partial x_k}}
 
@@ -373,7 +373,8 @@ class colvar_s( object ):
             str_cnf: typing.IO,
             str_crd: typing.IO,
             str_met: typing.IO,
-            masses: typing.Optional[bool] = False ):
+            masses: typing.Optional[bool] = False,
+            k_wall: typing.Optional[float] = -1.0 ):
         self.xref = xref
         self.kumb = kumb
         self.qmas = masses
@@ -427,6 +428,18 @@ class colvar_s( object ):
         else:
             self.sqms = numpy.ones( len( self.jidx ), dtype=numpy.float64 )
         self.sqms = numpy.column_stack( ( self.sqms, self.sqms, self.sqms ) ).reshape( ( self.jcol // 3, 3 ) )
+        # create walls for each distance...
+        self.wall = []
+        if( k_wall > 0.0 ):
+            r_min = numpy.min( self.rcrd, axis = 0 )
+            r_max = numpy.max( self.rcrd, axis = 0 )
+            print( "Colective variable s walls:", r_min + self.delz )
+            print( "                           ", r_max - self.delz )
+            for i in range( self.ncrd ):
+                self.wall.append( distance( k_wall, r_min[i] + self.delz,
+                    [ self.atom[i][0], self.atom[i][1] ], skip_BE = r_min[i] ) )
+                self.wall.append( distance( k_wall, r_max[i] - self.delz,
+                    [ self.atom[i][0], self.atom[i][1] ], skip_LE = r_max[i] ) )
 
 
     def get_jaco( self, mol: object ) -> tuple:
@@ -505,6 +518,9 @@ class colvar_s( object ):
 #            mol.grad[self.xdij[i]] += sder[i]
         sder.shape = ( self.jcol // 3, 3 )
         mol.grad[list( self.jidx.keys() ),:] += sder * self.sqms
+        # add walls ---------------------------------------
+        for w in self.wall:
+            w.get_grad( mol )
         return( ( out, cval, ccrd ) )
 
 
