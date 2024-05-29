@@ -184,6 +184,47 @@ static PyObject* _bbnd_jaco( PyObject *self, PyObject *args ) {
 }
 
 
+static PyObject* _lbnd_jaco( PyObject *self, PyObject *args ) {
+    PyObject        *ocrd, *obag;
+    PyArrayObject   *mcrd, *out;
+    long            *siz, dim[2], i, j, k, l;
+    double          *xyz, dr[3], r2, zz, *itm;
+
+    if( PyArg_ParseTuple( args, "OO", &obag, &ocrd ) ) {
+        mcrd = (PyArrayObject*) PyArray_FROM_OT( ocrd, NPY_DOUBLE );
+        siz = PyArray_SHAPE( mcrd );
+        xyz = (double*) malloc( siz[0] * siz[1] * sizeof( double ) );
+        for( k = 0, i = 0; i < siz[0]; i++ ) {
+            for( j = 0; j < siz[1]; j++ ) {
+                itm = (double*) PyArray_GETPTR2( mcrd, i, j );
+                xyz[k++] = *itm;
+            }
+        }
+        Py_DECREF( mcrd );
+
+		dim[0] = (long)( PyList_Size( obag ) / 2 );
+        dim[1] = 3;
+        out = (PyArrayObject*) PyArray_ZEROS( 2, dim, NPY_DOUBLE, 0 );
+		for( i = 0; i < dim[0]; i++ ) {
+			j = PyLong_AsLong( PyList_GetItem( obag, 2 * i     ) ) * 3;
+			k = PyLong_AsLong( PyList_GetItem( obag, 2 * i + 1 ) ) * 3;
+            dr[0] = xyz[j]   - xyz[k];
+            dr[1] = xyz[j+1] - xyz[k+1];
+            dr[2] = xyz[j+2] - xyz[k+2];
+            r2 = dr[0] * dr[0] + dr[1] * dr[1] + dr[2] * dr[2];
+            zz = 1.0 / ( r2 * sqrt( r2 ) );
+            for( l = 0; l < 3; l ++ ) {
+                itm  = (double*) PyArray_GETPTR2( out, i, l );
+                *itm =   dr[l] * zz;
+            }
+		}
+
+        free( xyz );
+        return( (PyObject*) out );
+    } else { Py_INCREF( Py_None ); return( Py_None ); }
+}
+
+
 double __cosang( long i3, long j3, long k3, double *xyz ) {
     double    vij[3], vik[3], mij, mik;
     vij[0] = xyz[j3]   - xyz[i3];
@@ -478,6 +519,7 @@ static struct PyMethodDef methods [] = {
 
     { "bbnd_info", (PyCFunction)_bbnd_info, METH_VARARGS },
     { "bbnd_jaco", (PyCFunction)_bbnd_jaco, METH_VARARGS },
+    { "lbnd_jaco", (PyCFunction)_lbnd_jaco, METH_VARARGS },
 
     { "acsf_info", (PyCFunction)_acsf_info, METH_VARARGS },
     { "acsf_pinf", (PyCFunction)_acsf_pinf, METH_VARARGS },
