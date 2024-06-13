@@ -401,3 +401,102 @@ def savitzky_golay( y: numpy.array, points: typing.Optional[int] = 0 ) -> numpy.
         for i in range( m+1, 2*m+1 ):
             f.append( numpy.sum( cf[i] * y[-points:]  ) / wf[i] )
         return( numpy.array( f ) )
+
+
+
+class gpr( object ):
+    def __init__( self, x: numpy.array, y: numpy.array ):
+# ------------------------------------------------------------------------------------
+#\begin{align}
+#&y' = y_{c} \left( x' \right) = K_{1xN}^T \; \left[ C^{-1} \; y \right]_{NxP} \\
+#&K_i = a_{1} \sum_{d=1}^{P}{ x'_{d} \cdot x_{i,d}} + v_{o}\; \text{exp} \left[ - \sum_{d=1}^{P}{\eta_{d}\left( x'_{d} - x_{i,d} \right)^2} \right] \\
+#&C_{i,j} = a_1 \sum_{d=1}^{P}{ x_{i,d} \cdot x_{j,d}} + v_{o}\; \text{exp} \left[ - \sum_{d=1}^{P}{\eta_{d}\left( x_{i,d} - x_{j,d} \right)^2} \right] + \sigma_{\varepsilon}^{2}\cdot \delta_{i,j} \\
+#&L = \frac{1}{M}\sum_{k=1}^{M}{ \left( y'_k - y_k \right)^2} \;\;\;\;\;\; \frac{\partial L}{\partial \zeta} = \frac{2}{M}\sum_{k=1}^{M}{ \left( y'_k - y_k \right)} \frac{\partial y'_k}{\partial \zeta} \\
+#&\frac{\partial y'_k}{\partial \zeta} = \left[\frac{\partial K}{\partial \zeta}\right]^T \left[ C^{-1} \; y\right] - K^T \left[ C^{-1} \frac{\partial C}{\partial \zeta} C^{-1} \right] y \\
+#&\frac{\partial K_{i}}{\partial a_{1}} = \sum_{d=1}^{P}{ x'_{d} \cdot x_{i,d}}
+#\;\;\;\;\;\;
+#\frac{\partial K_{i}}{\partial v_{o}} =  \text{exp} \left[ - \sum_{d=1}^{P}{\eta_{d}\left( x'_{d} - x_{i,d} \right)^2} \right]
+#\;\;\;\;\;\;
+#\frac{\partial K_{i}}{\partial \eta_{k}} = -2 \; v_{o}\; \text{exp} \left[ - \sum_{d=1}^{P}{\eta_{d}\left( x'_{d} - x_{i,d} \right)^2} \right]\;\left( x'_{k} - x_{i,k} \right) \\
+#&\frac{\partial C_{i,j}}{\partial a_{1}} = \sum_{d=1}^{P}{ x_{i,d} \cdot x_{j,d}}
+#\;\;\;\;\;\;
+#\frac{\partial C_{i,j}}{\partial v_{o}} =  \text{exp} \left[ - \sum_{d=1}^{P}{\eta_{d}\left( x_{i,d} - x_{j,d} \right)^2} \right]
+#\;\;\;\;\;\;
+#\frac{\partial C_{i,j}}{\partial \eta_{k}} = -2 \; v_{o}\; \text{exp} \left[ - \sum_{d=1}^{P}{\eta_{d}\left( x_{i,d} - x_{j,d} \right)^2} \right]\;\left( x_{i,k} - x_{j,k} \right)
+#\;\;\;\;\;\;
+#\frac{\partial C_{i,j}}{\partial \sigma_{\varepsilon}^{2}} = \delta_{i,j}
+#\end{align}
+# ------------------------------------------------------------------------------------
+        self.x = x.copy()
+        self.y = y.copy()
+        self.n = self.x.shape[0]
+        self.m = self.x.shape[1]
+        # ----------------------------------------------------
+        self.tmp = {}
+        self.tmp["p"] = numpy.zeros( ( self.n, self.n ) )
+        self.tmp["d"] = numpy.zeros( ( self.n, self.n, self.m ) )
+        for i in range( self.n ):
+            for j in range( self.n ):
+                self.tmp["p"][i,j] = numpy.dot( x[i], x[j] )
+                self.tmp["d"][i,j] = x[i] - x[j]
+        self.tmp["d2"] = numpy.square( self.tmp["d"] )
+        # ----------------------------------------------------
+        self.update( numpy.array( [ 1., 1., 0.001 ] + [ 1. for i in range( self.m ) ] ) )
+
+    
+    def update( self, parm: numpy.array ):
+        if( parm.shape[0] != self.m + 3 ):
+            print( "GPR [update]: wrong parameters vector dimension" )
+            return
+        self.a1 = parm[0]
+        self.v0 = parm[1]
+        self.se = parm[2]
+        self.et = parm[3:]
+        # ----------------------------------------------------
+        self.tmp["e"] = numpy.zeros( ( self.n, self.n ) )
+        for i in range( self.n ):
+            for j in range( self.n ):
+                self.tmp["e"][i,j] = numpy.exp( - numpy.dot( self.et, self.tmp["d2"][i,j] ) )
+        self.tmp["k"] = self.a1 * self.tmp["p"] + self.v0 * self.tmp["e"]
+        self.a = self.tmp["k"] + self.se * numpy.eye( self.n )
+        self.tmp["c"] = numpy.linalg.inv( self.a )
+        self.a = numpy.dot( self.tmp["c"], self.y )
+        
+        
+    def __call__( self, rx: numpy.array ) -> numpy.array:
+        k = numpy.zeros( self.n )
+        for i in range( self.n ):
+            k[i] = self.a1 * numpy.dot( rx, self.x[i] ) + self.v0 * numpy.exp( - numpy.dot( self.et, numpy.square( rx - self.x[i] ) ) )
+        return( numpy.dot( k, self.a ) )
+
+
+    def floss( self, prm: numpy.array ) -> float:
+        self.update( prm )
+        return( numpy.sum( numpy.square( numpy.dot( self.tmp["k"], self.a ) - self.y ) ) / self.n )
+
+    
+    def gloss( self, prm: numpy.array ) -> numpy.array:
+        self.update( prm )
+        dd = numpy.dot( self.tmp["k"], self.a ) - self.y
+        kc = numpy.dot( self.tmp["k"], self.tmp["c"] )
+        pa = numpy.dot( self.tmp["p"], self.a )
+        ea = numpy.dot( self.tmp["e"], self.a )
+        g = []
+        g.append( numpy.sum( dd * ( pa - numpy.dot( kc, pa ) ) ) )
+        g.append( numpy.sum( dd * ( ea - numpy.dot( kc, ea ) ) ) )
+        g.append( numpy.sum( dd * - numpy.dot( kc, self.a ) ) )
+        for i in range( self.m ):
+            ed = numpy.dot( numpy.dot( self.tmp["e"], self.tmp["d"][:,:,i] ), self.a )
+            g.append( - 2.0 * self.v0 * numpy.sum( dd * ( ed - numpy.dot( kc, ed ) ) ) )
+        #return( numpy.sum( numpy.square( dd ) ) / self.n, numpy.array( g ) * 2.0 / self.n )
+        # just gradient: scipy.optimize alike
+        return( numpy.array( g ) * 2.0 / self.n )
+
+
+#obj = qm3.utils.interpolation.gpr( inp, out )
+#vec = numpy.array( [ 1., 1., 0.001 ] + [ 1. for i in range( obj.m ) ] )
+#lim = [ ( 1e-3, 10 ), ( 1e-3, 10 ), ( 1e-10, 1 ) ] + [ ( 1e-3, 10 ) for i in range( obj.m ) ]
+#ret = scipy.optimize.minimize( obj.floss, vec, method = "TNC", jac = obj.gloss, bounds = lim,
+#        options = { "disp": True, "maxfun": 100 } )
+#obj.update( ret.x )
+#del obj.tmp

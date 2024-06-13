@@ -22,6 +22,7 @@ dcd.next( mol )
 
 ref = mol.coor[sel]
 ref -= numpy.mean( ref, axis = 0 )
+siz = numpy.sqrt( ref.shape[0] )
 
 out = []
 dif = []
@@ -33,10 +34,11 @@ while( dcd.next( mol ) ):
     r1, s, r2 = numpy.linalg.svd( cov )
     if( numpy.linalg.det( cov ) < 0 ):
         r2[2,:] *= -1.0
-    mod = numpy.dot( cur, numpy.dot( r1, r2 ) )
-    crd.append( mod )
-    dif.append( mod[idx] - ref[idx] )
-    out.append( numpy.sqrt( numpy.mean( numpy.sum( numpy.square( ref - mod ), axis = 1 ) ) ) )
+    cur = numpy.dot( cur, numpy.dot( r1, r2 ) )
+    crd.append( cur )
+    dif.append( cur[idx] - ref[idx] )
+    #out.append( numpy.sqrt( numpy.mean( numpy.sum( numpy.square( cur - mod ), axis = 1 ) ) ) )
+    out.append( numpy.linalg.norm( cur - mod ) / siz )
 dcd.close()
 
 out = numpy.array( out )
