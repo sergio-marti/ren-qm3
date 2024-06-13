@@ -484,7 +484,7 @@ class gpr( object ):
         g = []
         g.append( numpy.sum( dd * ( pa - numpy.dot( kc, pa ) ) ) )
         g.append( numpy.sum( dd * ( ea - numpy.dot( kc, ea ) ) ) )
-        g.append( numpy.sum( dd * - numpy.dot( kc, self.a ) ) )
+        g.append( - 2.0 * prm[2] * numpy.sum( dd * numpy.dot( kc, self.a ) ) )
         for i in range( self.m ):
             ed = numpy.dot( numpy.dot( self.tmp["e"], self.tmp["d"][:,:,i] ), self.a )
             g.append( - 2.0 * self.v0 * numpy.sum( dd * ( ed - numpy.dot( kc, ed ) ) ) )
