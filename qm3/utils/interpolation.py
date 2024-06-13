@@ -405,7 +405,7 @@ def savitzky_golay( y: numpy.array, points: typing.Optional[int] = 0 ) -> numpy.
 
 
 class gpr( object ):
-    def __init__( self, x: numpy.array, y: numpy.array ):
+    def __init__( self, x: numpy.array, y: numpy.array, se2 = 1.e-8 ):
 # ------------------------------------------------------------------------------------
 #\begin{align}
 #&y' = y_{c} \left( x' \right) = K_{1xN}^T \; \left[ C^{-1} \; y \right]_{NxP} \\
@@ -424,7 +424,7 @@ class gpr( object ):
 #\;\;\;\;\;\;
 #\frac{\partial C_{i,j}}{\partial \eta_{k}} = -2 \; v_{o}\; \text{exp} \left[ - \sum_{d=1}^{P}{\eta_{d}\left( x_{i,d} - x_{j,d} \right)^2} \right]\;\left( x_{i,k} - x_{j,k} \right)
 #\;\;\;\;\;\;
-#\frac{\partial C_{i,j}}{\partial \sigma_{\varepsilon}^{2}} = \delta_{i,j}
+#\frac{\partial C_{i,j}}{\partial \sigma_{\varepsilon}} = 2 \sigma_{\varepsilon} \delta_{i,j}
 #\end{align}
 # ------------------------------------------------------------------------------------
         self.x = x.copy()
@@ -441,24 +441,24 @@ class gpr( object ):
                 self.tmp["d"][i,j] = x[i] - x[j]
         self.tmp["d2"] = numpy.square( self.tmp["d"] )
         # ----------------------------------------------------
-        self.update( numpy.array( [ 1., 1., 0.001 ] + [ 1. for i in range( self.m ) ] ) )
+        self.se2 = se2
+        self.update( numpy.array( [ 1. for i in range( self.m + 2 ) ] ) )
 
     
-    def update( self, parm: numpy.array ):
-        if( parm.shape[0] != self.m + 3 ):
+    def update( self, parm: numpy.array, se2 = 1.e-8 ):
+        if( parm.shape[0] != self.m + 2 ):
             print( "GPR [update]: wrong parameters vector dimension" )
             return
         self.a1 = parm[0]
         self.v0 = parm[1]
-        self.se = parm[2]
-        self.et = parm[3:]
+        self.et = parm[2:]
         # ----------------------------------------------------
         self.tmp["e"] = numpy.zeros( ( self.n, self.n ) )
         for i in range( self.n ):
             for j in range( self.n ):
                 self.tmp["e"][i,j] = numpy.exp( - numpy.dot( self.et, self.tmp["d2"][i,j] ) )
         self.tmp["k"] = self.a1 * self.tmp["p"] + self.v0 * self.tmp["e"]
-        self.a = self.tmp["k"] + self.se * numpy.eye( self.n )
+        self.a = self.tmp["k"].copy() + self.se2 * numpy.eye( self.n )
         self.tmp["c"] = numpy.linalg.inv( self.a )
         self.a = numpy.dot( self.tmp["c"], self.y )
         
@@ -484,7 +484,6 @@ class gpr( object ):
         g = []
         g.append( numpy.sum( dd * ( pa - numpy.dot( kc, pa ) ) ) )
         g.append( numpy.sum( dd * ( ea - numpy.dot( kc, ea ) ) ) )
-        g.append( - 2.0 * prm[2] * numpy.sum( dd * numpy.dot( kc, self.a ) ) )
         for i in range( self.m ):
             ed = numpy.dot( numpy.dot( self.tmp["e"], self.tmp["d"][:,:,i] ), self.a )
             g.append( - 2.0 * self.v0 * numpy.sum( dd * ( ed - numpy.dot( kc, ed ) ) ) )
@@ -494,8 +493,8 @@ class gpr( object ):
 
 
 #obj = qm3.utils.interpolation.gpr( inp, out )
-#vec = numpy.array( [ 1., 1., 0.001 ] + [ 1. for i in range( obj.m ) ] )
-#lim = [ ( 1e-3, 10 ), ( 1e-3, 10 ), ( 1e-10, 1 ) ] + [ ( 1e-3, 10 ) for i in range( obj.m ) ]
+#vec = numpy.array( [ 1. for i in range( obj.m + 2 ) ] )
+#lim = [ ( 0.0001, 100 ) for i in range( obj.m + 2 ) ]
 #ret = scipy.optimize.minimize( obj.floss, vec, method = "TNC", jac = obj.gloss, bounds = lim,
 #        options = { "disp": True, "maxfun": 100 } )
 #obj.update( ret.x )
