@@ -409,8 +409,9 @@ class gpr( object ):
 # ------------------------------------------------------------------------------------
 #\begin{align}
 #&y' = y_{c} \left( x' \right) = K_{1xN}^T \; \left[ C^{-1} \; y \right]_{NxP} \\
-#&K_i = a_{1} \sum_{d=1}^{P}{ x'_{d} \cdot x_{i,d}} + v_{o}\; \text{exp} \left[ - \sum_{d=1}^{P}{\eta_{d}\left( x'_{d} - x_{i,d} \right)^2} \right] \\
-#&C_{i,j} = a_1 \sum_{d=1}^{P}{ x_{i,d} \cdot x_{j,d}} + v_{o}\; \text{exp} \left[ - \sum_{d=1}^{P}{\eta_{d}\left( x_{i,d} - x_{j,d} \right)^2} \right] + \sigma_{\varepsilon}^{2}\cdot \delta_{i,j} \\
+#&f\left(x_{i},x_{j}\right) = a_1 \sum_{d=1}^{P}{ x_{i,d} \cdot x_{j,d}} + v_{o}\; \text{exp} \left[ - \sum_{d=1}^{P}{\eta_{d}\left( x_{i,d} - x_{j,d} \right)^2} \right] \\
+#&K_i = f\left(x',x_{i}\right)\;\;\;\;\;\;
+#C_{i,j} = f\left(x_{i},x_{j}\right) + \sigma_{\varepsilon}^{2}\cdot \delta_{i,j} \\
 #&L = \frac{1}{M}\sum_{k=1}^{M}{ \left( y'_k - y_k \right)^2} \;\;\;\;\;\; \frac{\partial L}{\partial \zeta} = \frac{2}{M}\sum_{k=1}^{M}{ \left( y'_k - y_k \right)} \frac{\partial y'_k}{\partial \zeta} \\
 #&\frac{\partial y'_k}{\partial \zeta} = \left[\frac{\partial K}{\partial \zeta}\right]^T \left[ C^{-1} \; y\right] - K^T \left[ C^{-1} \frac{\partial C}{\partial \zeta} C^{-1} \right] y \\
 #&\frac{\partial K_{i}}{\partial a_{1}} = \sum_{d=1}^{P}{ x'_{d} \cdot x_{i,d}}
@@ -423,8 +424,6 @@ class gpr( object ):
 #\frac{\partial C_{i,j}}{\partial v_{o}} =  \text{exp} \left[ - \sum_{d=1}^{P}{\eta_{d}\left( x_{i,d} - x_{j,d} \right)^2} \right]
 #\;\;\;\;\;\;
 #\frac{\partial C_{i,j}}{\partial \eta_{k}} = -2 \; v_{o}\; \text{exp} \left[ - \sum_{d=1}^{P}{\eta_{d}\left( x_{i,d} - x_{j,d} \right)^2} \right]\;\left( x_{i,k} - x_{j,k} \right)
-#\;\;\;\;\;\;
-#\frac{\partial C_{i,j}}{\partial \sigma_{\varepsilon}} = 2 \sigma_{\varepsilon} \delta_{i,j}
 #\end{align}
 # ------------------------------------------------------------------------------------
         self.x = x.copy()
@@ -487,15 +486,43 @@ class gpr( object ):
         for i in range( self.m ):
             ed = numpy.dot( numpy.dot( self.tmp["e"], self.tmp["d"][:,:,i] ), self.a )
             g.append( - 2.0 * self.v0 * numpy.sum( dd * ( ed - numpy.dot( kc, ed ) ) ) )
-        #return( numpy.sum( numpy.square( dd ) ) / self.n, numpy.array( g ) * 2.0 / self.n )
-        # just gradient: scipy.optimize alike
-        return( numpy.array( g ) * 2.0 / self.n )
+        return( numpy.sum( numpy.square( dd ) ) / self.n, numpy.array( g ) * 2.0 / self.n )
 
 
-#obj = qm3.utils.interpolation.gpr( inp, out )
-#vec = numpy.array( [ 1. for i in range( obj.m + 2 ) ] )
-#lim = [ ( 0.0001, 100 ) for i in range( obj.m + 2 ) ]
-#ret = scipy.optimize.minimize( obj.floss, vec, method = "TNC", jac = obj.gloss, bounds = lim,
-#        options = { "disp": True, "maxfun": 100 } )
-#obj.update( ret.x )
-#del obj.tmp
+    def on_fire( self, nit = 30, tol = 1.e-6 ):
+        stp = 1.0
+        cnt = 0
+        alp = 0.1
+        itr = 0
+        ssz = stp
+        prm = numpy.array( [ 1. for i in range( self.m + 2 ) ] )
+        vel = numpy.zeros( self.m + 2 )
+        fcn, grd = self.gloss( prm )
+        gnm = numpy.linalg.norm( grd )
+        hst = []
+        print( fcn, gnm, prm )
+        while( itr < nit and ssz > tol ):
+            if( - numpy.sum( vel * grd ) > 0.0 ):
+                tmp = numpy.linalg.norm( vel )
+                vel = ( 1 - alp ) * vel - alp * grd / tmp
+                if( cnt > 5 ):
+                    ssz = min( ssz * 1.1, stp )
+                    alp *= 0.99
+                cnt += 1
+            else:
+                alp = 0.1
+                ssz *= 0.5
+                cnt = 0
+                vel = numpy.zeros( self.m + 2 )
+            vel -= ssz * grd
+            dsp = ssz * vel
+            tmp = numpy.linalg.norm( dsp )
+            if( tmp > ssz ):
+                dsp *= ssz / tmp
+            prm += dsp
+            fcn, grd = self.gloss( prm )
+            gnm = numpy.linalg.norm( grd ) 
+            itr += 1
+            print( itr, fcn, ssz, prm )
+            hst.append( fcn )
+        return( prm, hst )

@@ -576,10 +576,10 @@ class colvar_path( object ):
         cdst = numpy.zeros( self.nwin, dtype=numpy.float64 )
         dime = self.sele.shape[0]
         dist = numpy.zeros( ( self.nwin, dime, 3 ) )
+        rmat = numpy.zeros( ( self.nwin, 3, 3 ) )
         for i in range( self.nwin ):
-            dist[i], rmat = self.get_rmsd( self.refs[i], mol.coor[self.sele] )
+            dist[i], rmat[i] = self.get_rmsd( self.refs[i], mol.coor[self.sele] )
             cdst[i] = numpy.sqrt( numpy.mean( numpy.sum( numpy.square( dist[i] ), axis = 1 ) ) )
-            dist[i] = numpy.dot( dist[i], numpy.linalg.inv( rmat ) )
         cexp = numpy.exp( - cdst / self.delz )
         sumn = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp )
         sumd = cexp.sum()
@@ -589,7 +589,8 @@ class colvar_path( object ):
         mol.func += umbr
         grad = numpy.zeros( ( dime, 3 ) )
         for i in range( self.nwin ):
+            rmat[i] = numpy.linalg.inv( rmat[i] )
             if( numpy.abs( cdst[i] ) > .0 ):
-                grad += cexp[i] / ( sumd * dime * cdst[i] ) * ( cval / self.delz - i ) * dist[i]
+                grad += numpy.dot( cexp[i] / ( sumd * dime * cdst[i] ) * ( cval / self.delz - i ) * dist[i], rmat[i] )
         mol.grad[self.sele] -= diff * grad
         return( ( umbr, cval ) )
