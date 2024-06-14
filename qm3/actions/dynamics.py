@@ -37,7 +37,8 @@ def get_projector( mol:object )  -> ( int, numpy.array ):
         proj = numpy.zeros( ( mol.natm, 1 ) )
     else:
         ndeg = 3 * actv - 3
-        proj = numpy.sqrt( mol.mass / numpy.sum( mol.mass * mol.actv.astype( numpy.float64 ) ) ) * mol.actv.astype( numpy.float64 )
+        #proj = numpy.sqrt( mol.mass / numpy.sum( mol.mass * mol.actv.astype( numpy.float64 ) ) ) * mol.actv.astype( numpy.float64 )
+        proj = numpy.sqrt( mol.mass / numpy.sum( mol.mass ) )
     return( ndeg, proj )
 
 
@@ -58,11 +59,13 @@ def langevin_verlet( mol: object,
     log_file.write( "---------------------------------------- Dynamics: Langevin-Verlet (NVT)\n\n" )
     ndeg = 3 * mol.actv.sum()
     if( mol.actv.sum() < mol.natm ):
+        rcom = False
         proj = numpy.zeros( ( mol.natm, 1 ) )
         log_file.write( "Degrees of Freedom: %20ld\n"%( ndeg ) )
     else:
         ndeg -= 3
-        proj = numpy.sqrt( mol.mass / numpy.sum( mol.mass * mol.actv.astype( numpy.float64 ) ) ) * mol.actv.astype( numpy.float64 )
+        rcom = True
+        proj = numpy.sqrt( mol.mass / numpy.sum( mol.mass ) )
         log_file.write( "Degrees of Freedom: %20ld [removing COM]\n"%( ndeg ) )
     log_file.write( "Step Size:          %20.10lg (ps)\n"%( step_size ) )
     log_file.write( "Temperature:        %20.10lg (K)\n"%( temperature ) )
@@ -92,7 +95,8 @@ def langevin_verlet( mol: object,
     temp, kine = current_temperature( mol, ndeg )
     mol.get_grad()
     cacc = - mol.grad / mol.mass * 100.0
-    cacc -= numpy.sum( cacc * proj, axis = 0 ) * proj
+    if( rcom ):
+        cacc -= numpy.sum( cacc * proj, axis = 0 ) * proj
     xtmp = numpy.array( [ mol.func, kine, mol.func + kine, temp ], dtype=numpy.float64 )
     xavr = xtmp.copy()
     xrms = numpy.square( xtmp )
@@ -107,9 +111,11 @@ def langevin_verlet( mol: object,
         oacc = c0 * mol.velo + fv1 * cacc + sdev * sv * ( cv1 * r1 + cv2 * r2 )
         mol.get_grad()
         cacc = - mol.grad / mol.mass * 100.0
-        cacc -= numpy.sum( cacc * proj, axis = 0 ) * proj
+        if( rcom ):
+            cacc -= numpy.sum( cacc * proj, axis = 0 ) * proj
         mol.velo = oacc + fv2 * cacc
-#        mol.velo -= numpy.sum( mol.velo * proj, axis = 0 ) * proj
+        if( rcom ):
+            mol.velo -= numpy.sum( mol.velo * proj, axis = 0 ) * proj
         temp, kine = current_temperature( mol, ndeg )
         xtmp = numpy.array( [ mol.func, kine, mol.func + kine, temp ], dtype=numpy.float64 )
         xavr += xtmp
@@ -141,11 +147,13 @@ def csvr_verlet( mol: object,
     log_file.write( "---------------------------------------- Dynamics: CSVR-Verlet (NVT)\n\n" )
     ndeg = 3 * mol.actv.sum()
     if( mol.actv.sum() < mol.natm ):
+        rcom = False
         proj = numpy.zeros( ( mol.natm, 1 ) )
         log_file.write( "Degrees of Freedom: %20ld\n"%( ndeg ) )
     else:
         ndeg -= 3
-        proj = numpy.sqrt( mol.mass / numpy.sum( mol.mass * mol.actv.astype( numpy.float64 ) ) ) * mol.actv.astype( numpy.float64 )
+        rcom = True
+        proj = numpy.sqrt( mol.mass / numpy.sum( mol.mass ) )
         log_file.write( "Degrees of Freedom: %20ld [removing COM]\n"%( ndeg ) )
     log_file.write( "Step Size:          %20.10lg (ps)\n"%( step_size ) )
     log_file.write( "Temperature:        %20.10lg (K)\n"%( temperature ) )
@@ -160,13 +168,13 @@ def csvr_verlet( mol: object,
     fc   = step_size
     fv   = fc * 0.5
     fa   = fc * fv
-    ndeg -= 3
     if( not hasattr( mol, "velo" ) ):
         assign_velocities( mol, temperature, proj, ndeg )
     temp, kine = current_temperature( mol, ndeg )
     mol.get_grad()
     cacc = - mol.grad / mol.mass * 100.0
-    cacc -= numpy.sum( cacc * proj, axis = 0 ) * proj
+    if( rcom ):
+        cacc -= numpy.sum( cacc * proj, axis = 0 ) * proj
     xtmp = numpy.array( [ mol.func, kine, mol.func + kine, temp ], dtype=numpy.float64 )
     xavr = xtmp.copy()
     xrms = numpy.square( xtmp )
@@ -178,9 +186,9 @@ def csvr_verlet( mol: object,
         mol.velo += fv * cacc
         mol.get_grad()
         cacc = - mol.grad / mol.mass * 100.0
-        cacc -= numpy.sum( cacc * proj, axis = 0 ) * proj
+        if( rcom ):
+            cacc -= numpy.sum( cacc * proj, axis = 0 ) * proj
         mol.velo += fv * cacc
-        mol.velo -= numpy.sum( mol.velo * proj, axis = 0 ) * proj
         temp, kine = current_temperature( mol, ndeg )
         # Canonical Sampling through Velocity Rescaling
         rr  = numpy.random.normal( 0.0, 1.0, ndeg )
@@ -188,6 +196,8 @@ def csvr_verlet( mol: object,
         # Berendsen thermostat
         #scv = math.sqrt( 1.0 + step_size / temperature_coupling * ( temperature / temp - 1.0 ) )
         mol.velo *= scv
+        if( rcom ):
+            mol.velo -= numpy.sum( mol.velo * proj, axis = 0 ) * proj
         temp, kine = current_temperature( mol, ndeg )
         xtmp = numpy.array( [ mol.func, kine, mol.func + kine, temp ], dtype=numpy.float64 )
         xavr += xtmp
