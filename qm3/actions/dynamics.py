@@ -212,3 +212,87 @@ def csvr_verlet( mol: object,
     log_file.write( "%-20s"%( "Averages:" ) + "".join( [ "%20.5lf"%( i ) for i in xavr ] ) + "\n" )
     log_file.write( "%-20s"%( "RMS Deviations:" ) + "".join( [ "%20.5lf"%( i ) for i in xrms ] ) + "\n" )
     log_file.write( 100 * "-" + "\n" )
+
+# =================================================================================================
+
+class stepper__langevin_verlet( object ):
+    def __init__( self: object, mol: object,
+                    step_size: typing.Optional[float] = 0.001,
+                    temperature: typing.Optional[float] = 300.0,
+                    gamma_factor: typing.Optional[float] = 50.0, 
+                    print_frequency: typing.Optional[int] = 100,
+                    log_file: typing.Optional[typing.IO] = sys.stdout ):
+
+        self.log_file = log_file
+        self.step_size = step_size
+        self.temperature = temperature
+        self.print_frequency = print_frequency
+
+        self.log_file.write( "-------------------------------- Stepper Dynamics: Langevin-Verlet (NVT)\n\n" )
+
+        self.ndeg = 3 * mol.actv.sum()
+        if( mol.actv.sum() < mol.natm ):
+            self.rcom = False
+            self.proj = numpy.zeros( ( mol.natm, 1 ) )
+            self.log_file.write( "Degrees of Freedom: %20ld\n"%( self.ndeg ) )
+        else:
+            self.ndeg -= 3
+            self.rcom = True
+            self.proj = numpy.sqrt( mol.mass / numpy.sum( mol.mass ) )
+            self.log_file.write( "Degrees of Freedom: %20ld [removing COM]\n"%( self.ndeg ) )
+
+        self.log_file.write( "Step Size:          %20.10lg (ps)\n"%( step_size ) )
+        self.log_file.write( "Temperature:        %20.10lg (K)\n"%( temperature ) )
+        self.log_file.write( "Gamma Factor:       %20.10lg (ps^-1)\n"%( gamma_factor ) )
+        self.log_file.write( "Print Frequency:    %20d\n"%( print_frequency ) )
+
+        ff  = step_size * gamma_factor
+        if( ff < 0.01 ):
+            ff = 0.01
+            self.log_file.write( "\n>> Gamma factor:    %20.10lg (ps^-1)"%( 0.01 / self.step_size ) )
+
+        self.log_file.write( "\n%20s%20s%20s%20s%20s\n"%( "Time (ps)", "Potential (kJ/mol)", "Kinetic (kJ/mol)", "Total (kJ/mol)", "Temperature (K)" ) )
+        self.log_file.write( 100 * "-" + "\n" )
+
+        self.c0   = math.exp( - ff )
+        self.c1   = ( 1.0 - self.c0 ) / ff
+        self.c2   = ( 1.0 - self.c1 ) / ff
+        self.sr   = step_size * math.sqrt( ( 2.0 - ( 3.0 - 4.0 * self.c0 + self.c0 * self.c0 ) / ff ) / ff )
+        self.sv   = math.sqrt( 1.0 - self.c0 * self.c0 )
+        self.cv1  = step_size * ( 1.0 - self.c0 ) * ( 1.0 - self.c0 ) / ( ff * self.sr * self.sv )
+        self.cv2  = math.sqrt( 1.0 - self.cv1 * self.cv1 )
+        self.fr1  = step_size * self.c1
+        self.fv1  = step_size * ( self.c1 - self.c2 )
+        self.fv2  = step_size * self.c2
+        self.fr2  = step_size * self.fv2
+        self.sdev = 0.01 * numpy.sqrt( qm3.data.KB * temperature * 1000.0 * qm3.data.NA / mol.mass ) * mol.actv.astype( numpy.float64 )
+        if( not hasattr( mol, "velo" ) ):
+            assign_velocities( mol, temperature, self.proj, self.ndeg )
+        temp, kine = current_temperature( mol, self.ndeg )
+        mol.get_grad()
+        self.cacc = - mol.grad / mol.mass * 100.0
+        if( self.rcom ):
+            self.cacc -= numpy.sum( self.cacc * self.proj, axis = 0 ) * self.proj
+        self.time = 0.0
+        self.istp = 0
+        self.log_file.write( "%20.5lf%20.5lf%20.5lf%20.5lf%20.5lf\n"%( self.time, mol.func, kine, mol.func + kine, temp ) )
+
+
+    def integrate( self, mol ):
+        self.istp += 1
+        self.time += self.step_size
+        mol.coor += self.fr1 * mol.velo + self.fr2 * self.cacc
+        r1 = numpy.random.normal( 0.0, 1.0, ( mol.natm, 3 ) ) * mol.actv.astype( numpy.float64 )
+        r2 = numpy.random.normal( 0.0, 1.0, ( mol.natm, 3 ) ) * mol.actv.astype( numpy.float64 )
+        mol.coor += self.sdev * self.sr * r1
+        oacc = self.c0 * mol.velo + self.fv1 * self.cacc + self.sdev * self.sv * ( self.cv1 * r1 + self.cv2 * r2 )
+        mol.get_grad()
+        self.cacc = - mol.grad / mol.mass * 100.0
+        if( self.rcom ):
+            self.cacc -= numpy.sum( self.cacc * self.proj, axis = 0 ) * self.proj
+        mol.velo = oacc + self.fv2 * self.cacc
+        if( self.rcom ):
+            mol.velo -= numpy.sum( mol.velo * self.proj, axis = 0 ) * self.proj
+        temp, kine = current_temperature( mol, self.ndeg )
+        if( self.istp % self.print_frequency == 0 ):
+            self.log_file.write( "%20.5lf%20.5lf%20.5lf%20.5lf%20.5lf\n"%( self.time, mol.func, kine, mol.func + kine, temp ) )

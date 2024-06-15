@@ -500,7 +500,7 @@ class gpr( object ):
         fcn, grd = self.gloss( prm )
         gnm = numpy.linalg.norm( grd )
         hst = []
-        print( fcn, gnm, prm )
+        print( fcn, prm )
         while( itr < nit and ssz > tol ):
             if( - numpy.sum( vel * grd ) > 0.0 ):
                 tmp = numpy.linalg.norm( vel )
