@@ -753,9 +753,10 @@ Residue     1  SER
             yz += mass[i] * self.coor[i,1] * self.coor[i,2]
             zz += mass[i] * self.coor[i,2] * self.coor[i,2]
         val, vec = numpy.linalg.eigh( numpy.array( [ yy+zz, -xy, -xz, -xy, xx+zz, -yz, -xz, -yz, xx+yy ] ).reshape( ( 3, 3 ) ) )
-        vec = vec[:,numpy.argsort( val )]
+        #vec = vec[:,numpy.argsort( val )]
         if( numpy.linalg.det( vec ) < 0.0 ):
-            vec[:,0] = - vec[:,0]
+            #vec[:,0] = - vec[:,0]
+            vec[:,1] = - vec[:,1]
         for i in range( self.natm ):
             self.coor[i] = numpy.dot( self.coor[i], vec ) 
         return( cen, vec )

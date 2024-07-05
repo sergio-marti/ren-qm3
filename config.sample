@@ -37,4 +37,3 @@ MPI = CC=mpicc
 
 CONDA_CC  = x86_64-apple-darwin13.4.0-clang
 CONDA_FC  = x86_64-apple-darwin13.4.0-gfortran
-CONDA_ENV = /Users/smarti/Applications/miniconda3/envs/chem

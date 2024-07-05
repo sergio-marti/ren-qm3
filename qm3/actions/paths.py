@@ -10,7 +10,7 @@ __vcut = 0.00035481432270250985 # 1 _cm^-1
 
 
 def fake_cs( self: object, step: int ):
-    pass
+    sys.stdout.flush()
 
 
 def initial_step( mol: object, get_hess: typing.Callable, step_size: float ) -> tuple:

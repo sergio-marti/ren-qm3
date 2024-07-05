@@ -9,7 +9,7 @@ numpy.random.seed()
 
 
 def fake_cs( self: object, step: int ):
-    pass
+    sys.stdout.flush()
 
 
 def current_temperature( mol: object, ndeg: int ) -> ( float, float ):

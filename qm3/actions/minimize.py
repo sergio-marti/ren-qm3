@@ -10,7 +10,7 @@ cwd = os.path.abspath( os.path.dirname( __file__ ) ) + os.sep
 
 
 def fake_cs( self: object, step: int ):
-    pass
+    sys.stdout.flush()
 
 
 def steepest_descent( mol: object,

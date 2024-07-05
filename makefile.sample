@@ -66,18 +66,17 @@ molmech:
 
 _dftb.so:
 	$(CONDA_FC) $(SHD) -O2 -fPIC -o qm3/engines/_dftb.so qm3/engines/dftb.f90 -Jbuild -Ibuild \
-		-I$(CONDA_ENV)/include/dftbplus/modfiles -L$(CONDA_ENV)/lib -ldftbplus
+		`pkg-config --cflags --libs dftbplus`
 
 
 _xtb.so:
-	$(CONDA_CC) $(SHD) -O2 -fPIC -o qm3/engines/_xtb.so qm3/engines/xtb.c -I$(CONDA_ENV)/include -L$(CONDA_ENV)/lib -lxtb
+	$(CONDA_CC) $(SHD) -O2 -fPIC -o qm3/engines/_xtb.so qm3/engines/xtb.c \
+		`pkg-config --cflags --libs xtb`
 
 
 _dftd4.so:
 	$(CONDA_FC) $(SHD) -O2 -fPIC -o qm3/engines/_dftd4.so qm3/engines/dftd4.f90 -Jbuild -Ibuild \
-		-I$(CONDA_ENV)/include/dftd4/gcc-12.3.0 \
-		-I$(CONDA_ENV)/include/mctc-lib/gcc-11.3.0 \
-		-L$(CONDA_ENV)/lib -ldftd4 -lmctc-lib
+		`pkg-config --cflags --libs mctc-lib` `pkg-config --cflags --libs dftd4`
 
 
 #_sqm.so:
