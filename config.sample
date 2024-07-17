@@ -33,7 +33,5 @@ MPI = CC=mpicc
 #MPI = CC=mpicc LDSHARED="mpicc -shared"
 
 # ------------------------------------------------------------------
-# CONDA env
-
 CONDA_CC  = x86_64-apple-darwin13.4.0-clang
 CONDA_FC  = x86_64-apple-darwin13.4.0-gfortran
