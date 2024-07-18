@@ -1,0 +1,55 @@
+diff --git a/src/scc_core.f90 b/src/scc_core.f90
+index 476c725..3c36a38 100644
+--- a/src/scc_core.f90
++++ b/src/scc_core.f90
+@@ -391,10 +391,37 @@ subroutine scc(env,xtbData,solver,n,nel,nopen,ndim,ndp,nqp,nmat,nshell, &
+       nbr = nshell
+    end if
+ !  broyden data storage and init
++!xexo
++if( maxiter > 0 ) &
+    allocate( df(thisiter,nbr),u(thisiter,nbr),a(thisiter,thisiter), &
+    &         dq(nbr),dqlast(nbr),qlast_in(nbr),omega(thisiter), &
+    &         q_in(nbr),atomicShift(n), source = 0.0_wp )
+ 
++!xexo
++if( maxiter == 0 ) then
++if(ihomo+1.le.ndim.and.ihomo.ge.1) egap=emo(ihomo+1)-emo(ihomo)
++call dmat(ndim,focc,H,P)
++call electro(n,at,ndim,nshell,ies,H0,P,q,qsh,ees,eel)
++if (present(aes)) then
++    call mmompop(n,ndim,aoat2,xyz,p,s,dpint,qpint,dipm,qp)
++    call aniso_electro(aes,n,at,xyz,q,dipm,qp,aes%gab3,aes%gab5,eaes,epol)
++    eel=eel+eaes+epol
++end if
++if (present(scD4)) then
++    call scD4%getEnergy(at, q, ed)
++    eel = eel + ed
++endif
++if(pcem) then
++    call electro_pcem(nshell,qsh,externShift,epcem,eel)
++end if
++if (allocated(solvation)) then
++    cm5=q+cm5a
++    call solvation%getEnergy(env, cm5, qsh, gborn)
++    eel = eel + gborn
++end if
++converged = .true.
++end if
++
+ !! ------------------------------------------------------------------------
+ !  Iteration entry point
+    scc_iterator: do iter = 1, thisiter
+diff --git a/src/scf_module.F90 b/src/scf_module.F90
+index 7a6ebfb..253548f 100644
+--- a/src/scf_module.F90
++++ b/src/scf_module.F90
+@@ -288,6 +288,8 @@ subroutine scf(env, mol, wfn, basis, pcem, xtbData, solvation, &
+ ! note: H is in eV!
+ !ccccccccccccccccccc
+    !> update atomic Mulliken charges
++!xexo
++if( maxiter > 0 ) &
+    call qsh2qat(basis%ash,wfn%qsh,wfn%q)
+ 
+ !  # atom arrays
