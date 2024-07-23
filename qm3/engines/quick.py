@@ -95,7 +95,7 @@ class run( qm3.engines.template ):
             k += 1
         l = 0
         for i in self.nbn:
-            tmp = mol.coor[i]
+            tmp = mol.coor[i].copy()
             if( self.img ):
                 tmp -= mol.boxl * numpy.round( tmp / mol.boxl, 0 )
             mcrd[l,0:3] = tmp

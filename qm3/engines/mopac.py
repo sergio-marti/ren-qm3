@@ -73,7 +73,7 @@ class run( qm3.engines.template ):
             k += 1
         l = 1 + 4 * self.nQM + self.nMM
         for i in self.nbn:
-            tmp = mol.coor[i]
+            tmp = mol.coor[i].copy()
             if( self.img ):
                 tmp -= mol.boxl * numpy.round( tmp / mol.boxl, 0 )
             for j in [0, 1, 2]:

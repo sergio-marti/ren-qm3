@@ -51,7 +51,7 @@ class run( qm3.engines.template ):
         if( len( self.nbn ) > 0 ):
             s_mm = "#EXCHARGES\n"
             for i in self.nbn:
-                tmp = mol.coor[i]
+                tmp = mol.coor[i].copy()
                 if( self.img ):
                     tmp -= mol.boxl * numpy.round( tmp / mol.boxl, 0 )
                 s_mm += "%3d%4s%20.10lf%20.10lf%20.10lf%12.4lf\n"%( 1, "H",
@@ -81,7 +81,7 @@ class run( qm3.engines.template ):
             k += 1
         l = 3 * self.nQM
         for i in self.nbn:
-            tmp = mol.coor[i]
+            tmp = mol.coor[i].copy()
             if( self.img ):
                 tmp -= mol.boxl * numpy.round( tmp / mol.boxl, 0 )
             for j in [0, 1, 2]:

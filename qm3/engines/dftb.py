@@ -70,7 +70,7 @@ class run( qm3.engines.template ):
             s_nq = str( len( self.nbn ) )
             g = open( "charges.dat", "wt" )
             for i in self.nbn:
-                tmp = mol.coor[i]
+                tmp = mol.coor[i].copy()
                 if( self.img ):
                     tmp -= mol.boxl * numpy.round( tmp / mol.boxl, 0 )
                 g.write( "%20.10lf%20.10lf%20.10lf%12.6lf\n"%( tmp[0], tmp[1], tmp[2], mol.chrg[i] ) )
@@ -101,7 +101,7 @@ class run( qm3.engines.template ):
             k += 1
         k = 3 * ( self.nQM + self.nMM )
         for i in self.nbn:
-            tmp = mol.coor[i]
+            tmp = mol.coor[i].copy()
             if( self.img ):
                 tmp -= mol.boxl * numpy.round( tmp / mol.boxl, 0 )
             for j in [0, 1, 2]:

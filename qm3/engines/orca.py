@@ -45,7 +45,7 @@ class run( qm3.engines.template ):
             f = open( "orca.pc", "wt" )
             f.write( "%d\n"%( len( self.nbn ) ) )
             for i in self.nbn:
-                tmp = mol.coor[i]
+                tmp = mol.coor[i].copy()
                 if( self.img ):
                     tmp -= mol.boxl * numpy.round( tmp / mol.boxl, 0 )
                 f.write( "%12.4lf%20.10lf%20.10lf%20.10lf\n"%( mol.chrg[i] + self.__dq[i], tmp[0], tmp[1], tmp[2] ) )
