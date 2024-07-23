@@ -97,7 +97,7 @@ class run( qm3.engines.template ):
         for i in self.nbn:
             tmp = mol.coor[i]
             if( self.img ):
-                tmp -= mol.boxl * numpy.round( mol.coor[i] / mol.boxl, 0 )
+                tmp -= mol.boxl * numpy.round( tmp / mol.boxl, 0 )
             mcrd[l,0:3] = tmp
             mcrd[l,3] = mol.chrg[i] + self.__dq[i]
             l += 1

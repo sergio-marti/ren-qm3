@@ -72,7 +72,7 @@ class run( qm3.engines.template ):
             for i in self.nbn:
                 tmp = mol.coor[i]
                 if( self.img ):
-                    tmp -= mol.boxl * numpy.round( mol.coor[i] / mol.boxl, 0 )
+                    tmp -= mol.boxl * numpy.round( tmp / mol.boxl, 0 )
                 g.write( "%20.10lf%20.10lf%20.10lf%12.6lf\n"%( tmp[0], tmp[1], tmp[2], mol.chrg[i] ) )
             g.close()
         f = open( "dftb_in.hsd", "wt" )
@@ -103,7 +103,7 @@ class run( qm3.engines.template ):
         for i in self.nbn:
             tmp = mol.coor[i]
             if( self.img ):
-                tmp -= mol.boxl * numpy.round( mol.coor[i] / mol.boxl, 0 )
+                tmp -= mol.boxl * numpy.round( tmp / mol.boxl, 0 )
             for j in [0, 1, 2]:
                 self.vec[l] = tmp[j]
                 l += 1
