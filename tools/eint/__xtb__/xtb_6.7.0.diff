@@ -15,7 +15,7 @@ index 476c725..3c36a38 100644
 +!xexo
 +if( maxiter == 0 ) then
 +if(ihomo+1.le.ndim.and.ihomo.ge.1) egap=emo(ihomo+1)-emo(ihomo)
-+call dmat(ndim,focc,H,P)
++!call dmat(ndim,focc,H,P)
 +call electro(n,at,ndim,nshell,ies,H0,P,q,qsh,ees,eel)
 +if (present(aes)) then
 +    call mmompop(n,ndim,aoat2,xyz,p,s,dpint,qpint,dipm,qp)

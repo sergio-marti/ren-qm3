@@ -60,8 +60,9 @@ class run( qm3.engines.template ):
         self.dft.xc = opts.pop( "method" )
         self.dft.max_memory = int( opts.pop( "memory" ) )
         if( len( self.nbn ) > 0 ):
-            #crd -= mol.boxl * numpy.round( crd / mol.boxl, 0 )
             crd = mol.coor[self.nbn]
+            if( self.img ):
+                crd -= mol.boxl * numpy.round( crd / mol.boxl, 0 )
             crd *= self.cx
             chg = mol.chrg[self.nbn] + dq[self.nbn]
             self.scf = pyscf.qmmm.mm_charge( self.dft, crd, chg, unit = "Bohr" )
@@ -85,7 +86,8 @@ class run( qm3.engines.template ):
         self.scf.mol.set_geom_( numpy.array( crd ) )
         if( len( self.nbn ) > 0 ):
             crd = mol.coor[self.nbn]
-#            crd -= mol.boxl * numpy.round( crd / mol.boxl, 0 )
+            if( self.img ):
+                crd -= mol.boxl * numpy.round( crd / mol.boxl, 0 )
             crd *= self.cx
             self.scf.mm_mol.set_geom_( crd )
 

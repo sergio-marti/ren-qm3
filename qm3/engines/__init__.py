@@ -54,6 +54,10 @@ class template( object ):
         else:
             self.sel = numpy.arange( mol.natm )
 
+        # define whether using minimum image for the surrounding charges
+        self.img = True
+        print( "minimum image NBnd:", self.img )
+
         self.vla = []
         self.lnk = []
         self.grp = {}

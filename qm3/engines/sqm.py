@@ -51,7 +51,9 @@ class run( qm3.engines.template ):
         if( len( self.nbn ) > 0 ):
             s_mm = "#EXCHARGES\n"
             for i in self.nbn:
-                tmp = mol.coor[i] #- mol.boxl * numpy.round( mol.coor[i] / mol.boxl, 0 )
+                tmp = mol.coor[i]
+                if( self.img ):
+                    tmp -= mol.boxl * numpy.round( mol.coor[i] / mol.boxl, 0 )
                 s_mm += "%3d%4s%20.10lf%20.10lf%20.10lf%12.4lf\n"%( 1, "H",
                         tmp[0], tmp[1], tmp[2], mol.chrg[i] + self.__dq[i] )
             s_mm += "#END"
@@ -79,8 +81,11 @@ class run( qm3.engines.template ):
             k += 1
         l = 3 * self.nQM
         for i in self.nbn:
+            tmp = mol.coor[i]
+            if( self.img ):
+                tmp -= mol.boxl[j] * numpy.round( mol.coor[i,j] / mol.boxl[j], 0 )
             for j in [0, 1, 2]:
-                self.vec[l] = mol.coor[i,j] #- mol.boxl[j] * numpy.round( mol.coor[i,j] / mol.boxl[j], 0 )
+                self.vec[l] = tmp[j]
                 l += 1
 
 

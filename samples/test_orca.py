@@ -24,7 +24,7 @@ smm = mol.sph_sel( sqm, 12 )
 #sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"] ) ]
 sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"], [ mol.indx["A"][1]["H11"], mol.indx["A"][1]["H12"] ] ) ]
 
-f = io.StringIO( """%pal nprocs 2 end
+f = io.StringIO( """#%pal nprocs 2 end
 qm3_charges
 ! qm3_job rks b3lyp def2-svp chelpg
 *xyz 1 1
