@@ -88,7 +88,7 @@ class molecule( object ):
 #        return( out )
 
 
-    def sph_sel( self, sele: numpy.array, radius: float ) -> numpy.array:
+    def sph_sel( self, sele: numpy.array, radius: float, min_image: typing.Optional[bool] = True ) -> numpy.array:
         """
         quicker brute-force version based on numpy
             (paradoxically the non-sqrt version lasts almost the same...)
@@ -100,7 +100,10 @@ class molecule( object ):
                 out[self.rlim[i]:self.rlim[i+1]] = True
             else:
                 for j in range( self.rlim[i], self.rlim[i+1] ):
-                    if( sorted( numpy.linalg.norm( self.coor[sele] - self.coor[j], axis = 1 ) )[0] <= radius ):
+                    tmp = self.coor[sele] - self.coor[j] 
+                    if( min_image ):
+                        tmp -= self.boxl * numpy.round( tmp / self.boxl, 0 )
+                    if( sorted( numpy.linalg.norm( tmp, axis = 1 ) )[0] <= radius ):
                     #if( sorted( numpy.sum( numpy.square( self.coor[sele] - self.coor[j] ), axis = 1 ) )[0] <= cut ):
                         out[self.rlim[i]:self.rlim[i+1]] = True
                         break
@@ -814,4 +817,3 @@ Residue     1  SER
                 for j in [0, 1, 2]:
                     if( math.fabs( tmp[j] ) > 0 ):
                         self.coor[self.rlim[i]:self.rlim[i+1],j] -= self.boxl[j] * tmp[j]
-#                        self.coor[self.rlim[i]:self.rlim[i+1],j] -= self.boxl[j] * numpy.round( self.coor[self.rlim[i]:self.rlim[i+1],j] / self.boxl[j], 0 )

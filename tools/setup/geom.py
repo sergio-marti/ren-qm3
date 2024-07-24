@@ -1,21 +1,19 @@
 #!/usr/bin/env python3
+import  sys
 import	math
 import  numpy
+import  zipfile
 import  qm3.utils.interpolation
 import  matplotlib.pyplot as plt
 
-leg = []
-#leg = [ "$S_\\gamma-H_\\gamma$", "$H_\\gamma-N_\\epsilon$", "$S_\\gamma-C_\\beta$", "$H_\\gamma-O^{{}*{}}$", "$H^{{}*{}}-O^{{}*{}}$", "$H^{{}*{}}-O$" ]
 
-f = open( "pmf_s.cnf", "rt" )
-f.readline()
-siz = len( f.readlines() )
-f.close()
-
-f = open( "range", "rt" )
-lst = eval( f.readline() )
-f.close()
+zzz = zipfile.ZipFile( sys.argv[1], "r" )
+lst = [ i for i in range( 1, len( [ w for w in zzz.namelist() if w[0:3] == "geo" ] ) - 1 ) ]
+print( lst )
 num = len( lst )
+
+with zzz.open( "geo.%02d"%( lst[0] ), "r" ) as f:
+    siz = len( f.readline().split() )
 print( siz, num )
 
 avr = [ [ .0 for j in range( num ) ] for i in range( siz ) ]
@@ -23,7 +21,7 @@ rms = [ [ .0 for j in range( num ) ] for i in range( siz ) ]
 npt = [ [ .0 for j in range( num ) ] for i in range( siz ) ]
 
 for i in range( num ):
-    f = open( "geo.%02d"%( lst[i] ), "rt" )
+    f = zzz.open( "geo.%02d"%( lst[i] ), "r" )
     for l in f:
         t = [ float( j ) for j in l.strip().split() ]
         for j in range( siz ):
@@ -43,21 +41,19 @@ f.close()
 skp = 1000
 x = []
 for i in lst:
-    f = open( "dat.%02d"%( i ), "rt" )
+    f = zzz.open( "dat.%02d"%( i ), "r" )
     f.readline()
     m = [ float( l.strip() ) for l in f ][skp-1:]
     f.close()
     x.append( sum( m ) / len( m ) )
 x = numpy.array( x )
-plt.clf()
-plt.grid( True )
-plt.plot( numpy.diff( x ), '-o' )
-plt.show()
+
+zzz.close()
 
 fit = []
 gau = []
 for i in range( siz ):
-    fit.append( qm3.utils.interpolation.savitzky_golay( avr[i] ) )
+    fit.append( qm3.utils.interpolation.savitzky_golay( avr[i], 13 ) )
     obj = qm3.utils.interpolation.gaussian( x, fit[i], 0.1 )
     gau.append( [ obj.calc( j )[0] for j in x ] )
 
@@ -71,14 +67,9 @@ f.close()
 
 plt.clf()
 plt.grid( True )
+#plt.ylim( 0.9, 4.0 )
 for i in range( siz ):
     plt.plot( x, avr[i], "." )
-if( len( leg ) == siz ):
-    for i in range( siz ):
-        plt.plot( x, gau[i], "-", linewidth = 2.0, label = leg[i] )
-    plt.legend( loc = "upper right", fontsize = "medium" )
-else:
-    for i in range( siz ):
-        plt.plot( x, gau[i], "-", linewidth = 2.0 )
-
+for i in range( siz ):
+    plt.plot( x, gau[i], "-", linewidth = 2.0 )
 plt.savefig( "geom.pdf" )
