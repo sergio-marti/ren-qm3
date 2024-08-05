@@ -23,7 +23,7 @@ par = qm3.utils.parallel.client_mpi()
 mol = qm3.molecule()
 mol.prmtop_read( open( "complex.prmtop" ) )
 zzz = zipfile.ZipFile( "neb.zip", "r" )
-mol.xyz_read( zzz.open( "node.%02d"%( par.node ), "r" ), replace = True )
+mol.xyz_read( zzz.open( "node.%03d"%( par.node ), "r" ), replace = True )
 zzz.close()
 
 with open( "namd_npt.xsc" ) as f:
@@ -105,7 +105,7 @@ qm3.actions.dynamics.langevin_verlet( mol, print_frequency = 1, current_step = c
 mol.engines.pop( "mm" )
 mol.engines.pop( "ss" )
 mol.get_func()
-with open( "node.%02d"%( par.node ), "wt" ) as f:
+with open( "node.%03d"%( par.node ), "wt" ) as f:
     mol.xyz_write( f, comm = "func = %20.3lf\n"%( mol.func ) )
 
 par.barrier()

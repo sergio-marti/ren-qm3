@@ -1,0 +1,63 @@
+--- src/dftbp/dftbplus/main.F90.orig	2024-08-04 17:07:22
++++ src/dftbp/dftbplus/main.F90	2024-08-05 09:28:27
+@@ -1245,6 +1245,48 @@
+     else ! not REKS_SCC
+ 
+       ! Standard spin free or unrestricted DFTB
++!xexo
++if( this%maxSccIter == 0 ) then
++!call processPotentials(env, this, iSccIter, .true., this%qInput, this%qBlockIn,&
++!    & this%qiBlockIn)
++!call getSccHamiltonian(env, this%H0, this%ints, this%nNeighbourSK, this%neighbourList,&
++!    & this%species, this%orb, this%iSparseStart, this%img2CentCell, this%potential,&
++!    & allocated(this%reks), this%ints%hamiltonian, this%ints%iHamiltonian)
++!call convertToUpDownRepr(this%ints%hamiltonian, this%ints%iHamiltonian)
++!call getDensity(env, this%negfInt, iSccIter, this%denseDesc, this%ints,&
++!    & this%neighbourList, this%nNeighbourSk, this%iSparseStart, this%img2CentCell,&
++!    & this%iCellVec, this%cellVec, this%kPoint, this%kWeight, this%orb, this%tHelical,&
++!    & this%coord, this%species, this%electronicSolver, this%tRealHS, this%tSpinSharedEf,&
++!    & this%tSpinOrbit, this%tDualSpinOrbit, this%tFillKSep, this%tFixEf, this%tMulliken,&
++!    & this%iDistribFn, this%tempElec, this%nEl, this%parallelKS, this%Ef, this%mu,&
++!    & this%dftbEnergy(this%deltaDftb%iDeterminant), this%rangeSep, this%eigen,&
++!    & this%filling, this%rhoPrim, this%xi, this%orbitalL, this%HSqrReal,&
++!    & this%SSqrReal, this%eigvecsReal, this%iRhoPrim, this%HSqrCplx, this%SSqrCplx,&
++!    & this%eigvecsCplx, this%rhoSqrReal, this%deltaRhoInSqr, this%deltaRhoOutSqr,&
++!    & this%nNeighbourLC, this%deltaDftb, errStatus)
++!call processOutputCharges(env, this)
++!  call processPotentials(env, this, iSccIter+1, this%updateSccAfterDiag, this%qOutput,&
++!      & this%qBlockOut, this%qiBlockOut)
++call calcEnergies(env, this%scc, this%tblite, this%qOutput, this%q0, this%chargePerShell,&
++    & this%multipoleOut, this%species, this%isExtField, this%isXlbomd, this%dftbU,&
++    & this%tDualSpinOrbit, this%rhoPrim, this%H0, this%orb, this%neighbourList,&
++    & this%nNeighbourSk, this%img2CentCell, this%iSparseStart, this%cellVol,&
++    & this%extPressure, this%dftbEnergy(this%deltaDftb%iDeterminant)%TS, this%potential,&
++    & this%dftbEnergy(this%deltaDftb%iDeterminant), this%thirdOrd, this%solvation,&
++    & this%rangeSep, this%reks, this%qDepExtPot, this%qBlockOut, this%qiBlockOut,&
++    & this%xi, this%iAtInCentralRegion, this%tFixEf, this%Ef, this%onSiteElements,&
++    & this%qNetAtom, this%potential%intOnSiteAtom, this%potential%extOnSiteAtom)
++!call processScc(env, this, iGeoStep, iSccIter, sccErrorQ, tConverged, eOld, diffElec,&
++!    & tStopScc)
++!if( allocated(this%dispersion) ) then
++!  call this%dispersion%updateOnsiteCharges(this%qNetAtom, this%orb, this%referenceN0,&
++!      & this%species0, tConverged)
++!  call calcDispersionEnergy(this%dispersion,&
++!      & this%dftbEnergy(this%deltaDftb%iDeterminant)%atomDisp,&
++!      & this%dftbEnergy(this%deltaDftb%iDeterminant)%Edisp, this%iAtInCentralRegion)
++!end if
++call sumEnergies(this%dftbEnergy(this%deltaDftb%iDeterminant))
++end if
+ 
+       lpSCC: do iSccIter = 1, this%maxSccIter
+ 
+--- src/dftbp/api/mm/mmapi.F90.orig	2024-08-05 07:28:16
++++ src/dftbp/api/mm/mmapi.F90	2024-08-05 07:29:08
+@@ -74,7 +74,8 @@
+ 
+   !> A DFTB+ calculation
+   type :: TDftbPlus
+-    private
++    !xexo
++    !private
+     type(TEnvironment), allocatable :: env
+     type(TDftbPlusMain), allocatable :: main
+     logical :: isInitialised = .false.

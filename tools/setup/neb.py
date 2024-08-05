@@ -139,7 +139,7 @@ else:
             vpot.append( mol.func )
             grad[ii:ii+dime] = mol.grad[sele]
             # "neb_data" equivalent
-            with open( "node.%02d"%( chk[par.node][who] ), "wt" ) as f:
+            with open( "node.%03d"%( chk[par.node][who] ), "wt" ) as f:
                 mol.xyz_write( f, comm = "func = %20.3lf\n"%( mol.func ) )
         # send my functions and gradients to master
         par.barrier()

@@ -31,6 +31,7 @@ qm3_atoms
 }
 Hamiltonian = DFTB {
   SCC = Yes
+  ConvergentSccOnly = Yes
   MaxSCCIterations = 1000
   Mixer = DIIS {}
   SlaterKosterFiles = Type2FileNames {

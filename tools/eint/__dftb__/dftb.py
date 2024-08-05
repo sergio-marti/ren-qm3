@@ -28,6 +28,7 @@ class run( qm3.engines.template ):
                 ctypes.POINTER( ctypes.c_int ),
                 ctypes.POINTER( ctypes.c_int ),
                 ctypes.POINTER( ctypes.c_int ),
+                ctypes.POINTER( ctypes.c_int ),
                 ctypes.POINTER( ctypes.c_double ) ]
         self.lib.qm3_dftb_calc_.restype = None
         self.inp = fdsc.read()
@@ -41,7 +42,7 @@ class run( qm3.engines.template ):
         # ----------------------------------------------------------
 
 
-    def mk_input( self, mol, run ):
+    def mk_input( self, mol: object, run: str ):
         s_qm = "  %d C\n  %s\n"%( len( self.sel ) + len( self.lnk ), str.join( " ", self.tbl ) )
         j = 0
         for i in self.sel:
@@ -61,10 +62,8 @@ class run( qm3.engines.template ):
         s_wf = ""
         if( os.access( "charges.bin", os.R_OK ) ):
             s_wf = "  ReadInitialCharges = Yes"
-#        s_rn = "  CalculateForces = No"
         s_rn = "  PrintForces = No"
         if( run == "grad" ):
-#            s_rn = "  CalculateForces = Yes"
             s_rn = "  PrintForces = Yes"
         s_nq = ""
         if( len( self.nbn ) > 0 ):
@@ -85,7 +84,7 @@ class run( qm3.engines.template ):
         f.close()
 
 
-    def update_coor( self, mol ):
+    def update_coor( self, mol: object ):
         l = 0
         for i in self.sel:
             for j in [0, 1, 2]:
@@ -112,36 +111,38 @@ class run( qm3.engines.template ):
             k += 1
 
 
-    def get_func( self, mol, density = False ):
+    def get_func( self, mol:object, maxit: typing.Optional[int] = 1000 ):
         self.update_coor( mol )
-        self.lib.qm3_dftb_calc_( ctypes.c_int( self.nQM ), ctypes.c_int( self.nMM ), ctypes.c_int( self.siz ), self.vec )
+        self.lib.qm3_dftb_calc_( ctypes.c_int( self.nQM ), ctypes.c_int( self.nMM ), ctypes.c_int( self.siz ), ctypes.c_int( maxit ), self.vec )
         mol.func += self.vec[0]
-        l = 1
-        for i in self.sel:
-            mol.chrg[i] = self.vec[l]
-            l += 1
+        if( maxit > 0 ):
+            l = 1
+            for i in self.sel:
+                mol.chrg[i] = self.vec[l]
+                l += 1
         return( self.vec[0] )
 
 
-    def get_grad( self, mol ):
+    def get_grad( self, mol: object, maxit: typing.Optional[int] = 1000 ):
         self.update_coor( mol )
-        self.lib.qm3_dftb_calc_( ctypes.c_int( self.nQM ), ctypes.c_int( self.nMM ), ctypes.c_int( self.siz ), self.vec )
+        self.lib.qm3_dftb_calc_( ctypes.c_int( self.nQM ), ctypes.c_int( self.nMM ), ctypes.c_int( self.siz ), ctypes.c_int( maxit ), self.vec )
         mol.func += self.vec[0]
-        l = 1
-        for i in self.sel:
-            mol.chrg[i] = self.vec[l]
-            l += 1
-        l = 1 + self.nQM
-        g = [ self.vec[l+j] for j in range( 3 * self.nQM ) ]
-        qm3.engines.Link_grad( self.vla, g )
-        l = 0
-        for i in self.sel:
-            for j in [0, 1, 2]:
-                mol.grad[i,j] += g[l]
+        if( maxit > 0 ):
+            l = 1
+            for i in self.sel:
+                mol.chrg[i] = self.vec[l]
                 l += 1
-        l = 1 + 4 * self.nQM
-        for i in self.nbn:
-            for j in [0, 1, 2]:
-                mol.grad[i,j] += self.vec[l]
-                l += 1
+            l = 1 + self.nQM
+            g = [ self.vec[l+j] for j in range( 3 * self.nQM ) ]
+            qm3.engines.Link_grad( self.vla, g )
+            l = 0
+            for i in self.sel:
+                for j in [0, 1, 2]:
+                    mol.grad[i,j] += g[l]
+                    l += 1
+            l = 1 + 4 * self.nQM
+            for i in self.nbn:
+                for j in [0, 1, 2]:
+                    mol.grad[i,j] += self.vec[l]
+                    l += 1
         return( self.vec[0] )

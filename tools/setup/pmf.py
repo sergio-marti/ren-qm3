@@ -24,7 +24,7 @@ node = int( sys.argv[1] )
 mol = qm3.molecule()
 mol.prmtop_read( open( "complex.prmtop" ) )
 zzz = zipfile.ZipFile( "otfs.zip", "r" )
-mol.xyz_read( zzz.open( "node.%02d"%( node ), "r" ), replace = True )
+mol.xyz_read( zzz.open( "node.%03d"%( node ), "r" ), replace = True )
 zzz.close()
 
 with open( "namd_npt.xsc" ) as f:
@@ -77,10 +77,10 @@ with open( "pmf_s.delz", "rt" ) as f:
 mol.engines["umb"] = qm3.engines.mmres.colvar_s( mol, kb, rx,
     open( "pmf_s.cnf", "rt" ), open( "pmf_s.str", "rt" ), open( "pmf_s.met", "rt" ) )
 
-mol.fdat = open( "dat.%02d"%( node ), "wt" )
+mol.fdat = open( "dat.%03d"%( node ), "wt" )
 mol.fdat.write( "%12.6lf%12.6lf\n"%( kb, rx ) )
 mol.fdat.flush()
-mol.fgeo = open( "geo.%02d"%( node ), "wt" )
+mol.fgeo = open( "geo.%03d"%( node ), "wt" )
 mol.xgeo = []
 with open( "pmf_s.cnf", "rt" ) as f:
     f.readline()
@@ -88,18 +88,18 @@ with open( "pmf_s.cnf", "rt" ) as f:
         mol.xgeo.append( [ int( i ) for i in l.split() ] )
 print( mol.xgeo )
 
-if( os.path.isfile( "rst.%02d"%( node ) ) ):
-    with open( "rst.%02d"%( node ), "rb" ) as f:
-        mol.coor = pickle.load( f )
-        mol.velo = pickle.load( f )
-    mol.engines["mm"].update_coor( mol )
+#if( os.path.isfile( "rst.%03d"%( node ) ) ):
+#    with open( "rst.%03d"%( node ), "rb" ) as f:
+#        mol.coor = pickle.load( f )
+#        mol.velo = pickle.load( f )
+#    mol.engines["mm"].update_coor( mol )
 
 def cstep( obj, stp ):
     global  node
     obj.fdat.write( "%12.6f\n"%( obj.rval["umb"][1] ) )
     obj.fdat.flush()
     if( stp % 1000 == 0 ):
-        with open( "rst.%02d"%( node ), "wb" ) as f:
+        with open( "rst.%03d"%( node ), "wb" ) as f:
             pickle.dump( obj.coor, f )
             pickle.dump( obj.velo, f )
     for i,j in obj.xgeo:

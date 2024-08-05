@@ -65,8 +65,11 @@ class run( qm3.engines.template ):
             k += 1
         l = 3 + 5 * self.nQM + self.nMM
         for i in self.nbn:
+            tmp = mol.coor[i].copy()
+            if( self.img ):
+                tmp -= mol.boxl * numpy.round( tmp / mol.boxl, 0 )
             for j in [0, 1, 2]:
-                self.vec[l] = mol.coor[i,j] #- mol.boxl[j] * numpy.round( mol.coor[i,j] / mol.boxl[j], 0 )
+                self.vec[l] = tmp[j]
                 l += 1
         l  = 3 + 5 * self.nQM
         for i in self.nbn:
@@ -74,36 +77,38 @@ class run( qm3.engines.template ):
             l += 1
 
 
-    def get_func( self, mol : object, maxit: typing.Optional[int] = 1000 ):
+    def get_func( self, mol: object, maxit: typing.Optional[int] = 1000 ):
         self.update_coor( mol )
         self.lib.qm3_xtb_calc_( ctypes.c_int( self.nQM ), ctypes.c_int( self.nMM ), ctypes.c_int( self.siz ), ctypes.c_int( maxit ), self.vec )
         mol.func += self.vec[0]
-        l = 3 + 4 * self.nQM
-        for i in self.sel:
-            mol.chrg[i] = self.vec[l]
-            l += 1
+        if( maxit > 0 ):
+            l = 3 + 4 * self.nQM
+            for i in self.sel:
+                mol.chrg[i] = self.vec[l]
+                l += 1
         return( self.vec[0] )
 
 
-    def get_grad( self, mol : object, maxit: typing.Optional[int] = 1000 ):
+    def get_grad( self, mol: object, maxit: typing.Optional[int] = 1000 ):
         self.update_coor( mol )
         self.lib.qm3_xtb_calc_( ctypes.c_int( self.nQM ), ctypes.c_int( self.nMM ), ctypes.c_int( self.siz ), ctypes.c_int( maxit ), self.vec )
         mol.func += self.vec[0]
-        l = 3 + 4 * self.nQM
-        for i in self.sel:
-            mol.chrg[i] = self.vec[l]
-            l += 1
-        l = 3 + self.nQM
-        g = [ self.vec[l+j] for j in range( 3 * self.nQM ) ]
-        qm3.engines.Link_grad( self.vla, g )
-        l = 0
-        for i in self.sel:
-            for j in [0, 1, 2]:
-                mol.grad[i,j] += g[l]
+        if( maxit > 0 ):
+            l = 3 + 4 * self.nQM
+            for i in self.sel:
+                mol.chrg[i] = self.vec[l]
                 l += 1
-        l = 3 + 5 * self.nQM + self.nMM
-        for i in self.nbn:
-            for j in [0, 1, 2]:
-                mol.grad[i,j] += self.vec[l]
-                l += 1
+            l = 3 + self.nQM
+            g = [ self.vec[l+j] for j in range( 3 * self.nQM ) ]
+            qm3.engines.Link_grad( self.vla, g )
+            l = 0
+            for i in self.sel:
+                for j in [0, 1, 2]:
+                    mol.grad[i,j] += g[l]
+                    l += 1
+            l = 3 + 5 * self.nQM + self.nMM
+            for i in self.nbn:
+                for j in [0, 1, 2]:
+                    mol.grad[i,j] += self.vec[l]
+                    l += 1
         return( self.vec[0] )

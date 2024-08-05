@@ -25,7 +25,7 @@ for w in zzz.namelist():
     if( w[0:3] == "dat" ):
         f = zzz.open( w, "r" )
         f.readline()
-        x = numpy.loadtxt( f )
+        x = numpy.loadtxt( f )[skp:]
         m = numpy.mean( x )
         s = numpy.std( x )
         q = max( numpy.sum( x <= m ), numpy.sum( x >= m ) ) / x.shape[0]
@@ -52,7 +52,7 @@ pdf = matplotlib.backends.backend_pdf.PdfPages( "plt.pdf" )
 for f in lst:
     f.seek( 0 )
 
-umb_c, umb_f, umb_e = qm3.utils.pmf.umbint( lst )
+umb_c, umb_f, umb_e = qm3.utils.pmf.umbint( lst, nskip = skp )
 t = min( umb_f[0:len(umb_c)//2] )
 for i in range( len( umb_c ) ):
     umb_f[i] = ( umb_f[i] - t ) / 4.184
@@ -60,7 +60,7 @@ for i in range( len( umb_c ) ):
 for f in lst:
     f.seek( 0 )
 
-pmf_c, pmf_f = qm3.utils.pmf.wham( lst, maxit = 20000 )
+pmf_c, pmf_f = qm3.utils.pmf.wham( lst, maxit = 20000, nskip = skp )
 t = min( pmf_f[0:len(pmf_c)//2] )
 f = open( "ene", "wt" )
 for i in range( len( pmf_c ) ):
@@ -84,7 +84,7 @@ dsp = 0
 for f in lst:
     f.seek( 0 )
     f.readline()
-    x = numpy.loadtxt( f )
+    x = numpy.loadtxt( f )[skp:]
     dsp = max( dsp, numpy.std( x ) )
     mny = min( mny, numpy.min( x ) )
     mxy = max( mny, numpy.max( x ) )
@@ -101,7 +101,7 @@ if( sel.shape[0] > 0 ):
     for i in sel:
         tmp[i][-1].seek( 0 )
         tmp[i][-1].readline()
-        x = numpy.loadtxt( tmp[i][-1] )
+        x = numpy.loadtxt( tmp[i][-1] )[skp:]
         dsp = max( dsp, numpy.std( x ) )
         mny = min( mny, numpy.min( x ) )
         mxy = max( mny, numpy.max( x ) )
