@@ -24,7 +24,7 @@ smm = mol.sph_sel( sqm, 12 )
 #sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"] ) ]
 sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"], [ mol.indx["A"][1]["H11"], mol.indx["A"][1]["H12"] ] ) ]
 
-f = io.StringIO( """#%pal nprocs 2 end
+f = io.StringIO( """%pal nprocs 4 end
 qm3_charges
 ! qm3_job rks b3lyp def2-svp chelpg
 *xyz 1 1
@@ -35,9 +35,12 @@ mol.engines["qm"] = qm3.engines.orca.run( mol, f, sqm, smm, sla )
 mol.engines["qm"].exe = "./orca/orca orca.inp > orca.out"
 
 mol.get_grad()
-#print( round( mol.func, 1 ), "/ -697207.4" )
-#print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 575.7" )
-#print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 68.4" )
-print( round( mol.func, 1 ), "/ -697238.5" )
-print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 571.1" )
-print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 65.3" )
+#
+# orca_5_0_4_macosx_intel_openmpi411
+#
+#print( round( mol.func, 1 ), "/ -697208.3" )
+#print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 574.6" )
+#print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 68.1" )
+print( round( mol.func, 1 ), "/ -697239.4" )
+print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 570.0" )
+print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 64.9" )
