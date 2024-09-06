@@ -4,7 +4,7 @@ prt=enzyme.pdb
 lig=ligand.mol2
 box=30
 
-obabel -imol2 $lig -opdbqt -partialcharges eem | grep -E -v "^USER|^TER" > lig.x
+obabel -imol2 $lig -opdbqt --partialcharge eem | grep -E -v "^USER|^TER" > lig.x
 
 rm -f borra.*
 cat > inp << EOD
