@@ -817,3 +817,57 @@ Residue     1  SER
                 for j in [0, 1, 2]:
                     if( math.fabs( tmp[j] ) > 0 ):
                         self.coor[self.rlim[i]:self.rlim[i+1],j] -= self.boxl[j] * tmp[j]
+
+
+
+try:
+    import  io
+    import  qm3._py3Dmol
+
+    def display( mol, 
+            frmt: typing.Optional[str] = "xyz",
+            wframe: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
+            cpk: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
+            label: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
+            center: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ) ):
+
+        view = qm3._py3Dmol.view()
+        view.clear()
+        f = io.StringIO()
+        if( frmt == "pdb" ):
+            mol.pdb_write( f )
+            f.seek( 0 )
+            view.addModel( f.read(), "pdb", { "keepH": True } )
+        else:
+            mol.xyz_write( f )
+            f.seek( 0 )
+            view.addModel( f.read(), "xyz" )
+
+
+        if( wframe.sum() > 0 ):
+            view.setStyle( { "index": numpy.flatnonzero( wframe ).ravel().tolist() },
+                                 { "stick": { "radius": 0.05 } } )
+
+        if( cpk.sum() > 0 ):
+            view.setStyle( { "index": numpy.flatnonzero( cpk ).ravel().tolist() },
+                                 { "sphere": { "radius": 0.3 }, "stick": { "radius": 0.1 } } )
+
+        if( label.sum() > 0 ):
+            for i in numpy.flatnonzero( label ):
+                if( frmt == "xyz" ):
+                    tmp = str( i )
+                else:
+                    tmp = mol.labl[i]
+                view.addLabel( tmp,
+                        { "alignment": "center", "backgroundColor": "#ffffff", "backgroundOpacity": 0.3, "fontColor": "#000000",
+                     "fontSize": 10, "position": { "x": mol.coor[i,0], "y": mol.coor[i,1], "z": mol.coor[i,2] } } )
+
+        if( center.sum() > 0 ):
+            view.center( { "index": numpy.flatnonzero( center ).ravel().tolist() } )
+        else:
+            view.center()
+
+        #view.show()
+        return( view )
+except:
+    pass
