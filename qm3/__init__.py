@@ -824,7 +824,7 @@ try:
     import  io
     import  qm3._py3Dmol
 
-    def display( mol, 
+    def 3dmol( mol, 
             frmt: typing.Optional[str] = "xyz",
             wframe: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
             cpk: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
