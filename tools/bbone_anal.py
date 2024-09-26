@@ -37,8 +37,8 @@ while( dcd.next( mol ) ):
     cur = numpy.dot( cur, numpy.dot( r1, r2 ) )
     crd.append( cur )
     dif.append( cur[idx] - ref[idx] )
-    #out.append( numpy.sqrt( numpy.mean( numpy.sum( numpy.square( cur - mod ), axis = 1 ) ) ) )
-    out.append( numpy.linalg.norm( cur - mod ) / siz )
+    #out.append( numpy.sqrt( numpy.mean( numpy.sum( numpy.square( cur - ref ), axis = 1 ) ) ) )
+    out.append( numpy.linalg.norm( cur - ref ) / siz )
 dcd.close()
 
 out = numpy.array( out )
