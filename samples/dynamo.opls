@@ -1,0 +1,139 @@
+MM_Definitions OPLS_AA 1.0
+
+Types
+xNA     7   3.25000   0.17000
+xCC     6   3.39967   0.08600
+xCD     6   3.39967   0.08600
+xC3     6   3.39967   0.10940
+xHC     1   2.64953   0.01570
+xH5     1   2.42146   0.01500
+xH4     1   2.51055   0.01500
+xHN     1   1.06908   0.01570
+HW      1   0.00000   0.00000
+OW      8   3.15061   0.15210 
+
+End
+
+Electrostatics Scale 0.5
+Lennard_Jones  Scale 0.5
+Units kcal/mole
+
+Residues
+
+Residue WAT
+  3  3  0
+O        OW      -0.834
+H1       HW       0.417
+H2       HW       0.417
+
+O H1 ; O H2 ; H1 H2
+
+Residue SUS
+19 19 5
+N1       xNA     -0.127
+C2       xCC     -0.016
+C3       xCC     -0.126
+N4       xNA     -0.141
+C5       xCD     -0.041
+C6       xC3     -0.078
+H7       xHC      0.090
+H8       xHC      0.090
+C9       xC3     -0.101
+C10      xC3     -0.039
+H11      xHC      0.052
+H12      xHC      0.052
+H13      xHC      0.054
+H14      xHC      0.054
+H15      xHC      0.054
+H16      xH5      0.264
+H17      xH4      0.239
+H18      xHN      0.361
+H19      xHN      0.363
+
+N1 C2
+N1 C3
+N1 H19
+C2 N4
+C2 H16
+C3 C5
+C3 H17
+N4 C5
+N4 H18
+C5 C10
+C6 C9
+C6 C10
+C6 H11
+C6 H12
+H7 C10
+H8 C10
+C9 H13
+C9 H14
+C9 H15
+
+C2 C3 N1 H19
+H16 N4 C2 N1
+C5 H17 C3 N1
+C2 C5 N4 H18
+C10 C3 C5 N4
+
+End
+
+Parameters
+
+Bonds
+xCC  xNA    425.8    1.380
+xHN  xNA    408.4    1.010
+xCC  xH5    351.7    1.082
+xCC  xCD    500.9    1.373
+xCC  xH4    352.0    1.082
+xCD  xNA    425.8    1.380
+xC3  xCD    334.8    1.502
+xC3  xC3    300.9    1.538
+xC3  xHC    330.6    1.097
+HW   OW     529.6    0.9572
+HW   HW     38.25    1.5139
+End
+
+Angles
+xNA  xCC  xNA    75.2    106.60
+xNA  xCC  xH5    49.6    121.55
+xNA  xCC  xCD    73.4    106.99
+xNA  xCC  xH4    49.8    120.53
+xCC  xNA  xCC    68.5    109.90
+xCC  xNA  xHN    46.8    125.50
+xCC  xNA  xCD    63.5    128.01
+xCC  xCD  xNA    73.4    106.99
+xCC  xCD  xC3    64.7    119.45
+xNA  xCD  xC3    65.3    122.73
+xCD  xCC  xH4    47.3    128.48
+xCD  xNA  xHN    46.8    125.50
+xCD  xC3  xC3    63.5    111.93
+xCD  xC3  xHC    47.2    110.49
+xC3  xC3  xHC    46.3    109.80
+xHC  xC3  xHC    39.4    107.58
+xC3  xC3  xC3    62.9    111.51
+HW   HW   OW      0.0     37.74
+HW   OW   HW     55.0    104.52
+End
+
+Dihedrals
+X    xCC  xNA  X       0.000   -0.000    3.400   -0.000
+X    xCC  xCD  X      -0.000    0.000    8.000    0.000
+X    xCD  xNA  X       0.000   -0.000    3.400   -0.000
+X    xC3  xCD  X       0.000    0.000    0.000    0.000
+xHC  xC3  xC3  xC3    -0.000    0.000    0.000    0.320
+X    xC3  xC3  X       0.000   -0.000   -0.000    0.312
+xHC  xC3  xC3  xHC     0.000   -0.000   -0.000    0.300
+End
+
+Impropers
+xCC  xCC  xNA  xHN    -0.000    0.000    2.200    0.000
+xCC  xCD  xNA  xHN    -0.000    0.000    2.200    0.000
+xH5  xNA  xCC  xNA    -0.000    0.000    2.200    0.000
+xCD  xH4  xCC  xNA    -0.000    0.000    2.200    0.000
+xC3  xCC  xCD  xNA    -0.000    0.000    2.200    0.000
+End
+
+End
+
+End
