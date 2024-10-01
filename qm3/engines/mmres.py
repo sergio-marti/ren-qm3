@@ -2,6 +2,7 @@ import  math
 import  numpy
 import  typing
 import  qm3.data
+import  qm3.utils.interpolation
 #import  collections
 
 
@@ -342,18 +343,13 @@ class colvar_s( object ):
     kumb: kJ / ( mol Angs^2 amu )
     xref: Ang amu^0.5
     -------------------------------------
-    ncrd        nwin
-    atom_1,i    atom_1,j
+    atm_1,i     atm_1,j
     ...         ...
-    atom_n,i    atom_n,j
+    atm_nc,i    atm_nc,j
     -------------------------------------
     ref_1,1     ref_1,nc
     ...         ...
     ref_nw,1    ref_nw,nc
-    -------------------------------------
-    met_1,(1,1)   met_1,(nc,nc) [by rows]
-    ...           ...
-    met_nw,(1,1)  met_nw,(nc,nc)
     -------------------------------------
 
     x( %zeta  ) approx {sum from{i=0} to{N-1} {i %delta_z e^{-{{lline %zeta - z_i rline}over %delta_z}}}} over
@@ -369,117 +365,109 @@ class colvar_s( object ):
     J. Phys. Chem. A v121, p9764 (2017) [doi:10.1021/acs.jpca.7b10842]
     WIREs Comput. Mol. Sci. v8 (2018) [doi:10.1002/wcms.1329]
     """
-    def __init__( self, mol: object, kumb: float, xref: float,
-            str_cnf: typing.IO,
-            str_crd: typing.IO,
-            str_met: typing.IO,
-            masses: typing.Optional[bool] = False,
-            k_wall: typing.Optional[float] = -1.0 ):
+    def __init__( self, mol: object, kumb: float, xref: float, delz: float,
+            str_cnf: str,
+            str_crd: typing.Optional[str] = "",
+            masses: typing.Optional[bool] = False ):
         self.xref = xref
         self.kumb = kumb
+        self.delz = delz
         self.qmas = masses
         # parse config
-        tmp = str_cnf.readline().strip().split()
-        self.ncrd = int( tmp[0] )
+        self.atom = numpy.loadtxt( str_cnf, dtype=numpy.int32 )
+        self.ncrd = self.atom.shape[0]
         self.ncr2 = self.ncrd * self.ncrd
-        self.nwin = int( tmp[1] )
-        self.atom = []
         self.jidx = {}
         for i in range( self.ncrd ):
-            tmp = [ int( j ) for j in str_cnf.readline().strip().split() ]
-            self.atom.append( ( tmp[0], tmp[1] ) )
-            self.jidx[tmp[0]] = True
-            self.jidx[tmp[1]] = True
-#        self.jidx = collections.OrderedDict( { jj: ii for ii,jj in enumerate( sorted( self.jidx ) ) } )
-#        self.xdij = collections.OrderedDict( { self.jidx[ii]: ii for ii in self.jidx } )
+            self.jidx[self.atom[i,0]] = True
+            self.jidx[self.atom[i,1]] = True
         self.jidx = { jj: ii for ii,jj in enumerate( sorted( self.jidx ) ) }
         self.xdij = { self.jidx[ii]: ii for ii in self.jidx }
         self.jcol = 3 * len( self.jidx )
         # load previous equi-distributed string
-        self.rcrd = numpy.array( [ float( i ) for i in str_crd.read().strip().split() ], dtype=numpy.float64 )
-        self.rcrd.shape = ( self.nwin, self.ncrd )
-        # load previous string metrics (default to identity...)
-        try:
-            self.rmet = numpy.array( [ float( i ) for i in str_met.read().strip().split() ], dtype=numpy.float64 )
-            self.rmet.shape = ( self.nwin, self.ncr2 )
-        except:
-            self.rmet = numpy.zeros( ( self.nwin, self.ncr2 ), dtype=numpy.float64 )
-            self.rmet[0:self.nwin,:] = numpy.eye( self.ncrd ).ravel()
-        # get the arc of the current string
+        if( str_crd == "" ):
+            self.rcrd = []
+            self.nwin = 0
+        else:
+            self.rcrd = numpy.loadtxt( str_crd, dtype=numpy.float64 )
+            self.nwin = self.rcrd.shape[0]
+        # store the the masses
+        if( self.qmas ):
+            self.mass = mol.mass[list( self.jidx.keys() )]
+            self.sqms = numpy.sqrt( mol.mass[list( self.jidx.keys() )] )
+        else:
+            self.mass = numpy.ones( len( self.jidx ), dtype=numpy.float64 )
+            self.sqms = numpy.ones( len( self.jidx ), dtype=numpy.float64 )
+        self.mass = numpy.column_stack( ( self.mass, self.mass, self.mass ) ).reshape( self.jcol )
+        self.sqms = numpy.column_stack( ( self.sqms, self.sqms, self.sqms ) ).reshape( ( self.jcol // 3, 3 ) )
+
+
+    def append( self, mol: object ):
+        if( self.nwin == 0 ):
+            self._met = []
+        ccrd, jaco, imet = self.get_info( mol )
+        self.nwin += 1
+        self.rcrd.append( ccrd.tolist() )
+        self._met.append( imet.copy() )
+
+
+    def define( self, str_crd: str, redistribute: typing.Optional[bool] = False ):
+        self.rcrd = numpy.array( self.rcrd )
+        self._met = numpy.array( self._met )
         self.arcl = numpy.zeros( self.nwin, dtype=numpy.float64 )
         for i in range( 1, self.nwin ):
             vec = self.rcrd[i] - self.rcrd[i-1]
             vec.shape = ( self.ncrd, 1 )
-            mat = 0.5 * ( self.rmet[i] + self.rmet[i-1] )
-            mat.shape = ( self.ncrd, self.ncrd )
-            mat = numpy.linalg.inv( mat )
-            self.arcl[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( mat, vec ) ) )
+            self.arcl[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( self._met[i], vec ) ) )
         self.delz = self.arcl.sum() / float( self.nwin - 1.0 )
+        if( redistribute ):
+            arcl = numpy.cumsum( self.arcl )
+            equi = numpy.array( [ arcl[-1] / ( self.nwin - 1.0 ) * i for i in range( self.nwin ) ] )
+            fcrd = numpy.zeros( ( self.nwin, self.ncrd ) )
+            for i in range( self.ncrd ):
+                #inte = qm3.utils.interpolation.cubic_spline( arcl, rcrd[:,i] )
+                inte = qm3.utils.interpolation.gaussian( arcl, self.rcrd[:,i], 0.2 )
+                fcrd[:,i] = numpy.array( [ inte.calc( x )[0] for x in equi ] )
+            self.rcrd = fcrd.copy()
+            self.arcl = numpy.zeros( self.nwin, dtype=numpy.float64 )
+            for i in range( 1, self.nwin ):
+                vec = self.rcrd[i] - self.rcrd[i-1]
+                vec.shape = ( self.ncrd, 1 )
+                self.arcl[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( self._met[i], vec ) ) )
+            self.delz = self.arcl.sum() / float( self.nwin - 1.0 )
         if( self.qmas ):
             print( "Colective variable s range: [%.3lf - %.3lf: %.6lf] _Ang amu^0.5"%( 0.0, self.arcl.sum(), self.delz ) )
         else:
             print( "Colective variable s range: [%.3lf - %.3lf: %.6lf] _Ang"%( 0.0, self.arcl.sum(), self.delz ) )
-        # store inverse (constant) metrics
-        for i in range( self.nwin ):
-            self.rmet[i] = numpy.linalg.inv( self.rmet[i].reshape( ( self.ncrd, self.ncrd ) ) ).ravel()
-        # store the square root of the masses
-        if( self.qmas ):
-            self.sqms = numpy.sqrt( mol.mass[list( self.jidx.keys() )] )
-        else:
-            self.sqms = numpy.ones( len( self.jidx ), dtype=numpy.float64 )
-        self.sqms = numpy.column_stack( ( self.sqms, self.sqms, self.sqms ) ).reshape( ( self.jcol // 3, 3 ) )
-        # create walls for each distance...
-        self.wall = []
-        if( k_wall > 0.0 ):
-            r_min = numpy.min( self.rcrd, axis = 0 )
-            r_max = numpy.max( self.rcrd, axis = 0 )
-            print( "Colective variable s walls:", r_min + self.delz )
-            print( "                           ", r_max - self.delz )
-            for i in range( self.ncrd ):
-                self.wall.append( distance( k_wall, r_min[i] + self.delz,
-                    [ self.atom[i][0], self.atom[i][1] ], skip_BE = r_min[i] ) )
-                self.wall.append( distance( k_wall, r_max[i] - self.delz,
-                    [ self.atom[i][0], self.atom[i][1] ], skip_LE = r_max[i] ) )
+        numpy.savetxt( str_crd, self.rcrd, fmt = "%12.4lf" )
+        return( self.delz, self.arcl )
 
 
-    def get_jaco( self, mol: object ) -> tuple:
+    def get_info( self, mol: object ) -> tuple:
         ccrd = numpy.zeros( self.ncrd, dtype=numpy.float64 )
         jaco = numpy.zeros( ( self.ncrd, self.jcol ), dtype=numpy.float64 )
         for i in range( self.ncrd ):
-            ai = self.atom[i][0]
-            aj = self.atom[i][1]
+            ai = self.atom[i,0]
+            aj = self.atom[i,1]
             rr = mol.coor[aj] - mol.coor[ai]
             ccrd[i] = numpy.linalg.norm( rr )
             for j in [0, 1, 2]:
                 jaco[i,3*self.jidx[ai]+j] -= rr[j] / ccrd[i]
                 jaco[i,3*self.jidx[aj]+j] += rr[j] / ccrd[i]
-        return( ( ccrd, jaco ) )
-
-
-    def metrics( self, mol: object ) -> numpy.array:
-        ccrd, jaco = self.get_jaco( mol )
-        if( self.qmas ):
-            mass = mol.mass[list( self.jidx.keys() )]
-        else:
-            mass = numpy.ones( len( self.jidx ), dtype=numpy.float64 )
-        mass = numpy.column_stack( ( mass, mass, mass ) ).reshape( self.jcol )
         cmet = numpy.zeros( ( self.ncrd, self.ncrd ), dtype=numpy.float64 )
         for i in range( self.ncrd ):
             for j in range( i, self.ncrd ):
-                cmet[i,j] = numpy.sum( jaco[i,:] * jaco[j,:] / mass )
+                cmet[i,j] = numpy.sum( jaco[i,:] * jaco[j,:] / self.mass )
                 cmet[j,i] = cmet[i,j]
-        return( cmet )
+        return( ( ccrd, jaco, numpy.linalg.inv( cmet ) ) )
 
 
     def get_func( self, mol: object ) -> tuple:
-        ccrd, jaco = self.get_jaco( mol )
+        ccrd, jaco, imet = self.get_info( mol )
         cdst = numpy.zeros( self.nwin, dtype=numpy.float64 )
         for i in range( self.nwin ):
-            vec = ccrd - self.rcrd[i]
-            vec.shape = ( self.ncrd, 1 )
-            mat = self.rmet[i]
-            mat.shape = ( self.ncrd, self.ncrd )
-            cdst[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( mat, vec ) ) )
+            vec = ( ccrd - self.rcrd[i] ).reshape( ( self.ncrd, 1 ) )
+            cdst[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( imet, vec ) ) )
         cexp = numpy.exp( - cdst / self.delz )
         cval = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp ) / cexp.sum()
         out  = 0.5 * self.kumb * math.pow( cval - self.xref, 2.0 )
@@ -488,18 +476,13 @@ class colvar_s( object ):
 
 
     def get_grad( self, mol: object ) -> tuple:
-        ccrd, jaco = self.get_jaco( mol )
+        ccrd, jaco, imet = self.get_info( mol )
         cdst = numpy.zeros( self.nwin, dtype=numpy.float64 )
         jder = numpy.zeros( ( self.nwin, self.jcol ), dtype=numpy.float64 )
         for i in range( self.nwin ):
-            vec = ccrd - self.rcrd[i]
-            vec.shape = ( self.ncrd, 1 )
-            mat = self.rmet[i]
-            mat.shape = ( self.ncrd, self.ncrd )
-            mat = numpy.dot( mat, vec )
-            cdst[i] = math.sqrt( numpy.dot( vec.T, mat ) )
-            tmp = numpy.dot( vec.T, numpy.dot( self.rmet[i].reshape( ( self.ncrd, self.ncrd ) ), jaco ) )
-            jder[i] = 0.5 * ( numpy.dot( mat.T, jaco ) + tmp ).ravel() / cdst[i]
+            vec = ( ccrd - self.rcrd[i] ).reshape( ( self.ncrd, 1 ) )
+            cdst[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( imet, vec ) ) )
+            jder[i] = numpy.dot( vec.T, numpy.dot( imet, jaco ) ).ravel() / cdst[i]
         cexp = numpy.exp( - cdst / self.delz )
         sumn = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp )
         sumd = cexp.sum()
@@ -509,18 +492,10 @@ class colvar_s( object ):
         mol.func += out
         sder = numpy.zeros( self.jcol, dtype=numpy.float64 )
         for i in range( self.jcol ):
-#            sder[i] = diff * numpy.sum( jder[:,i] * cexp * ( cval / self.delz - numpy.arange( self.nwin, dtype=numpy.float64 ) ) ) / sumd
             for j in range( self.nwin ):
                 sder[i] += diff * jder[j,i] * ( cval / self.delz - j ) * cexp[j] / sumd
-#        tmp = self.jcol // 3
-#        sder.shape = ( tmp, 3 )
-#        for i in range( tmp ):
-#            mol.grad[self.xdij[i]] += sder[i]
         sder.shape = ( self.jcol // 3, 3 )
         mol.grad[list( self.jidx.keys() ),:] += sder * self.sqms
-        # add walls ---------------------------------------
-        for w in self.wall:
-            w.get_grad( mol )
         return( ( out, cval, ccrd ) )
 
 
