@@ -370,11 +370,11 @@ class colvar_s( object ):
             kumb: typing.Optional[float] = 0.0,
             xref: typing.Optional[float] = 0.0,
             delz: typing.Optional[float] = 0.0,
-            masses: typing.Optional[bool] = False ):
+            mass: typing.Optional[bool] = False ):
         self.xref = xref
         self.kumb = kumb
         self.delz = delz
-        self.qmas = masses
+        self.qmas = mass
         # parse config
         self.atom = numpy.loadtxt( str_cnf, dtype=numpy.int32 )
         self.ncrd = self.atom.shape[0]
