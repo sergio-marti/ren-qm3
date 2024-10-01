@@ -365,9 +365,11 @@ class colvar_s( object ):
     J. Phys. Chem. A v121, p9764 (2017) [doi:10.1021/acs.jpca.7b10842]
     WIREs Comput. Mol. Sci. v8 (2018) [doi:10.1002/wcms.1329]
     """
-    def __init__( self, mol: object, kumb: float, xref: float, delz: float,
-            str_cnf: str,
+    def __init__( self, mol: object, str_cnf: str,
             str_crd: typing.Optional[str] = "",
+            kumb: typing.Optional[float] = 0.0,
+            xref: typing.Optional[float] = 0.0,
+            delz: typing.Optional[float] = 0.0,
             masses: typing.Optional[bool] = False ):
         self.xref = xref
         self.kumb = kumb
