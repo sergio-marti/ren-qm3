@@ -340,7 +340,7 @@ class tether( object ):
 
 class colvar_s( object ):
     """
-    kumb: kJ / ( mol Angs^2 amu )
+    kumb: kJ / ( mol Angs^2 )
     xref: Ang amu^0.5
     -------------------------------------
     atm_1,i     atm_1,j
@@ -369,14 +369,16 @@ class colvar_s( object ):
             str_crd: typing.Optional[str] = "",
             kumb: typing.Optional[float] = 0.0,
             xref: typing.Optional[float] = 0.0,
-            delz: typing.Optional[float] = 0.0,
-            mass: typing.Optional[bool] = False ):
+            delz: typing.Optional[float] = 0.0 ):
+            #@mass: typing.Optional[bool] = False ):
         self.xref = xref
         self.kumb = kumb
         self.delz = delz
-        self.qmas = mass
+        #@self.qmas = mass
         # parse config
         self.atom = numpy.loadtxt( str_cnf, dtype=numpy.int32 )
+        if( len( self.atom.shape ) == 1 ):
+            self.atom.shape = ( 1, self.atom.shape[0] )
         self.ncrd = self.atom.shape[0]
         self.ncr2 = self.ncrd * self.ncrd
         self.jidx = {}
@@ -384,7 +386,6 @@ class colvar_s( object ):
             self.jidx[self.atom[i,0]] = True
             self.jidx[self.atom[i,1]] = True
         self.jidx = { jj: ii for ii,jj in enumerate( sorted( self.jidx ) ) }
-        self.xdij = { self.jidx[ii]: ii for ii in self.jidx }
         self.jcol = 3 * len( self.jidx )
         # load previous equi-distributed string
         if( str_crd == "" ):
@@ -393,15 +394,12 @@ class colvar_s( object ):
         else:
             self.rcrd = numpy.loadtxt( str_crd, dtype=numpy.float64 )
             self.nwin = self.rcrd.shape[0]
-        # store the the masses
-        if( self.qmas ):
-            self.mass = mol.mass[list( self.jidx.keys() )]
-            self.sqms = numpy.sqrt( mol.mass[list( self.jidx.keys() )] )
-        else:
-            self.mass = numpy.ones( len( self.jidx ), dtype=numpy.float64 )
-            self.sqms = numpy.ones( len( self.jidx ), dtype=numpy.float64 )
-        self.mass = numpy.column_stack( ( self.mass, self.mass, self.mass ) ).reshape( self.jcol )
-        self.sqms = numpy.column_stack( ( self.sqms, self.sqms, self.sqms ) ).reshape( ( self.jcol // 3, 3 ) )
+        #@# store the the masses
+        #@if( self.qmas ):
+        #@    self.mass = mol.mass[list( self.jidx.keys() )]
+        #@else:
+        #@    self.mass = numpy.ones( len( self.jidx ), dtype=numpy.float64 )
+        #@self.mass = numpy.column_stack( ( self.mass, self.mass, self.mass ) ).reshape( self.jcol )
 
 
     def append( self, mol: object ):
@@ -422,7 +420,9 @@ class colvar_s( object ):
             vec.shape = ( self.ncrd, 1 )
             self.arcl[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( self._met[i], vec ) ) )
         self.delz = self.arcl.sum() / float( self.nwin - 1.0 )
+        print( ">> mean: %.6lf ± %.6lf"%( numpy.mean( self.arcl ), numpy.std( self.arcl ) ) )
         if( redistribute ):
+            print( "Colective variable s range: [%.3lf - %.3lf: %.6lf] _Ang"%( 0.0, self.arcl.sum(), self.delz ) )
             arcl = numpy.cumsum( self.arcl )
             equi = numpy.array( [ arcl[-1] / ( self.nwin - 1.0 ) * i for i in range( self.nwin ) ] )
             fcrd = numpy.zeros( ( self.nwin, self.ncrd ) )
@@ -437,10 +437,12 @@ class colvar_s( object ):
                 vec.shape = ( self.ncrd, 1 )
                 self.arcl[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( self._met[i], vec ) ) )
             self.delz = self.arcl.sum() / float( self.nwin - 1.0 )
-        if( self.qmas ):
-            print( "Colective variable s range: [%.3lf - %.3lf: %.6lf] _Ang amu^0.5"%( 0.0, self.arcl.sum(), self.delz ) )
-        else:
-            print( "Colective variable s range: [%.3lf - %.3lf: %.6lf] _Ang"%( 0.0, self.arcl.sum(), self.delz ) )
+            print( ">> mean: %.6lf ± %.6lf"%( numpy.mean( self.arcl ), numpy.std( self.arcl ) ) )
+        #@if( self.qmas ):
+        #@    print( "Colective variable s range: [%.3lf - %.3lf: %.6lf] _Ang amu^0.5"%( 0.0, self.arcl.sum(), self.delz ) )
+        #@else:
+        #@    print( "Colective variable s range: [%.3lf - %.3lf: %.6lf] _Ang"%( 0.0, self.arcl.sum(), self.delz ) )
+        print( "Colective variable s range: [%.3lf - %.3lf: %.6lf] _Ang"%( 0.0, self.arcl.sum(), self.delz ) )
         numpy.savetxt( str_crd, self.rcrd, fmt = "%12.4lf" )
         return( self.delz, self.arcl )
 
@@ -459,7 +461,7 @@ class colvar_s( object ):
         cmet = numpy.zeros( ( self.ncrd, self.ncrd ), dtype=numpy.float64 )
         for i in range( self.ncrd ):
             for j in range( i, self.ncrd ):
-                cmet[i,j] = numpy.sum( jaco[i,:] * jaco[j,:] / self.mass )
+                cmet[i,j] = numpy.sum( jaco[i,:] * jaco[j,:] ) #@ / self.mass )
                 cmet[j,i] = cmet[i,j]
         return( ( ccrd, jaco, numpy.linalg.inv( cmet ) ) )
 
@@ -483,7 +485,9 @@ class colvar_s( object ):
         jder = numpy.zeros( ( self.nwin, self.jcol ), dtype=numpy.float64 )
         for i in range( self.nwin ):
             vec = ( ccrd - self.rcrd[i] ).reshape( ( self.ncrd, 1 ) )
-            cdst[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( imet, vec ) ) )
+            mat = numpy.dot( imet, vec )
+            cdst[i] = math.sqrt( numpy.dot( vec.T, mat ) )
+            #jder[i] = 0.5 * ( numpy.dot( mat.T, jaco ) + numpy.dot( vec.T, numpy.dot( imet, jaco ) ) ).ravel() / cdst[i]
             jder[i] = numpy.dot( vec.T, numpy.dot( imet, jaco ) ).ravel() / cdst[i]
         cexp = numpy.exp( - cdst / self.delz )
         sumn = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp )
@@ -497,7 +501,7 @@ class colvar_s( object ):
             for j in range( self.nwin ):
                 sder[i] += diff * jder[j,i] * ( cval / self.delz - j ) * cexp[j] / sumd
         sder.shape = ( self.jcol // 3, 3 )
-        mol.grad[list( self.jidx.keys() ),:] += sder * self.sqms
+        mol.grad[list( self.jidx.keys() ),:] += sder
         return( ( out, cval, ccrd ) )
 
 

@@ -12,8 +12,9 @@ def distribute( rcrd: numpy.array, rmet: list,
     for i in range( 1, nwin ):
         vec = rcrd[i] - rcrd[i-1]
         vec.shape = ( ncrd, 1 )
-        mat = 0.5 * ( rmet[i] + rmet[i-1] )
-        mat = numpy.linalg.inv( mat )
+        #mat = 0.5 * ( rmet[i] + rmet[i-1] )
+        #mat = numpy.linalg.inv( mat )
+        mat = numpy.linalg.inv( rmet[i] )
         arcl[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( mat, vec ) ) )
     arcl = numpy.cumsum( arcl )
     delz = arcl[-1] / float( nwin - 1.0 )
@@ -48,8 +49,7 @@ class string( object ):
     J. Comput. Chem. v35, p1672 (2014) [doi:10.1002/jcc.23673]
     J. Phys. Chem. A v121, p9764 (2017) [doi:10.1021/acs.jpca.7b10842]
     """
-    def __init__( self, mol: object, node: int, tstp: float,
-            str_cnf: typing.IO ):
+    def __init__( self, mol: object, node: int, tstp: float, str_cnf: typing.IO ):
         self.node = node
         self.tstp = tstp
         # parse config
@@ -72,10 +72,9 @@ class string( object ):
         tmp = numpy.array( [ float( i ) for i in str_cnf.read().strip().split() ], dtype=numpy.float64 )
         tmp.shape = ( self.nwin, self.ncrd )
         self.rcrd = tmp[self.node,:]
-        # store the masses (and their square root)
-        #self.mass = mol.mass[list( self.jidx.keys() )]
-        #self.mass = numpy.column_stack( ( self.mass, self.mass, self.mass ) ).reshape( self.jcol )
-        self.mass = numpy.ones( self.jcol, dtype=numpy.float64 )
+        #@# store the masses (and their square root)
+        #@self.mass = mol.mass[list( self.jidx.keys() )]
+        #@self.mass = numpy.column_stack( ( self.mass, self.mass, self.mass ) ).reshape( self.jcol )
         # initialize metrics
         self.cmet = numpy.zeros( ( self.ncrd, self.ncrd ), dtype=numpy.float64 )
 
@@ -100,7 +99,7 @@ class string( object ):
         # calculate current metric tensor (eq. 7 @ 10.1016/j.cplett.2007.08.017)
         for i in range( self.ncrd ):
             for j in range( i, self.ncrd ):
-                self.cmet[i,j] = numpy.sum( jaco[i,:] * jaco[j,:] / self.mass )
+                self.cmet[i,j] = numpy.sum( jaco[i,:] * jaco[j,:] ) #@ / self.mass )
                 self.cmet[j,i] = self.cmet[i,j]
         # perform (damped) dynamics on the reference CVs (eq. 17 @ 10.1016/j.cplett.2007.08.017)
         grad = numpy.dot( diff, self.cmet )
