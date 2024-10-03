@@ -5,6 +5,8 @@ import  struct
 import  os, stat
 import  qm3.data
 import  qm3.utils
+import  socket
+import  time
 
 
 def numerical( mol: object,
@@ -38,6 +40,83 @@ def numerical( mol: object,
                 mol.coor[i,j] -= dsp
                 k += 1
     mol.get_grad()
+    # symmetrize
+    hess = 0.5 * ( hess + hess.T )
+    return( hess )
+
+
+
+def par_numerical( nproc: int, mol: object,
+        dsp: typing.Optional[float] = 1.e-4,
+        central: typing.Optional[bool] = True ) -> numpy.array:
+    unix = "qm3_parnumhes.%d"%( os.getpid() )
+    sele = numpy.flatnonzero( mol.actv.ravel() )
+    size = 3 * sele.shape[0]
+    for i in range( nproc ):
+        if( os.fork() == 0 ):
+            time.sleep( 0.5 )
+            sckt = socket.socket( socket.AF_UNIX, socket.SOCK_STREAM )
+            sckt.connect( unix )
+            sckt.sendall( struct.pack( "i", -1 ) )
+            temp = struct.unpack( "2i", sckt.recv( 8 ) )
+            while( temp[0] >= 0 ):
+                sckt.close()
+                ii = temp[0] // 3
+                jj = temp[0] %  3
+                bak = mol.coor[sele[ii],jj]
+                mol.coor[sele[ii],jj] = bak + dsp * temp[1]
+                mol.get_grad()
+                mol.coor[sele[ii],jj] = bak
+                sckt = socket.socket( socket.AF_UNIX, socket.SOCK_STREAM )
+                sckt.connect( unix )
+                if( temp[1] == -1 ):
+                    sckt.sendall( struct.pack( "i", size + temp[0] ) )
+                else:
+                    sckt.sendall( struct.pack( "i", temp[0] ) )
+                sckt.sendall( b"".join( [ struct.pack( "d", x ) for x in mol.grad[sele].ravel() ] ) )
+                sckt.close()
+                sckt = socket.socket( socket.AF_UNIX, socket.SOCK_STREAM )
+                sckt.connect( unix )
+                sckt.sendall( struct.pack( "i", -1 ) )
+                temp = struct.unpack( "2i", sckt.recv( 8 ) )
+            sckt.close()
+            os._exit( 0 )
+    grad = []
+    task = []
+    for i in range( size ):
+        task.append( struct.pack( "i", i ) + struct.pack( "i", +1 ) )
+        grad.append( None )
+    if( central ):
+        for i in range( size ):
+            task.append( struct.pack( "i", i ) + struct.pack( "i", -1 ) )
+            grad.append( None )
+    sckt = socket.socket( socket.AF_UNIX, socket.SOCK_STREAM )
+    sckt.bind( unix )
+    dead = 0
+    while( dead < nproc ):
+        sckt.listen( nproc + 1 )
+        chld, addr = sckt.accept()
+        temp = struct.unpack( "i", chld.recv( 4 ) )[0]
+        if( temp == -1 ):
+            if( len( task ) > 0 ):
+                chld.sendall( task.pop() )
+            else:
+                chld.sendall( struct.pack( "i", -1 ) + struct.pack( "i", 0 ) )
+                dead += 1
+        else:
+            grad[temp] = struct.unpack( "%dd"%( size ), chld.recv( 8 * size ) )
+        chld.close()
+    sckt.close()
+    grad = numpy.array( grad )
+    hess = numpy.zeros( ( size, size ), dtype=numpy.float64 )
+    mol.get_grad()
+    if( central ):
+        for i in range( size ):
+            hess[i,:] = ( grad[i] - grad[size+i] ) / ( 2.0 * dsp )
+    else:
+        ref = mol.grad[sele].ravel()
+        for i in range( size ):
+            hess[i,:] = ( grad[i] - ref ) / dsp
     # symmetrize
     hess = 0.5 * ( hess + hess.T )
     return( hess )

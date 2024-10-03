@@ -1,8 +1,11 @@
 import  numpy
 import  qm3
-import  qm3.engines.mopac
-import  qm3.utils.hessian
+import	qm3.engines.mopac
+import	qm3.utils._mpi
+import	qm3.utils.hessian
 import  io
+
+who, cpu = qm3.utils._mpi.init()
 
 mol = qm3.molecule()
 f = io.StringIO( """26
@@ -36,7 +39,42 @@ H           7.2054065864       -5.1951553158       -1.9398695949
 """ )
 mol.xyz_read( f )
 mol.guess_atomic_numbers()
+
 mol.engines["qm"] = qm3.engines.mopac.run( mol, "AM1", 0, 1 )
-hes = qm3.utils.hessian.par_numerical( 4, mol, central = True )
-val, vec = qm3.utils.hessian.frequencies( mol, hes )
-print( val[0:7] )
+
+sel = numpy.argwhere( mol.actv.ravel() ).ravel()
+
+tsk = [ [] for i in range( cpu ) ]
+siz = 0
+for i in sel:
+    for j in [0, 1, 2]:
+        tsk[siz%cpu].append( ( siz, i, j ) )
+        siz += 1
+
+dsp = 1.0e-4
+hes = numpy.zeros( ( siz, siz ), dtype=numpy.float64 )
+for k,i,j in tsk[who]:
+    bak = mol.coor[i,j]
+    mol.coor[i,j] = bak + dsp
+    mol.get_grad()
+    gp = mol.grad[sel].ravel()
+    mol.coor[i,j] = bak - dsp
+    mol.get_grad()
+    hes[k,:] = ( gp - mol.grad[sel].ravel() ) / ( 2.0 * dsp )
+    mol.coor[i,j] = bak
+
+qm3.utils._mpi.barrier()
+
+if( who == 0 ):
+    for i in range( 1, cpu ):
+        hes += numpy.array( qm3.utils._mpi.recv_r8( i, siz * siz ) ).reshape( ( siz, siz ) )
+    hes = 0.5 * ( hes + hes.T )
+    val, vec = qm3.utils.hessian.frequencies( mol, hes )
+    print( val[0:7] )
+    qm3.utils._mpi.barrier()
+    qm3.utils._mpi.stop()
+else:
+    qm3.utils._mpi.send_r8( 0, hes.ravel().tolist() )
+    qm3.utils._mpi.barrier()
+    qm3.utils._mpi.stop()
+
