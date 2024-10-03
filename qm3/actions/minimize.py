@@ -111,6 +111,7 @@ def fire( mol: object,
         ndeg = math.sqrt( 3.0 )
         if( gradient_tolerance == 1.5 ):
             gradient_tolerance = 2.2
+            log_file.write( ">> switching gradient_tolerance to 2.2\n" )
     else:
         ndeg = math.sqrt( ndeg )
     nstp = 0
@@ -213,6 +214,7 @@ def cgplus( mol: object,
         ndeg = math.sqrt( 3.0 )
         if( gradient_tolerance == 1.5 ):
             gradient_tolerance = 2.2
+            log_file.write( ">> switching gradient_tolerance to 2.2\n" )
     else:
         ndeg = math.sqrt( size )
     sele = numpy.flatnonzero( mol.actv.ravel() )
@@ -329,6 +331,7 @@ def lbfgsb( mol: object,
         grms = numpy.max( numpy.linalg.norm( mol.grad, axis = 1 ) ) / ndeg
         if( gradient_tolerance == 1.5 ):
             gradient_tolerance = 2.2
+            log_file.write( ">> switching gradient_tolerance to 2.2\n" )
     else:
         grms = numpy.linalg.norm( mol.grad ) / ndeg
     k = 0
@@ -433,6 +436,7 @@ def baker( mol: object,
         ndeg = math.sqrt( 3.0 )
         if( gradient_tolerance == 1.5 ):
             gradient_tolerance = 2.2
+            log_file.write( ">> switching gradient_tolerance to 2.2\n" )
     else:
         ndeg = math.sqrt( size )
     sele = numpy.flatnonzero( mol.actv.ravel() )
@@ -591,6 +595,7 @@ def rfo( mol: object,
         ndeg = math.sqrt( 3.0 )
         if( gradient_tolerance == 1.5 ):
             gradient_tolerance = 2.2
+            log_file.write( ">> switching gradient_tolerance to 2.2\n" )
     else:
         ndeg = math.sqrt( size )
     sele = numpy.flatnonzero( mol.actv.ravel() )
