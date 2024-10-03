@@ -33,7 +33,7 @@ _sys.setDefaultPeriodicBoxVectors(
     openmm.Vec3( 0.0, box[1], 0.0 ) * openmm.unit.angstrom,
     openmm.Vec3( 0.0, 0.0, box[2] ) * openmm.unit.angstrom )
 
-#>> frezee atoms
+#>> freeze atoms
 #for i in range( 55 ):
 #    _sys.setParticleMass( i, 0.0 )
 

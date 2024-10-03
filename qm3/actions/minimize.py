@@ -6,6 +6,13 @@ import  ctypes
 import  os
 
 
+# Gaussian uses by default in optimizations:
+#
+# 0.000450 for Maximum Force (2.23 kJ/mol.A)
+# 0.000300 for RMS     Force (1.49 kJ/mol.A)
+# ------------------------------------------
+
+
 cwd = os.path.abspath( os.path.dirname( __file__ ) ) + os.sep
 
 
@@ -102,6 +109,8 @@ def fire( mol: object,
     log_file.write( "-" * 70 + "\n" )
     if( use_maxgrad ):
         ndeg = math.sqrt( 3.0 )
+        if( gradient_tolerance == 1.5 ):
+            gradient_tolerance = 2.2
     else:
         ndeg = math.sqrt( ndeg )
     nstp = 0
@@ -202,6 +211,8 @@ def cgplus( mol: object,
     dlib.cgp_cgfam_.restype = None
     if( use_maxgrad ):
         ndeg = math.sqrt( 3.0 )
+        if( gradient_tolerance == 1.5 ):
+            gradient_tolerance = 2.2
     else:
         ndeg = math.sqrt( size )
     sele = numpy.flatnonzero( mol.actv.ravel() )
@@ -316,6 +327,8 @@ def lbfgsb( mol: object,
     mol.get_grad()
     if( use_maxgrad ):
         grms = numpy.max( numpy.linalg.norm( mol.grad, axis = 1 ) ) / ndeg
+        if( gradient_tolerance == 1.5 ):
+            gradient_tolerance = 2.2
     else:
         grms = numpy.linalg.norm( mol.grad ) / ndeg
     k = 0
@@ -418,6 +431,8 @@ def baker( mol: object,
     mxit = 999
     if( use_maxgrad ):
         ndeg = math.sqrt( 3.0 )
+        if( gradient_tolerance == 1.5 ):
+            gradient_tolerance = 2.2
     else:
         ndeg = math.sqrt( size )
     sele = numpy.flatnonzero( mol.actv.ravel() )
@@ -574,6 +589,8 @@ def rfo( mol: object,
     tol2 = 1.0e-8
     if( use_maxgrad ):
         ndeg = math.sqrt( 3.0 )
+        if( gradient_tolerance == 1.5 ):
+            gradient_tolerance = 2.2
     else:
         ndeg = math.sqrt( size )
     sele = numpy.flatnonzero( mol.actv.ravel() )
