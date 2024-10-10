@@ -176,21 +176,19 @@ def cgplus( mol: object,
         gradient_tolerance: typing.Optional[float] = 1.5,
         method: typing.Optional[str] = "Polak-Ribiere", 
         restart: typing.Optional[bool] = True,
-        use_maxgrad: typing.Optional[bool] = False,
         log_file: typing.Optional[typing.IO] = sys.stdout,
         current_step: typing.Optional[typing.Callable] = fake_cs ):
     global  cwd
-    nsel = mol.actv.sum()
-    size = 3 * nsel
+    size = 3 * mol.actv.sum()
     log_file.write( "------------------------------------------ Minimization (CG+)\n\n" )
     log_file.write( "Degrees of Freedom:   %20ld\n"%( size ) )
     log_file.write( "Step Number:          %20d\n"%( step_number ) )
     log_file.write( "Print Frequency:      %20d\n"%( print_frequency ) )
-    log_file.write( "Use Maxgradient:      %20s\n"%( use_maxgrad ) )
     log_file.write( "Gradient Tolerance:   %20.10lg\n"%( gradient_tolerance ) )
     log_file.write( "Method:             %22s\n\n"%( method ) )
     log_file.write( "%10s%20s%20s\n"%( "Step", "Function", "Gradient" ) )
     log_file.write( "-" * 50 + "\n" )
+    ndeg = math.sqrt( size )
     rest = int( restart )
     meth = 2
     kind = { "Fletcher-Reeves" : 1, "Polak-Ribiere" : 2, "Positive Polak-Ribiere": 3 }
@@ -210,19 +208,9 @@ def cgplus( mol: object,
         ctypes.POINTER( ctypes.c_int ),
         ctypes.POINTER( ctypes.c_int ) ]
     dlib.cgp_cgfam_.restype = None
-    if( use_maxgrad ):
-        ndeg = math.sqrt( 3.0 )
-        if( gradient_tolerance == 1.5 ):
-            gradient_tolerance = 2.2
-            log_file.write( ">> switching gradient_tolerance to 2.2\n" )
-    else:
-        ndeg = math.sqrt( size )
     sele = numpy.flatnonzero( mol.actv.ravel() )
     mol.get_grad()
-    if( use_maxgrad ):
-        grms = numpy.max( numpy.linalg.norm( mol.grad, axis = 1 ) ) / ndeg
-    else:
-        grms = numpy.linalg.norm( mol.grad ) / ndeg
+    grms = numpy.linalg.norm( mol.grad ) / ndeg
     coor = mol.coor[sele].ravel().ctypes.data_as( ctypes.POINTER( ctypes.c_double ) )
     grad = mol.grad[sele].ravel().ctypes.data_as( ctypes.POINTER( ctypes.c_double ) )
     dire = ( ctypes.c_double * size )()
@@ -253,10 +241,7 @@ def cgplus( mol: object,
                     mol.coor[i,j] = coor[l]
                     l += 1
             mol.get_grad()
-            if( use_maxgrad ):
-                grms = numpy.max( numpy.linalg.norm( mol.grad, axis = 1 ) ) / ndeg
-            else:
-                grms = numpy.linalg.norm( mol.grad ) / ndeg
+            grms = numpy.linalg.norm( mol.grad ) / ndeg
             grad = mol.grad[sele].ravel().ctypes.data_as( ctypes.POINTER( ctypes.c_double ) )
         itr += 1
         if( itr % print_frequency == 0 ):
@@ -272,12 +257,10 @@ def lbfgs( mol: object,
         step_number: typing.Optional[int] = 1000,
         print_frequency: typing.Optional[int] = 100,
         gradient_tolerance: typing.Optional[float] = 1.5,
-        use_maxgrad: typing.Optional[bool] = False,
         log_file: typing.Optional[typing.IO] = sys.stdout,
         current_step: typing.Optional[typing.Callable] = fake_cs ):
     global  cwd
-    nsel = mol.actv.sum()
-    size = 3 * nsel
+    size = 3 * mol.actv.sum()
     log_file.write( "------------------------------------------ Minimization (L-BFGS: Fortran)\n\n" )
     log_file.write( "Degrees of Freedom:   %20ld\n"%( size ) )
     log_file.write( "Step Number:          %20d\n"%( step_number ) )
@@ -322,20 +305,11 @@ def lbfgs( mol: object,
     lsv = ( ctypes.c_bool * 4 )()
     isv = ( ctypes.c_int * 44 )()
     dsv = ( ctypes.c_double * 29 )()
-    if( use_maxgrad ):
-        ndeg = math.sqrt( 3.0 )
-    else:
-        ndeg = math.sqrt( size )
+    ndeg = math.sqrt( size )
     sele = numpy.flatnonzero( mol.actv.ravel() )
     mol.get_grad()
-    if( use_maxgrad ):
-        grms = numpy.max( numpy.linalg.norm( mol.grad, axis = 1 ) ) / ndeg
-        if( gradient_tolerance == 1.5 ):
-            gradient_tolerance = 2.2
-            log_file.write( ">> switching gradient_tolerance to 2.2\n" )
-    else:
-        grms = numpy.linalg.norm( mol.grad ) / ndeg
-    # no boundaries -----------------------------------
+    grms = numpy.linalg.norm( mol.grad ) / ndeg
+    # NO BOUNDARIES -----------------------------------
     k = 0
     for i in sele:
         for j in [0, 1, 2]:
@@ -367,10 +341,7 @@ def lbfgs( mol: object,
                 for j in [0, 1, 2]:
                     grd[k] = mol.grad[i,j]
                     k += 1
-            if( use_maxgrad ):
-                grms = numpy.max( numpy.linalg.norm( mol.grad, axis = 1 ) ) / ndeg
-            else:
-                grms = numpy.linalg.norm( mol.grad ) / ndeg
+            grms = numpy.linalg.norm( mol.grad ) / ndeg
             itr += 1
             if( itr % print_frequency == 0 ):
                 log_file.write( "%10d%20.5lf%20.10lf\n"%( itr, mol.func, grms ) )
@@ -410,13 +381,11 @@ def l_bfgs( mol: object,
             log_file.write( ">> switching gradient_tolerance to 2.2\n" )
     else:
         ndeg = math.sqrt( size )
-
     aux   = numpy.zeros( history, dtype=numpy.float64 )
     rho   = numpy.zeros( history, dtype=numpy.float64 )
     dg    = numpy.zeros( ( history, size ), dtype=numpy.float64 )
     dx    = numpy.zeros( ( history, size ), dtype=numpy.float64 )
     hscal = 1.0
-
     mol.get_grad()
     if( use_maxgrad ):
         grms = numpy.max( numpy.linalg.norm( mol.grad, axis = 1 ) ) / ndeg
@@ -453,7 +422,6 @@ def l_bfgs( mol: object,
         if( tmp > step_size ):
             step *= step_size / tmp
         mol.coor[sele] += step.reshape( ( sele.shape[0], 3 ) )
-
         lfun = mol.func
         mol.get_grad()
         if( use_maxgrad ):
@@ -465,7 +433,6 @@ def l_bfgs( mol: object,
                 log_file.write( ">> search become uphill!\n" )
                 qfun = False
                 mol.coor[sele] -= step.reshape( ( sele.shape[0], 3 ) )
-
         itr += 1
         if( itr % print_frequency == 0 ):
             log_file.write( "%10d%20.5lf%20.10lf\n"%( itr, mol.func, grms ) )
