@@ -32,11 +32,12 @@ _sys.setDefaultPeriodicBoxVectors(
 
 mol.engines["mm"] = qm3.engines.openmm.run( _sys, _top, platform = "OpenCL" )
 
-qm3.actions.minimize.lbfgsb( mol, print_frequency = 100 )
+qm3.actions.minimize.lbfgs( mol )
+qm3.actions.minimize.l_bfgs( mol, use_maxgrad = True )
 
 with open( "last.xyz", "wt" ) as f:
     mol.xyz_write( f )
 
 mol.get_grad()
-print( mol.func )
-print( numpy.linalg.norm( mol.grad ) )
+print( round( mol.func, 1 ) )
+print( round( numpy.linalg.norm( mol.grad ), 1 ) )
