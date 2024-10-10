@@ -390,7 +390,7 @@ def l_bfgs( mol: object,
         exit_uphill: typing.Optional[bool] = False,
         log_file: typing.Optional[typing.IO] = sys.stdout,
         current_step: typing.Optional[typing.Callable] = fake_cs ):
-    log_file.write( "---------------------------------------- Minimization (L-BFGS: Python)\n" )
+    log_file.write( "---------------------------------------- Minimization (L-BFGS: Python)\n\n" )
     sele = numpy.flatnonzero( mol.actv.ravel() )
     size = 3 * sele.shape[0]
     log_file.write( "Degrees of Freedom: %20ld\n"%( size ) )
