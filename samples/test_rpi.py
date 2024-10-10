@@ -1,3 +1,5 @@
+import  os
+os.environ["OMP_NUM_THREADS"] = "1"
 import  numpy
 import  typing
 import  qm3
@@ -9,7 +11,7 @@ import  qm3.actions.paths
 import  qm3.actions.ring_polymer
 import  io
 import  pickle
-import  os
+
 
 mol = qm3.molecule()
 f = io.StringIO("""15

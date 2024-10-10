@@ -1,3 +1,5 @@
+import  os
+os.environ["OMP_NUM_THREADS"] = "1"
 import  numpy
 import  qm3
 import	qm3.utils.parallel

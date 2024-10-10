@@ -1,9 +1,12 @@
+import  os
+os.environ["OMP_NUM_THREADS"] = "1"
 import  numpy
 import  qm3
 import	qm3.engines.mopac
 import	qm3.utils._mpi
 import	qm3.utils.hessian
 import  io
+
 
 who, cpu = qm3.utils._mpi.init()
 

@@ -1,3 +1,5 @@
+import  os
+os.environ["OPENMM_CPU_THREADS"] = "1"
 import  sys
 import	numpy
 import  openmm
@@ -5,7 +7,6 @@ import  openmm.app
 import  openmm.unit
 import	qm3
 import  qm3.engines.openmm
-import  os
 
  
 cwd = os.path.abspath( os.path.dirname( sys.argv[0] ) ) + os.sep

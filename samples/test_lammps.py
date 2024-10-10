@@ -1,8 +1,11 @@
+import  os
+os.environ["OMP_NUM_THREADS"] = "1"
 import  sys
 import	numpy
 import	qm3
 import  qm3.engines.lammps
  
+
 mol = qm3.molecule()
 box = numpy.array( [ 25.965, 29.928, 28.080 ] )
 

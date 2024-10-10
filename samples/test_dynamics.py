@@ -1,3 +1,6 @@
+import  os
+os.environ["OPENMM_CPU_THREADS"] = "1"
+os.environ["OMP_NUM_THREADS"] = "1"
 import  sys
 import	numpy
 import  openmm
@@ -8,7 +11,6 @@ import  qm3.engines.openmm
 import  qm3.engines.xtb
 import  qm3.actions.dynamics
 import  qm3.utils._dcd
-import  os
 
  
 cwd = os.path.abspath( os.path.dirname( sys.argv[0] ) ) + os.sep
@@ -34,7 +36,7 @@ _sys.setDefaultPeriodicBoxVectors(
 
 sqm = mol.resn == "SUS"
 smm = mol.sph_sel( sqm, 10 )
-mol.engines["mm"] = qm3.engines.openmm.run( _sys, _top, sel_QM = sqm, platform = "CPU" )
+mol.engines["mm"] = qm3.engines.openmm.run( _sys, _top, sel_QM = sqm )
 mol.engines["qm"] = qm3.engines.xtb.run( mol, 1, 0, sel_QM = sqm, sel_MM = smm )
 
 mol.get_grad()

@@ -265,7 +265,6 @@ def lbfgs( mol: object,
     log_file.write( "Degrees of Freedom:   %20ld\n"%( size ) )
     log_file.write( "Step Number:          %20d\n"%( step_number ) )
     log_file.write( "Print Frequency:      %20d\n"%( print_frequency ) )
-    log_file.write( "Use Maxgradient:      %20s\n"%( use_maxgrad ) )
     log_file.write( "Gradient Tolerance:   %20.10lg\n\n"%( gradient_tolerance ) )
     log_file.write( "%10s%20s%20s\n"%( "Step", "Function", "Gradient" ) )
     log_file.write( "-" * 50 + "\n" )

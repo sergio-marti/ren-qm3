@@ -1,3 +1,5 @@
+import  os
+os.environ["OPENMM_CPU_THREADS"] = "1"
 import  sys
 import	numpy
 import  openmm
@@ -6,7 +8,6 @@ import  openmm.unit
 import	qm3
 import  qm3.engines.openmm
 import  qm3.actions.minimize
-import  os
 
  
 cwd = os.path.abspath( os.path.dirname( sys.argv[0] ) ) + os.sep
@@ -30,13 +31,10 @@ _sys.setDefaultPeriodicBoxVectors(
     openmm.Vec3( 0.0, mol.boxl[1], 0.0 ) * openmm.unit.angstrom,
     openmm.Vec3( 0.0, 0.0, mol.boxl[2] ) * openmm.unit.angstrom )
 
-mol.engines["mm"] = qm3.engines.openmm.run( _sys, _top, platform = "OpenCL" )
+mol.engines["mm"] = qm3.engines.openmm.run( _sys, _top )
 
-qm3.actions.minimize.cgplus( mol, print_frequency = 100 )
-
-with open( "last.xyz", "wt" ) as f:
-    mol.xyz_write( f )
+qm3.actions.minimize.cgplus( mol )
 
 mol.get_grad()
-print( mol.func )
-print( numpy.linalg.norm( mol.grad ) )
+print( round( mol.func, 1 ), " / -33912.4" )
+print( round( numpy.linalg.norm( mol.grad ), 1 ), " / 164.3" )
