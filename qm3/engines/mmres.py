@@ -438,6 +438,18 @@ class colvar_s( object ):
                 self.arcl[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( self._met[i], vec ) ) )
             self.delz = self.arcl.sum() / float( self.nwin - 1.0 )
             print( ">> mean: %.6lf ± %.6lf"%( numpy.mean( self.arcl ), numpy.std( self.arcl ) ) )
+            try:
+                import matplotlib.pyplot as plt
+                plt.clf()
+                plt.grid( True )
+                for i in range( self.ncrd ):
+                    plt.plot( self.rcrd[:,i], '.' )
+                for i in range( self.ncrd ):
+                    plt.plot( fcrd[:,i], '-' )
+                plt.tight_layout()
+                plt.savefig( "colvar_s.pdf" )
+            except:
+                pass
         #@if( self.qmas ):
         #@    print( "Colective variable s range: [%.3lf - %.3lf: %.6lf] _Ang amu^0.5"%( 0.0, self.arcl.sum(), self.delz ) )
         #@else:
