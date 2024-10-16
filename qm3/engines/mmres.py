@@ -369,7 +369,8 @@ class colvar_s( object ):
             str_crd: typing.Optional[str] = "",
             kumb: typing.Optional[float] = 0.0,
             xref: typing.Optional[float] = 0.0,
-            delz: typing.Optional[float] = 0.0 ):
+            delz: typing.Optional[float] = 0.0,
+            wall: typing.Optional[float] = -1.0 ):
             #@mass: typing.Optional[bool] = False ):
         self.xref = xref
         self.kumb = kumb
@@ -400,6 +401,18 @@ class colvar_s( object ):
         #@else:
         #@    self.mass = numpy.ones( len( self.jidx ), dtype=numpy.float64 )
         #@self.mass = numpy.column_stack( ( self.mass, self.mass, self.mass ) ).reshape( self.jcol )
+        self.wall = []
+        if( wall > 0.0 ):
+            r_dsp = numpy.mean( numpy.abs( numpy.diff( self.rcrd, axis = 0 ) ), axis = 0 ) * 2.0
+            r_min = numpy.min( self.rcrd, axis = 0 )
+            r_max = numpy.max( self.rcrd, axis = 0 )
+            print( "Colective variable s walls:", r_min - r_dsp )
+            print( "                          :", r_max + r_dsp )
+            for i in range( self.ncrd ):
+                self.wall.append( distance( wall, r_min[i] + r_dsp[i],
+                        [ self.atom[i,0], self.atom[i,1] ], skip_BE = r_min[i] - r_dsp[i] ) )
+                self.wall.append( distance( wall, r_max[i] - r_dsp[i],
+                        [ self.atom[i,0], self.atom[i,1] ], skip_LE = r_max[i] + r_dsp[i] ) )
 
 
     def append( self, mol: object ):
@@ -514,6 +527,8 @@ class colvar_s( object ):
                 sder[i] += diff * jder[j,i] * ( cval / self.delz - j ) * cexp[j] / sumd
         sder.shape = ( self.jcol // 3, 3 )
         mol.grad[list( self.jidx.keys() ),:] += sder
+        for eng in self.wall:
+            eng.get_grad( mol )
         return( ( out, cval, ccrd ) )
 
 
