@@ -371,13 +371,13 @@ class colvar_s( object ):
             xref: typing.Optional[float] = 0.0,
             delz: typing.Optional[float] = 0.0,
             wall: typing.Optional[float] = -1.0,
-            exp2: typing.Optional[float] = True,
-            mass: typing.Optional[bool] = False ):
+            exp2: typing.Optional[float] = True ):
+            #@mass: typing.Optional[bool] = False ):
         self.xref = xref
         self.kumb = kumb
         self.delz = delz
         self.exp2 = exp2
-        self.qmas = mass
+        #@self.qmas = mass
         # parse config
         self.atom = numpy.loadtxt( str_cnf, dtype=numpy.int32 )
         if( len( self.atom.shape ) == 1 ):
@@ -397,12 +397,12 @@ class colvar_s( object ):
         else:
             self.rcrd = numpy.loadtxt( str_crd, dtype=numpy.float64 )
             self.nwin = self.rcrd.shape[0]
-        # store the the masses
-        if( self.qmas ):
-            self.mass = mol.mass[list( self.jidx.keys() )]
-        else:
-            self.mass = numpy.ones( len( self.jidx ), dtype=numpy.float64 )
-        self.mass = numpy.column_stack( ( self.mass, self.mass, self.mass ) ).reshape( self.jcol )
+        #@# store the the masses
+        #@if( self.qmas ):
+        #@    self.mass = mol.mass[list( self.jidx.keys() )]
+        #@else:
+        #@    self.mass = numpy.ones( len( self.jidx ), dtype=numpy.float64 )
+        #@self.mass = numpy.column_stack( ( self.mass, self.mass, self.mass ) ).reshape( self.jcol )
         # define walls
         self.wall = []
         if( wall > 0.0 ):
@@ -506,7 +506,7 @@ class colvar_s( object ):
         cmet = numpy.zeros( ( self.ncrd, self.ncrd ), dtype=numpy.float64 )
         for i in range( self.ncrd ):
             for j in range( i, self.ncrd ):
-                cmet[i,j] = numpy.sum( jaco[i,:] * jaco[j,:] / self.mass )
+                cmet[i,j] = numpy.sum( jaco[i,:] * jaco[j,:] ) #@ / self.mass )
                 cmet[j,i] = cmet[i,j]
         return( ( ccrd, jaco, numpy.linalg.inv( cmet ) ) )
 
