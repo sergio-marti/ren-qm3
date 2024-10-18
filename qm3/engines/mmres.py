@@ -340,8 +340,8 @@ class tether( object ):
 
 class colvar_s( object ):
     """
-    kumb: kJ / ( mol Angs^2 )
-    xref: Ang amu^0.5
+    kumb: kJ / ( mol Ang^2 )    kJ / ( mol Ang^2 amu )
+    xref: Ang                   Ang amu^0.5
     -------------------------------------
     atm_1,i     atm_1,j
     ...         ...
@@ -371,13 +371,13 @@ class colvar_s( object ):
             xref: typing.Optional[float] = 0.0,
             delz: typing.Optional[float] = 0.0,
             wall: typing.Optional[float] = -1.0,
-            exp2: typing.Optional[float] = False ):
-            #@mass: typing.Optional[bool] = False ):
+            exp2: typing.Optional[float] = True,
+            mass: typing.Optional[bool] = False ):
         self.xref = xref
         self.kumb = kumb
         self.delz = delz
         self.exp2 = exp2
-        #@self.qmas = mass
+        self.qmas = mass
         # parse config
         self.atom = numpy.loadtxt( str_cnf, dtype=numpy.int32 )
         if( len( self.atom.shape ) == 1 ):
@@ -397,19 +397,20 @@ class colvar_s( object ):
         else:
             self.rcrd = numpy.loadtxt( str_crd, dtype=numpy.float64 )
             self.nwin = self.rcrd.shape[0]
-        #@# store the the masses
-        #@if( self.qmas ):
-        #@    self.mass = mol.mass[list( self.jidx.keys() )]
-        #@else:
-        #@    self.mass = numpy.ones( len( self.jidx ), dtype=numpy.float64 )
-        #@self.mass = numpy.column_stack( ( self.mass, self.mass, self.mass ) ).reshape( self.jcol )
+        # store the the masses
+        if( self.qmas ):
+            self.mass = mol.mass[list( self.jidx.keys() )]
+        else:
+            self.mass = numpy.ones( len( self.jidx ), dtype=numpy.float64 )
+        self.mass = numpy.column_stack( ( self.mass, self.mass, self.mass ) ).reshape( self.jcol )
+        # define walls
         self.wall = []
         if( wall > 0.0 ):
             r_dsp = numpy.mean( numpy.abs( numpy.diff( self.rcrd, axis = 0 ) ), axis = 0 ) * 2.0
             r_min = numpy.min( self.rcrd, axis = 0 )
             r_max = numpy.max( self.rcrd, axis = 0 )
             print( "Colective variable s walls:", r_min - r_dsp )
-            print( "                          :", r_max + r_dsp )
+            print( "                           ", r_max + r_dsp )
             for i in range( self.ncrd ):
                 self.wall.append( distance( wall, r_min[i] + r_dsp[i],
                         [ self.atom[i,0], self.atom[i,1] ], skip_BE = r_min[i] - r_dsp[i] ) )
@@ -435,14 +436,13 @@ class colvar_s( object ):
             vec.shape = ( self.ncrd, 1 )
             self.arcl[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( self._met[i], vec ) ) )
         self.delz = self.arcl.sum() / float( self.nwin - 1.0 )
-        print( ">> mean: %.6lf ± %.6lf / delz: %.6lf"%( numpy.mean( self.arcl ), numpy.std( self.arcl ), self.delz ) )
         if( redistribute ):
             arcl = numpy.cumsum( self.arcl )
             equi = numpy.array( [ arcl[-1] / ( self.nwin - 1.0 ) * i for i in range( self.nwin ) ] )
             fcrd = numpy.zeros( ( self.nwin, self.ncrd ) )
             for i in range( self.ncrd ):
                 #inte = qm3.utils.interpolation.cubic_spline( arcl, self.rcrd[:,i] )
-                inte = qm3.utils.interpolation.gaussian( arcl, self.rcrd[:,i], 0.25 )
+                inte = qm3.utils.interpolation.gaussian( arcl, self.rcrd[:,i], 0.15 )
                 fcrd[:,i] = numpy.array( [ inte.calc( x )[0] for x in equi ] )
             try:
                 import matplotlib.pyplot as plt
@@ -451,7 +451,7 @@ class colvar_s( object ):
                 for i in range( self.ncrd ):
                     plt.plot( self.rcrd[:,i], 'o' )
                 for i in range( self.ncrd ):
-                    plt.plot( fcrd[:,i], '-' )
+                    plt.plot( fcrd[:,i], '.-' )
                 plt.tight_layout()
                 plt.savefig( "colvar_s.pdf" )
             except:
@@ -463,13 +463,19 @@ class colvar_s( object ):
                 vec.shape = ( self.ncrd, 1 )
                 self.arcl[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( self._met[i], vec ) ) )
             self.delz = self.arcl.sum() / float( self.nwin - 1.0 )
-            print( ">> mean: %.6lf ± %.6lf / delz: %.6lf"%( numpy.mean( self.arcl ), numpy.std( self.arcl ), self.delz ) )
-        #@if( self.qmas ):
-        #@    print( "Colective variable s range: [%.3lf - %.3lf: %.6lf] _Ang amu^0.5"%( 0.0, self.arcl.sum(), self.delz ) )
-        #@else:
-        #@    print( "Colective variable s range: [%.3lf - %.3lf: %.6lf] _Ang"%( 0.0, self.arcl.sum(), self.delz ) )
+        else:
+            try:
+                import matplotlib.pyplot as plt
+                plt.clf()
+                plt.grid( True )
+                for i in range( self.ncrd ):
+                    plt.plot( self.rcrd[:,i], '.-' )
+                plt.tight_layout()
+                plt.savefig( "colvar_s.pdf" )
+            except:
+                pass
+        print( ">> mean: %.6lf ± %.6lf / delz: %.6lf"%( numpy.mean( self.arcl ), numpy.std( self.arcl ), self.delz ) )
         # ----------------------------------------------------
-        #print( "Colective variable s range: [%.3lf - %.3lf: %.6lf] _Ang"%( 0.0, self.arcl.sum(), self.delz ) )
         cdst = numpy.zeros( self.nwin, dtype=numpy.float64 )
         for i in range( self.nwin ):
             vec = ( self.rcrd[-1] - self.rcrd[i] ).reshape( ( self.ncrd, 1 ) )
@@ -479,10 +485,11 @@ class colvar_s( object ):
         else:
             cexp = numpy.exp( - cdst / self.delz )
         cval = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp ) / cexp.sum()
-        print( "Colective variable s range: [%.3lf - %.3lf: %.6lf] _Ang"%( 0.0, cval, cval / self.nwin ) )
+        dels = cval / self.nwin
+        print( "Colective variable s range: [%.3lf - %.3lf: %.6lf]"%( 0.0, cval, dels ) )
         # ----------------------------------------------------
         numpy.savetxt( str_crd, self.rcrd, fmt = "%12.4lf" )
-        return( self.delz, cval / self.nwin, self.arcl )
+        return( self.delz, dels, self.arcl )
 
 
     def get_info( self, mol: object ) -> tuple:
@@ -499,7 +506,7 @@ class colvar_s( object ):
         cmet = numpy.zeros( ( self.ncrd, self.ncrd ), dtype=numpy.float64 )
         for i in range( self.ncrd ):
             for j in range( i, self.ncrd ):
-                cmet[i,j] = numpy.sum( jaco[i,:] * jaco[j,:] ) #@ / self.mass )
+                cmet[i,j] = numpy.sum( jaco[i,:] * jaco[j,:] / self.mass )
                 cmet[j,i] = cmet[i,j]
         return( ( ccrd, jaco, numpy.linalg.inv( cmet ) ) )
 
@@ -543,9 +550,9 @@ class colvar_s( object ):
         for i in range( self.jcol ):
             for j in range( self.nwin ):
                 if( self.exp2 ):
-                    sder[i] += diff * jder[j,i] * ( cval / self.delz - j ) * cexp[j] / sumd * cdst[j] / self.delz * 2.0
+                    sder[i] += diff * jder[j,i] * ( cval / self.delz - j ) * ( cexp[j] / sumd ) * ( cdst[j] / self.delz ) * 2.0
                 else:
-                    sder[i] += diff * jder[j,i] * ( cval / self.delz - j ) * cexp[j] / sumd
+                    sder[i] += diff * jder[j,i] * ( cval / self.delz - j ) * ( cexp[j] / sumd )
         sder.shape = ( self.jcol // 3, 3 )
         mol.grad[list( self.jidx.keys() ),:] += sder
         for eng in self.wall:
@@ -587,7 +594,8 @@ class colvar_path( object ):
         for i in range( 1, self.nwin ):
             self.arcl[i] = numpy.sqrt( numpy.mean( numpy.sum( numpy.square( self.get_rmsd( self.refs[i-1], self.refs[i] )[0] ), axis = 1 ) ) )
         self.delz = self.arcl.sum() / float( self.nwin - 1.0 )
-        print( "Colective variable path range: [%.3lf - %.3lf: %.6lf] _Ang"%( 0.0, self.arcl.sum(), self.delz ) )
+        # fix this for the s value (instead of arc length), and allow exp2 also...
+        print( "Colective variable path range: [%.3lf - %.3lf: %.6lf]"%( 0.0, self.arcl.sum(), self.delz ) )
 
 
     def get_func( self, mol: object ) -> tuple:
