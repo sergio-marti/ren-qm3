@@ -1,4 +1,3 @@
-import  sys
 import	numpy
 import  openmm
 import  openmm.app
@@ -7,21 +6,18 @@ import	qm3
 import  qm3.engines.openmm
 import  qm3.engines.xtb
 import  qm3.actions.minimize
-import  os
-
-cwd = os.path.abspath( os.path.dirname( sys.argv[0] ) ) + os.sep
 
 mol = qm3.molecule()
-mol.pdb_read( open( cwd + "pdb" ) )
+mol.pdb_read( open( "pdb" ) )
 mol.boxl = numpy.array( [ 40.0, 40.0, 40.0 ] )
-mol.psf_read( open( cwd + "oxy-cope.psf" ) )
+mol.psf_read( open( "oxy-cope.psf" ) )
 mol.guess_atomic_numbers()
 
-_psf = openmm.app.charmmpsffile.CharmmPsfFile( cwd + "oxy-cope.psf" )
+_psf = openmm.app.charmmpsffile.CharmmPsfFile( "oxy-cope.psf" )
 _psf.setBox( mol.boxl[0] * openmm.unit.angstrom,
         mol.boxl[1] * openmm.unit.angstrom,
         mol.boxl[2] * openmm.unit.angstrom )
-_prm = openmm.app.charmmparameterset.CharmmParameterSet( cwd + "oxy-cope.top", cwd + "oxy-cope.prm" )
+_prm = openmm.app.charmmparameterset.CharmmParameterSet( "oxy-cope.top", "oxy-cope.prm" )
 _sys = _psf.createSystem( _prm,
     nonbondedMethod = openmm.app.CutoffPeriodic,
     nonbondedCutoff = 16.0 * openmm.unit.angstrom,
