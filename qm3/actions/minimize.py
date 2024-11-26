@@ -52,9 +52,9 @@ def steepest_descent( mol: object,
         grms = numpy.max( numpy.linalg.norm( mol.grad, axis = 1 ) ) / ndf
     else:
         grms = norm / ndf
-    log_file.write( "%10s%20s%20s%20s\n"%( "Step", "Function", "Gradient", "Displacement" ) )
-    log_file.write( "-" * 70 + "\n" )
-    log_file.write( "%30.5lf%20.8lf%20.10lf\n"%( mol.func, grms, ssiz ) )
+    log_file.write( "%10s%20s%20s\n"%( "Step", "Function", "Gradient" ) )
+    log_file.write( "-" * 50 + "\n" )
+    log_file.write( "%30.5lf%20.8lf\n"%( mol.func, grms ) )
     itr  = 0
     while( itr < step_number and grms > gradient_tolerance ):
         mol.coor -= mol.grad / norm * ssiz
@@ -72,11 +72,11 @@ def steepest_descent( mol: object,
             grms = norm / ndf
         itr += 1
         if( itr % print_frequency == 0 ):
-            log_file.write( "%10d%20.5lf%20.10lf%20.10lf\n"%( itr, mol.func, grms, ssiz ) )
+            log_file.write( "%10d%20.5lf%20.10lf\n"%( itr, mol.func, grms ) )
         current_step( mol, itr )
     if( itr % print_frequency != 0 ):
-        log_file.write( "%10d%20.5lf%20.10lf%20.10lf\n"%( itr + 1, mol.func, grms, ssiz ) )
-    log_file.write( "-" * 70 + "\n\n" )
+        log_file.write( "%10d%20.5lf%20.10lf\n"%( itr + 1, mol.func, grms ) )
+    log_file.write( "-" * 50 + "\n\n" )
 
 # =================================================================================================
 
