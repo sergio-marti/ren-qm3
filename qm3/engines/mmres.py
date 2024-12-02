@@ -370,7 +370,7 @@ class colvar_s( object ):
             kumb: typing.Optional[float] = 0.0,
             xref: typing.Optional[float] = 0.0,
             delz: typing.Optional[float] = 0.0,
-            exp2: typing.Optional[float] = True ):
+            exp2: typing.Optional[float] = False ):
             #@mass: typing.Optional[bool] = False ):
         self.xref = xref
         self.kumb = kumb
