@@ -40,9 +40,11 @@ qm3_charges
 mol.engines["qm"] = qm3.engines.sqm.run( mol, f, sqm, smm, sla )
 
 mol.get_grad()
-#print( round( mol.func, 1 ), "/ 845.8" )
-#print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 714.2" )
-#print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 155.1" )
-print( round( mol.func, 1 ), "/ 815.3" )
-print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 712.5" )
-print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 152.8" )
+if( len( sla[0] ) == 2 ):
+    print( round( mol.func, 1 ), "/ 845.8" )
+    print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 714.2" )
+    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 155.1" )
+else:
+    print( round( mol.func, 1 ), "/ 815.3" )
+    print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 712.5" )
+    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 152.8" )

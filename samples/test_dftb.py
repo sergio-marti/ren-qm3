@@ -70,9 +70,11 @@ ParserOptions { WriteHSDInput = No }
 mol.engines["qm"] = qm3.engines.dftb.run( mol, f, sqm, smm, sla )
 
 mol.get_grad()
-#print( round( mol.func, 1 ), "/ -36796.1" )
-#print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 560.9" )
-#print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 61.9" )
-print( round( mol.func, 1 ), "/ -36826.6" )
-print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 556.5" )
-print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 59.9" )
+if( len( sla[0] ) == 2 ):
+    print( round( mol.func, 1 ), "/ -36796.1" )
+    print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 560.9" )
+    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 61.9" )
+else:
+    print( round( mol.func, 1 ), "/ -36826.6" )
+    print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 556.5" )
+    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 59.9" )

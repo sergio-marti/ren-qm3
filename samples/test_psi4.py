@@ -38,9 +38,11 @@ opt = { "reference": "rks",
 mol.engines["qm"] = qm3.engines.psi4.run( mol, opt, sqm, smm, sla )
 
 mol.get_grad()
-#print( round( mol.func, 1 ), "/ -697633.7" )
-#print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 575.6" )
-#print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 68.3" )
-print( round( mol.func, 1 ), "/ -697664.9" )
-print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 571.0" )
-print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 65.1" )
+if( len( sla[0] ) == 2 ):
+    print( round( mol.func, 1 ), "/ -697633.7" )
+    print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 575.6" )
+    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 68.3" )
+else:
+    print( round( mol.func, 1 ), "/ -697664.9" )
+    print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 571.0" )
+    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 65.1" )
