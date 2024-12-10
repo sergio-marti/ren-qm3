@@ -49,6 +49,9 @@ def numerical( mol: object,
 def par_numerical( nproc: int, mol: object,
         dsp: typing.Optional[float] = 1.e-4,
         central: typing.Optional[bool] = True ) -> numpy.array:
+    """
+    NOT intended to be used along with an OpenMM engine (mol.get_grad with hang forever)
+    """
     unix = "qm3_parnumhes.%d"%( os.getpid() )
     sele = numpy.flatnonzero( mol.actv.ravel() )
     size = 3 * sele.shape[0]
@@ -94,7 +97,7 @@ def par_numerical( nproc: int, mol: object,
     sckt.bind( unix )
     dead = 0
     while( dead < nproc ):
-        sckt.listen( nproc + 1 )
+        sckt.listen( nproc * 2 )
         chld, addr = sckt.accept()
         temp = struct.unpack( "i", chld.recv( 4 ) )[0]
         if( temp == -1 ):

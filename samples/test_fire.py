@@ -7,6 +7,7 @@ import  openmm.app
 import  openmm.unit
 import	qm3
 import  qm3.engines.openmm
+import  qm3.engines.mopac
 import  qm3.actions.minimize
 
  
@@ -33,7 +34,9 @@ _sys.setDefaultPeriodicBoxVectors(
 
 sqm = mol.resn == "SUS"
 smm = mol.sph_sel( sqm, 10 )
+smm[sqm] = False
 print( sqm.sum(), smm.sum() )
+mol.engines["qm"] = qm3.engines.mopac.run( mol, "AM1", 1, 1, sqm, smm )
 mol.engines["mm"] = qm3.engines.openmm.run( _sys, _top, sel_QM = sqm )
 
 qm3.actions.minimize.fire( mol )

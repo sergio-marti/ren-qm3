@@ -1,11 +1,18 @@
+#!/usr/bin/env python3
 import  os
 os.environ["OMP_NUM_THREADS"] = "1"
 import  numpy
 import  qm3
+import  qm3.utils.parallel
 import  qm3.engines.mopac
 import  qm3.actions.minimize
 import  qm3.actions.neb
 import  io
+import  sys
+
+
+opar = qm3.utils.parallel.client_fsi( int( sys.argv[1] ) )
+#opar = qm3.utils.parallel.client_mpi()
 
 
 mol = qm3.molecule()
@@ -109,12 +116,47 @@ prod = mol.coor.copy()
 
 gues = qm3.actions.neb.distribute( 20, [ reac, tran, prod ] )
 
-with open( "chain", "wt" ) as f:
-    for g in gues:
-        mol.coor = g
-        mol.xyz_write( f )
+if( opar.node == 0 ):
+    obj = qm3.actions.neb.neb( gues, 200, opar )
+    obj.current_step = lambda i: sys.stdout.flush()
+    qm3.actions.minimize.fire( obj, print_frequency = 1, gradient_tolerance = len( gues ) * 0.1 )
+    opar.barrier()
+    for who in range( 1, opar.ncpu ):
+        opar.send_i4( who, [ 0 ] )
 
+else:
+    sele = numpy.argwhere( mol.actv.ravel() ).ravel()
+    dime = len( sele )
+    opar.barrier()
+    nchk = opar.recv_i4( 0, 1 )[0]
+    chnk = opar.recv_i4( 0, nchk )
+    print( ">>", opar.node, nchk, chnk )
+    size = dime * nchk
+    grad = numpy.zeros( ( size, 3 ) )
+    opar.barrier()
+    flag = opar.recv_i4( 0, 1 )[0]
+    while( flag ):
+        # get current coordinates for my chunks
+        coor = numpy.array( opar.recv_r8( 0, 3 * size ) )
+        coor.shape = ( size, 3 )
+        # calculate gradients
+        vpot = []
+        for who in range( nchk ):
+            ii = who * dime
+            mol.coor[sele] = coor[ii:ii+dime]
+            mol.get_grad()
+            mol.project_gRT()
+            vpot.append( mol.func )
+            grad[ii:ii+dime] = mol.grad[sele]
+            # "neb_data" equivalent
+            with open( "node.%02d"%( chnk[who] ), "wt" ) as f:
+                mol.xyz_write( f, comm = "func: %.4lf"%( mol.func ) )
+        # send my functions and gradients to master
+        opar.barrier()
+        opar.send_r8( 0, vpot )
+        opar.send_r8( 0, grad.ravel().tolist() )
+        # wait for more
+        opar.barrier()
+        flag = opar.recv_i4( 0, 1 )[0]
 
-obj = qm3.actions.neb.serial( mol, gues, 100 )
-
-qm3.actions.minimize.fire( obj, print_frequency = 1, gradient_tolerance = len( gues ) * 0.1 )
+opar.stop()
