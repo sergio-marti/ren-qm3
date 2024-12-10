@@ -109,7 +109,7 @@ class client_fsi( object ):
         msg = self.__recv( sckt )
         sckt.close()
         while( len( msg ) < siz * 4 ):
-            time.sleep( 0.1 )
+            time.sleep( 0.01 )
             sckt = socket.socket( socket.AF_UNIX, socket.SOCK_STREAM )
             sckt.connect( self.unix )
             self.__send( sckt, b"R%03d%03d%010d"%( self.node, src, siz * 4 - len( msg ) ) )
