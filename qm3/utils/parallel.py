@@ -8,16 +8,13 @@ import typing
 
 class client_fsi( object ):
     def __send( self, sckt, msg ):
-        tmp = b"%010d"%( len( msg ) ) + msg
-        siz = len( tmp )
-        cur = 0
-        while( cur < siz ):
-            cur += sckt.send( tmp[cur:] )
+        tmp = struct.pack( "i", len( msg ) ) + msg
+        sckt.sendall( tmp )
 
     def __recv( self, sckt ):
         msg = sckt.recv( self.slen )
-        siz = int( msg[0:10] )
-        msg = msg[10:]
+        siz = struct.unpack( "i", msg[0:4] )[0]
+        msg = msg[4:]
         cur = len( msg )
         while( cur < siz ):
             msg += sckt.recv( min( siz - cur, self.slen ) )
@@ -27,33 +24,30 @@ class client_fsi( object ):
     def __serve( self, chld ):
         msg = self.__recv( chld )
         cmd = chr( msg[0] )
-        who = int( msg[1:4] )
-        dst = int( msg[4:7] )
+        who = struct.unpack( "h", msg[1:3] )[0]
+        dst = struct.unpack( "h", msg[3:5] )[0]
         if( cmd == "W" ):
-            self.data[dst][who] += msg[7:]
+            self.data[dst][who].extend( msg[5:] )
         elif( cmd == "R" ):
-            siz = int( msg[7:] )
-            if( len( self.data[who][dst] ) >= siz ):
-                self.__send( chld, self.data[who][dst][0:siz] )
-                self.data[who][dst] = self.data[who][dst][siz:]
-            else:
-                self.__send( chld, b"" )
-        elif( cmd == "X" ):
-            self.sdwn -= 1
+            siz = struct.unpack( "i", msg[5:] )[0]
+            #if( len( self.data[who][dst] ) >= siz ):
+            #    self.__send( chld, self.data[who][dst][0:siz] )
+            #    del self.data[who][dst][0:siz]
+            #else:
+            #    self.__send( chld, b"" )
+            self.__send( chld, self.data[who][dst][0:siz] )
+            del self.data[who][dst][0:siz]
         elif( cmd == "B" ):
             self.barB += 1
         elif( cmd == "b" ):
-            if( self.barB % self.ncpu == 0 ):
-                chld.send( b"@#" )
-            else:
-                chld.send( b"@@" )
+            chld.send( b"@@" if( self.barB % self.ncpu == 0 ) else b"__" )
         elif( cmd == "P" ):
             self.barP += 1
         elif( cmd == "p" ):
-            if( self.barP % self.ncpu == 0 ):
-                chld.send( b"@#" )
-            else:
-                chld.send( b"@@" )
+            chld.send( b"@@" if( self.barP % self.ncpu == 0 ) else b"__" )
+        elif( cmd == "X" ):
+            self.sdwn -= 1
+
         chld.close()
         if( self.sdwn <= 0 ):
             os._exit( 0 )
@@ -65,28 +59,32 @@ class client_fsi( object ):
         self.unix = "client_fsi.%d"%( os.getpid() )
         self.slen = 10240
         pids = list( range( self.ncpu ) )
+
         for i in range( self.ncpu ):
             if( self.node == -1 ):
                 if( os.fork() == 0 ):
                     time.sleep( wait )
-                    sckt = socket.socket( socket.AF_UNIX, socket.SOCK_STREAM )
-                    sckt.connect( self.unix )
-                    self.node = struct.unpack( "i", sckt.recv( 4 ) )[0]
-                    sckt.close()
+                    with socket.socket( socket.AF_UNIX, socket.SOCK_STREAM ) as sckt:
+                        sckt.connect( self.unix )
+                        self.__node = sckt.recv( 2 )
+                        self.node = struct.unpack( "h", self.__node )[0]
                     time.sleep( wait )
+
         if( self.node == -1 ):
             self.sdwn = self.ncpu
             self.barB = 0
             self.barP = 0
-            self.data = [ [ b"" for j in range( self.ncpu ) ] for i in range( self.ncpu ) ]
+            self.data = [ [ bytearray() for _ in range( self.ncpu ) ] for _ in range( self.ncpu ) ]
             sckt = socket.socket( socket.AF_UNIX, socket.SOCK_STREAM )
             sckt.bind( self.unix )
+
             while( len( pids ) > 0 ):
                 sckt.listen( self.ncpu * 2 )
                 chld, addr = sckt.accept()
-                chld.send( struct.pack( "i", pids.pop() ) )
+                chld.send( struct.pack( "h", pids.pop() ) )
                 chld.close()
             sys.stderr.write( "fsi_server: %d processes initialized!\n"%( self.ncpu ) )
+
             while( True ):
                 sckt.listen( self.ncpu * 2 )
                 chld, addr = sckt.accept()
@@ -94,84 +92,58 @@ class client_fsi( object ):
             #sckt.close()
 
     def send_i4( self, dst, lst ):
-        msg = b"W%03d%03d"%( self.node, dst )
-        for r in lst:
-            msg += struct.pack( "i", int( r ) )
-        sckt = socket.socket( socket.AF_UNIX, socket.SOCK_STREAM )
-        sckt.connect( self.unix )
-        self.__send( sckt, msg )
-        sckt.close()
-
-    def recv_i4( self, src, siz ):
-        sckt = socket.socket( socket.AF_UNIX, socket.SOCK_STREAM )
-        sckt.connect( self.unix )
-        self.__send( sckt, b"R%03d%03d%010d"%( self.node, src, siz * 4 ) )
-        msg = self.__recv( sckt )
-        sckt.close()
-        while( len( msg ) < siz * 4 ):
-            time.sleep( 0.01 )
-            sckt = socket.socket( socket.AF_UNIX, socket.SOCK_STREAM )
+        msg = b"W" + self.__node + struct.pack( "h", dst ) + b"".join( struct.pack( "i", x ) for x in lst )
+        with socket.socket( socket.AF_UNIX, socket.SOCK_STREAM ) as sckt:
             sckt.connect( self.unix )
-            self.__send( sckt, b"R%03d%03d%010d"%( self.node, src, siz * 4 - len( msg ) ) )
-            msg += self.__recv( sckt )
-            sckt.close()
-        return( list( struct.unpack( "%di"%( siz ), msg ) ) )
+            self.__send( sckt, msg )
 
     def send_r8( self, dst, lst ):
-        msg = b"W%03d%03d"%( self.node, dst )
-        for r in lst:
-            msg += struct.pack( "d", float( r ) )
-        sckt = socket.socket( socket.AF_UNIX, socket.SOCK_STREAM )
-        sckt.connect( self.unix )
-        self.__send( sckt, msg )
-        sckt.close()
+        msg = b"W" + self.__node + struct.pack( "h", dst ) + b"".join( struct.pack( "d", x ) for x in lst )
+        with socket.socket( socket.AF_UNIX, socket.SOCK_STREAM ) as sckt:
+            sckt.connect( self.unix )
+            self.__send( sckt, msg )
+
+    def __xrecv( self, src, siz, knd, fmt ):
+        dim = siz * knd
+        msg = bytearray()
+        with socket.socket( socket.AF_UNIX, socket.SOCK_STREAM ) as sckt:
+            sckt.connect( self.unix )
+            self.__send( sckt, b"R" + self.__node + struct.pack( "h", src ) + struct.pack( "i", dim ) )
+            msg.extend( self.__recv( sckt ) )
+        while( len( msg ) < dim ):
+            time.sleep( 0.01 )
+            with socket.socket( socket.AF_UNIX, socket.SOCK_STREAM ) as sckt:
+                sckt.connect( self.unix )
+                self.__send( sckt, b"R" + self.__node + struct.pack( "h", src ) + struct.pack( "i", dim - len( msg ) ) )
+                msg.extend( self.__recv( sckt ) )
+        return( list( struct.unpack( "%d%s"%( siz, fmt ), msg ) ) )
+
+    def recv_i4( self, src, siz ):
+        return( self.__xrecv( src, siz, 4, "i" ) )
 
     def recv_r8( self, src, siz ):
-        sckt = socket.socket( socket.AF_UNIX, socket.SOCK_STREAM )
-        sckt.connect( self.unix )
-        self.__send( sckt, b"R%03d%03d%010d"%( self.node, src, siz * 8 ) )
-        msg = self.__recv( sckt )
-        sckt.close()
-        while( len( msg ) < siz * 8 ):
-            time.sleep( 0.01 )
-            sckt = socket.socket( socket.AF_UNIX, socket.SOCK_STREAM )
+        return( self.__xrecv( src, siz, 8, "d" ) )
+
+    def __xbarrier( self, sgnl, poll ):
+        with socket.socket( socket.AF_UNIX, socket.SOCK_STREAM ) as sckt:
             sckt.connect( self.unix )
-            self.__send( sckt, b"R%03d%03d%010d"%( self.node, src, siz * 8 - len ( msg ) ) )
-            msg += self.__recv( sckt )
-            sckt.close()
-        return( list( struct.unpack( "%dd"%( siz ), msg ) ) )
+            self.__send( sckt, sgnl + self.__node + b"\x00\x00_" )
+        while( True ):
+            time.sleep( 0.01 )
+            with socket.socket( socket.AF_UNIX, socket.SOCK_STREAM ) as sckt:
+                sckt.connect( self.unix )
+                self.__send( sckt, poll + self.__node + b"\x00\x00_" )
+                if( sckt.recv( 2 ) == b"@@" ):
+                    break
 
     def barrier( self ):
-        sckt = socket.socket( socket.AF_UNIX, socket.SOCK_STREAM )
-        sckt.connect( self.unix )
-        self.__send( sckt, b"B%03d%03d_"%( self.node, 0 ) )
-        sckt.close()
-        flg = True
-        while( flg ):
-            time.sleep( 0.01 )
-            sckt = socket.socket( socket.AF_UNIX, socket.SOCK_STREAM )
-            sckt.connect( self.unix )
-            self.__send( sckt, b"b%03d%03d_"%( self.node, 0 ) )
-            flg = sckt.recv( 2 ) == b"@@"
-            sckt.close()
-        sckt = socket.socket( socket.AF_UNIX, socket.SOCK_STREAM )
-        sckt.connect( self.unix )
-        self.__send( sckt, b"P%03d%03d_"%( self.node, 0 ) )
-        sckt.close()
-        flg = True
-        while( flg ):
-            time.sleep( 0.01 )
-            sckt = socket.socket( socket.AF_UNIX, socket.SOCK_STREAM )
-            sckt.connect( self.unix )
-            self.__send( sckt, b"p%03d%03d_"%( self.node, 0 ) )
-            flg = sckt.recv( 2 ) == b"@@"
-            sckt.close()
+        self.__xbarrier( b"B", b"b" )
+        self.__xbarrier( b"P", b"p" )
 
     def stop( self ):
-        sckt = socket.socket( socket.AF_UNIX, socket.SOCK_STREAM )
-        sckt.connect( self.unix )
-        self.__send( sckt, b"X%03d%03d_"%( self.node, 0 ) )
-        sckt.close()
+        with socket.socket( socket.AF_UNIX, socket.SOCK_STREAM ) as sckt:
+            sckt.connect( self.unix )
+            self.__send( sckt, b"X" + self.__node + b"\x00\x00_" )
         os._exit( 0 )
 
 
