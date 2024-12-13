@@ -26,8 +26,6 @@ def distribute( nodes: int, guess: list ) -> list:
 
 class neb( object ):
     """
-    the guess geometries should include the coordinates for the all atoms of the model
-
     the value of 'kumb' should be approx the same of the potential energy barrier
 
     when optimizing the whole band, set the 'gradient_tolerance' equal to 0.1 * nodes (_kJ/mol.A)
