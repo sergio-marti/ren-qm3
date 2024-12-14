@@ -78,7 +78,7 @@ class run( qm3.engines.template ):
         else:
             scf = dft
         pyscf.lib.num_threads( self.opt["nproc"] )
-        return( scf )
+        return( scf.density_fit() )
 
 
     def get_func( self, mol ):
