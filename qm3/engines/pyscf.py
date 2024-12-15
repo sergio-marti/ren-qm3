@@ -102,7 +102,7 @@ class run( qm3.engines.template ):
         for i in self.sel:
             mol.chrg[i] = chg[k]
             k += 1
-        g = scf.Gradients().run( grid_response = True ).de.flatten().tolist()
+        g = scf.Gradients().run( grid_response = True ).de.ravel().tolist()
         qm3.engines.Link_grad( self.vla, g )
         k = 0
         for i in self.sel:
@@ -130,3 +130,158 @@ class run( qm3.engines.template ):
                 mol.grad[i,:] += g[k,:] * self.cg
                 k += 1
         return( out )
+
+
+
+try:
+    import  gpu4pyscf.dft
+    import  gpu4pyscf.qmmm.pbc
+    #import  cupy
+
+    class runGPU( qm3.engines.template ):
+        def __init__( self, mol: object, 
+                opts: typing.Optional[dict] = { "basis": "def2-svp", "conv_tol": 1.e-9, "charge": 0, "spin": 0,
+                    "method": "b3lypg", "memory": 4096, "grid": 3, "max_cyc": 50, "nproc": 2 },
+                sel_QM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
+                sel_MM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
+                link: typing.Optional[list] = [] ):
+            qm3.engines.template.__init__( self, mol, sel_QM, sel_MM, link )
+            self.cx  = 1.0 / qm3.data.A0
+            self.ce  = qm3.data.H2J
+            self.cg  = self.ce * self.cx
+            self.opt = opts
+            # redistribute MM-charge on the remaining atoms of the group
+            self.__dq = numpy.zeros( mol.natm )
+            for i,j in self.lnk:
+                if( j in self.grp ):
+                    self.__dq[self.grp[j]] += mol.chrg[j] / len( self.grp[j] )
+            # ----------------------------------------------------------
+    
+    
+        def update_coor( self, mol ):
+            aQM = pyscf.gto.Mole()
+            aQM.unit = "Angstrom"
+            aQM.symmetry = False
+            aQM.basis = self.opt["basis"]
+            aQM.spin = self.opt["spin"]
+            aQM.charge = self.opt["charge"]
+            aQM.verbose = 0
+            aQM.atom = ""
+            for i in self.sel:
+                aQM.atom += "%-2s%20.10lf%20.10lf%20.10lf\n"%( qm3.data.symbol[mol.anum[i]],
+                        mol.coor[i,0], mol.coor[i,1], mol.coor[i,2] )
+            self.vla = []
+            if( len( self.lnk ) > 0 ):
+                k = len( self.sel )
+                for i in range( len( self.lnk ) ):
+                    c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
+                    aQM.atom += "%-2s%20.10lf%20.10lf%20.10lf\n"%( "H", c[0], c[1], c[2] )
+                    self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
+                    k += 1
+            aQM.build()
+            if( aQM.spin == 0 ):
+                dft = gpu4pyscf.dft.RKS( aQM )
+            else:
+                dft = gpu4pyscf.dft.UKS( aQM )
+            dft.verbose = 0
+            dft.direct_scf = True
+            dft.conv_tol = self.opt["conv_tol"]
+            dft.max_cycle = self.opt["max_cyc"]
+            dft.grids.level = self.opt["grid"]
+            dft.xc = self.opt["method"]
+            dft.max_memory = self.opt["memory"]
+            dft.chkfile = "pyscf.chk"
+            # -------------------------------------------------------------------------------
+            # >> gpu4pyscf/scf/hf.py (line 497):
+            #    def dump_chk(self, envs):
+            #        assert isinstance(envs, dict)
+            #        if self.chkfile:
+            #            chkfile.dump_scf(
+            #                self.mol, self.chkfile, cupy.asnumpy( envs['e_tot'] ),
+            #                cupy.asnumpy(envs['mo_energy']), cupy.asnumpy(envs['mo_coeff']),
+            #                cupy.asnumpy(envs['mo_occ']), overwrite_mol=False)
+            # -------------------------------------------------------------------------------
+            if( os.path.isfile( "pyscf.chk" ) ):
+                dft.init_guess = "chkfile"
+            if( len( self.nbn ) > 0 ):
+                crd = mol.coor[self.nbn].copy()
+                if( self.img ):
+                    for i in range( crd.shape[0] ):
+                        crd[i] -= mol.boxl * numpy.round( crd[i] / mol.boxl, 0 )
+                crd *= self.cx
+                chg = mol.chrg[self.nbn] + self.__dq[self.nbn]
+                cut = numpy.min( mol.boxl ) * 0.5
+                rad = 0.1 * numpy.ones( crd.shape[0] ) 
+                scf = gpu4pyscf.qmmm.pbc.itrf.add_mm_charges( dft, crd, numpy.eye( 3 ) * mol.boxl, 
+                                    chg, radii = rad, rcut_ewald = cut, rcut_hcore = cut )
+            else:
+                scf = dft
+            return( scf )
+    
+    
+        def get_func( self, mol ):
+            scf = self.update_coor( mol )
+            out = float( scf.kernel() * self.ce )
+            mol.func += out
+            return( out )
+    
+    
+        def get_grad( self, mol ):
+            scf = self.update_coor( mol )
+            out = float( scf.kernel() * self.ce )
+            mol.func += out
+            g = scf.nuc_grad_method().kernel().ravel().tolist()
+            #g = scf.Gradients().run( grid_response = True ).de.ravel().tolist()
+            qm3.engines.Link_grad( self.vla, g )
+            k = 0
+            for i in self.sel:
+                for j in [0, 1, 2]:
+                    mol.grad[i,j] += g[k] * self.cg
+                    k += 1
+            if( len( self.nbn ) > 0 ):
+                # ---------------------------------------------------------------------------
+                # CPU
+                den = scf.make_rdm1().get()
+                dr  = scf.mol.atom_coords()[:,None,:] - scf.mm_mol.atom_coords()
+                r   = numpy.linalg.norm( dr, axis = 2 )
+                g   = numpy.einsum( "r,R,rRx,rR->Rx", scf.mol.atom_charges(), scf.mm_mol.atom_charges(), dr, r ** -3 )
+                if( len( den.shape ) == 3 ):
+                    for i,q in enumerate( scf.mm_mol.atom_charges() ):
+                        with scf.mol.with_rinv_origin( scf.mm_mol.atom_coord( i ) ):
+                            v = scf.mol.intor( "int1e_iprinv" )
+                        g[i] += ( numpy.einsum( "ij,xji->x", den[0], v ) + numpy.einsum( "ij,xij->x", den[0], v.conj() ) ) * -q
+                        g[i] += ( numpy.einsum( "ij,xji->x", den[1], v ) + numpy.einsum( "ij,xij->x", den[1], v.conj() ) ) * -q
+                else:
+                    for i,q in enumerate( scf.mm_mol.atom_charges() ):
+                        with scf.mol.with_rinv_origin( scf.mm_mol.atom_coord( i ) ):
+                            v = scf.mol.intor( "int1e_iprinv" )
+                        g[i] += ( numpy.einsum( "ij,xji->x", den, v ) + numpy.einsum( "ij,xij->x", den, v.conj() ) ) * -q
+                k = 0
+                for i in self.nbn:
+                    mol.grad[i,:] += g[k,:] * self.cg
+                    k += 1
+                # ---------------------------------------------------------------------------
+                # GPU
+                #den = scf.make_rdm1()
+                #dr  = cupy.array( scf.mol.atom_coords()[:,None,:] - scf.mm_mol.atom_coords() )
+                #r   = cupy.linalg.norm( dr, axis = 2 )
+                #g   = cupy.einsum( "r,R,rRx,rR->Rx", cupy.array( scf.mol.atom_charges() ), cupy.array( scf.mm_mol.atom_charges() ), dr, r ** -3 )
+                #if( len( den.shape ) == 3 ):
+                #    for i,q in enumerate( scf.mm_mol.atom_charges() ):
+                #        with scf.mol.with_rinv_origin( scf.mm_mol.atom_coord( i ) ):
+                #            v = cupy.array( scf.mol.intor( "int1e_iprinv" ) )
+                #        g[i] += ( cupy.einsum( "ij,xji->x", den[0], v ) + cupy.einsum( "ij,xij->x", den[0], v.conj() ) ) * -q
+                #        g[i] += ( cupy.einsum( "ij,xji->x", den[1], v ) + cupy.einsum( "ij,xij->x", den[1], v.conj() ) ) * -q
+                #else:
+                #    for i,q in enumerate( scf.mm_mol.atom_charges() ):
+                #        with scf.mol.with_rinv_origin( scf.mm_mol.atom_coord( i ) ):
+                #            v = cupy.array( scf.mol.intor( "int1e_iprinv" ) )
+                #        g[i] += ( cupy.einsum( "ij,xji->x", den, v ) + cupy.einsum( "ij,xij->x", den, v.conj() ) ) * -q
+                #k = 0
+                #for i in self.nbn:
+                #    mol.grad[i,:] += g[k,:].get() * self.cg
+                #    k += 1
+                # ---------------------------------------------------------------------------
+            return( out )
+except:
+    pass
