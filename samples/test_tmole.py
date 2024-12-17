@@ -63,6 +63,8 @@ on
 scf
 iter
 200
+conv
+8
 
 *
 *
