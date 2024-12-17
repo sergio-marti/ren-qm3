@@ -67,7 +67,7 @@ class run( qm3.engines.template ):
         h = numpy.array( [] )
         if( run in [ "grad", "hess" ] ):
             f = open( "orca.engrad", "rt" )
-            t = re.compile( "[0-9\.\-]+" ).findall( f.read() )
+            t = re.compile( "[0-9\\.\\-]+" ).findall( f.read() )
             f.close()
             n = int( t[0] )
             out = float( t[1] ) * self.ce
@@ -81,7 +81,7 @@ class run( qm3.engines.template ):
                     k += 1
             if( len( self.nbn ) > 0 and os.access( "orca.pcgrad", os.R_OK ) ):
                 f = open( "orca.pcgrad", "rt" )
-                t = re.compile( "[0-9\.\-]+" ).findall( f.read() )
+                t = re.compile( "[0-9\\.\\-]+" ).findall( f.read() )
                 f.close()
                 n = int( t[0] )
                 g = [ float( t[i] ) * self.cg for i in range( 1, 1 + n * 3 ) ]
@@ -108,7 +108,7 @@ class run( qm3.engines.template ):
                 h = h[0:i,0:i] * self.ch
         else:
             f = open( "orca.out", "rt" )
-            mol.func += self.ce * float( re.compile( "FINAL SINGLE POINT ENERGY[\ ]*([0-9\.\-]+)" ).findall( f.read() )[0] )
+            mol.func += self.ce * float( re.compile( "FINAL SINGLE POINT ENERGY[\\ ]*([0-9\\.\\-]+)" ).findall( f.read() )[0] )
             f.close()
         # parse orca output in search for "^CHELPG Charges" (only if chelpg is found in self.inp)
         for ff in glob.glob( "orca.*" ):

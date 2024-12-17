@@ -13,7 +13,7 @@ except:
 
 
 class grid( object ):
-    __number = re.compile( "^[0-9\.\-eE+]+$" )
+    __number = re.compile( "^[0-9\\.\\-eE+]+$" )
     def __init__( self ):
         self.x = numpy.array( [] )
         self.y = numpy.array( [] )
