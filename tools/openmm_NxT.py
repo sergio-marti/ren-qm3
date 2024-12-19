@@ -94,7 +94,7 @@ _sim = openmm.app.Simulation( _top.topology, _sys, _int, openmm.Platform.getPlat
 #_sim.context.setVelocitiesToTemperature( 300.0 )
 
 #>> 1 ns NPT
-#_sim.reporters.append( openmm.app.dcdreporter.DCDReporter( "last.dcd", 4_000, enforcePeriodicBox = True ) )
+#_sim.reporters.append( openmm.app.dcdreporter.DCDReporter( "last.dcd", 4_000, enforcePeriodicBox = False ) )
 #_sim.reporters.append( openmm.app.statedatareporter.StateDataReporter( sys.stdout, 1_000,
 #    time = True, potentialEnergy = True, temperature = True, density = True ) )
 #_sim.step( 1_000_000 )
@@ -103,7 +103,7 @@ _sim = openmm.app.Simulation( _top.topology, _sys, _int, openmm.Platform.getPlat
 #>> 100 ns NVT
 _sim.context.setStepCount( 0 )
 n = 100_000_000
-_sim.reporters.append( openmm.app.dcdreporter.DCDReporter( "last.dcd", 40_000, enforcePeriodicBox = True ) )
+_sim.reporters.append( openmm.app.dcdreporter.DCDReporter( "last.dcd", 40_000, enforcePeriodicBox = False ) )
 _sim.reporters.append( openmm.app.statedatareporter.StateDataReporter( sys.stdout, 10_000,
     time = True, potentialEnergy = True, temperature = True,
     remainingTime = True, totalSteps = n ) )
@@ -114,10 +114,10 @@ _sim.saveState( "last.xml" )
 #>> save coordinates (OpenMM: PDB)
 #with open( "last.pdb", "wt" ) as f:
 #    openmm.app.pdbfile.PDBFile.writeFile( _sim.topology,
-#        _sim.context.getState( getPositions = True, enforcePeriodicBox = True ).getPositions(), f )
+#        _sim.context.getState( getPositions = True, enforcePeriodicBox = False ).getPositions(), f )
 
 #>> save coordinates (XYZ)
-tmp = _sim.context.getState( getPositions = True, enforcePeriodicBox = True ).getPositions()
+tmp = _sim.context.getState( getPositions = True, enforcePeriodicBox = False ).getPositions()
 crd = []
 for i in range( len( tmp ) ):
     crd.append( [ tmp[i].x, tmp[i].y, tmp[i].z ] )
