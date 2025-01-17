@@ -163,8 +163,8 @@ def umbint( data_lst: list,
                     maxx = max( maxx, t )
                 ndat[k] += 1.0
                 aver[k] += t
-                sdev[k] += t * t
                 t2       = t * t
+                sdev[k] += t2
                 s3      += t2 * t
                 s4      += t2 * t2
             i += 1
