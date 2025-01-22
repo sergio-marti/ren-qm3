@@ -29,6 +29,11 @@ mol.engines["qm"] = qm3.engines.quick.run( mol,
     sqm, smm, sla )
 
 mol.get_grad()
-print( round( mol.func, 1 ), "/ -697689.3" )
-print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 569.0" )
-print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 63.8" )
+if( len( sla[0] ) == 2 ):
+    print( round( mol.func, 1 ), "/ -697658.2" )
+    print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 573.6" )
+    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 67.0" )
+else:
+    print( round( mol.func, 1 ), "/ -697689.3" )
+    print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 569.0" )
+    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 63.8" )

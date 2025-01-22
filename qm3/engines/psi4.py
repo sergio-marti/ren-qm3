@@ -53,6 +53,8 @@ class run( qm3.engines.template ):
 
 
     def update_coor( self, mol ):
+        if( self.img ):
+            cen = numpy.mean( mol.coor[self.sel], axis = 0 )
         crd = []
         for i in self.sel:
             crd.append( ( self.cx * mol.coor[i] ).tolist() )
@@ -73,7 +75,7 @@ class run( qm3.engines.template ):
             for i in self.nbn:
                 tmp = mol.coor[i].copy()
                 if( self.img ):
-                    tmp -= mol.boxl * numpy.round( tmp / mol.boxl, 0 )
+                    tmp -= mol.boxl * numpy.round( ( tmp - cen ) / mol.boxl, 0 )
                 self.aMM.append( [ mol.chrg[i] + self.__dq[i], tmp[0] * self.cx, tmp[1] * self.cx, tmp[2] * self.cx ] )
                 f.write( "%20.10lf%20.10lf%20.10lf\n"%( tmp[0], tmp[1], tmp[2] ) )
             f.close()

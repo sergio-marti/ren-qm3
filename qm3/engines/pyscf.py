@@ -32,6 +32,8 @@ class run( qm3.engines.template ):
 
 
     def update_coor( self, mol ):
+        if( self.img ):
+            cen = numpy.mean( mol.coor[self.sel], axis = 0 )
         # just updating coordinates seems not to work properly...
         aQM = pyscf.gto.Mole()
         aQM.unit = "Angstrom"
@@ -71,7 +73,7 @@ class run( qm3.engines.template ):
             crd = mol.coor[self.nbn].copy()
             if( self.img ):
                 for i in range( crd.shape[0] ):
-                    crd[i] -= mol.boxl * numpy.round( crd[i] / mol.boxl, 0 )
+                    crd[i] -= mol.boxl * numpy.round( ( crd[i] - cen ) / mol.boxl, 0 )
             crd *= self.cx
             chg = mol.chrg[self.nbn] + self.__dq[self.nbn]
             scf = pyscf.qmmm.mm_charge( dft, crd, chg, unit = "Bohr" )

@@ -75,6 +75,8 @@ class run( qm3.engines.template ):
 
 
     def get_grad( self, mol: object ):
+        if( self.img ):
+            cen = numpy.mean( mol.coor[self.sel], axis = 0 )
         func = ( ctypes.c_double )()
         func.value = 0.0
         qcrd = numpy.zeros( ( self.nQM, 3 ) )
@@ -97,7 +99,7 @@ class run( qm3.engines.template ):
         for i in self.nbn:
             tmp = mol.coor[i].copy()
             if( self.img ):
-                tmp -= mol.boxl * numpy.round( tmp / mol.boxl, 0 )
+                tmp -= mol.boxl * numpy.round( ( tmp - cen ) / mol.boxl, 0 )
             mcrd[l,0:3] = tmp
             mcrd[l,3] = mol.chrg[i] + self.__dq[i]
             l += 1

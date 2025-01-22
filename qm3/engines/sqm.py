@@ -33,6 +33,8 @@ class run( qm3.engines.template ):
 
 
     def mk_input( self, mol ):
+        if( self.img ):
+            cen = numpy.mean( mol.coor[self.sel], axis = 0 )
         s_qm = ""
         j = 0
         for i in self.sel:
@@ -53,7 +55,7 @@ class run( qm3.engines.template ):
             for i in self.nbn:
                 tmp = mol.coor[i].copy()
                 if( self.img ):
-                    tmp -= mol.boxl * numpy.round( tmp / mol.boxl, 0 )
+                    tmp -= mol.boxl * numpy.round( ( tmp - cen ) / mol.boxl, 0 )
                 s_mm += "%3d%4s%20.10lf%20.10lf%20.10lf%12.4lf\n"%( 1, "H",
                         tmp[0], tmp[1], tmp[2], mol.chrg[i] + self.__dq[i] )
             s_mm += "#END"

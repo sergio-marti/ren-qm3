@@ -56,7 +56,6 @@ class template( object ):
 
         # define whether using minimum image for the surrounding charges
         self.img = True
-        print( "minimum image NBnd:", self.img )
 
         self.vla = []
         self.lnk = []
@@ -78,3 +77,9 @@ class template( object ):
             self.nbn = numpy.flatnonzero( self.nbn )
         else:
             self.nbn = numpy.array( [], dtype=numpy.int32 )
+
+
+    def __setattr__( self, name, value ):
+        if( name == "img" ):
+            print( "minimum image NBnd:", value )
+        super( template, self ).__setattr__( name, value )

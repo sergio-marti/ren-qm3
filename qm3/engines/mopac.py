@@ -57,6 +57,8 @@ class run( qm3.engines.template ):
 
 
     def update_coor( self, mol: object ):
+        if( self.img ):
+            cen = numpy.mean( mol.coor[self.sel], axis = 0 )
         l = 1
         for i in self.sel:
             for j in [0, 1, 2]:
@@ -75,7 +77,7 @@ class run( qm3.engines.template ):
         for i in self.nbn:
             tmp = mol.coor[i].copy()
             if( self.img ):
-                tmp -= mol.boxl * numpy.round( tmp / mol.boxl, 0 )
+                tmp -= mol.boxl * numpy.round( ( tmp - cen ) / mol.boxl, 0 )
             for j in [0, 1, 2]:
                 self.vec[l] = tmp[j]
                 l += 1
