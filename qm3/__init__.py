@@ -88,7 +88,7 @@ class molecule( object ):
 #        return( out )
 
 
-    def sph_sel( self, sele: numpy.array, radius: float, min_image: typing.Optional[bool] = True ) -> numpy.array:
+    def sph_sel( self, sele: numpy.array, radius: float, min_image: typing.Optional[bool] = False ) -> numpy.array:
         """
         quicker brute-force version based on numpy
             (paradoxically the non-sqrt version lasts almost the same...)
