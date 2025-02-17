@@ -60,7 +60,8 @@ grd = numpy.array( grd )
 #
 dev = torch.device( "cuda" if torch.cuda.is_available() else "cpu" )
 print( dev )
-rng = numpy.array( [ numpy.min( ene ) - 4.184, numpy.max( ene ) + 4.184 ] )
+rng = numpy.array( [ numpy.min( ene ) - 4.184, numpy.max( ene ) + 4.184,
+                     numpy.min( grd ) * 2.0, numpy.max( ene ) * 2.0 ] )
 numpy.savetxt( "eref", rng )
 print( rng )
 ene = torch.tensor( ene, dtype=torch.float32 ).to( dev ).unsqueeze( -1 )
@@ -88,7 +89,8 @@ print( net )
 with open( "network", "wt" ) as f:
     f.write( " ".join( [ str( i ) for i in net ] ) + "\n" )
 ene = ( ene - rng[0] ) / ( rng[1] - rng[0] ) * 2.0 - 1.0
-grd = grd * 2.0 / ( rng[1] - rng[0] )
+#grd = grd * 2.0 / ( rng[1] - rng[0] )
+grd = ( grd - rng[2] ) / ( rng[3] - rng[2] ) * 2.0 - 1.0
 print( env.shape, ene.shape, crd.shape, grd.shape )
 
 # ------------------------------------------------------------------------
@@ -98,12 +100,14 @@ mol.engines["ml"] = qm3.engines.mlmodel.run( ref, rng, env,
                         numpy.ones( mol.natm, dtype=numpy.bool_ ),
                         [ qm3.data.symbol[i] for i in mol.anum ],
                         net, dev )
+mol.engines["ml"].load()
 
 bsize = ene.shape[0]
 nepoc = 99999
 optim = torch.optim.Adam( mol.engines["ml"].parameters(), lr = 1.e-3 )
 sched = qm3.engines.mlmodel.scheduler( optim, min_lr = 1.e-7, max_lr = 1.e-3, steps_per_epoch = 1, lr_decay = 0.9,
                                         cycle_length = 100, mult_factor = 1.5 )
+#sched = torch.optim.lr_scheduler.ReduceLROnPlateau( optim, factor = 0.5, patience = 50, min_lr = 1.e-7 )
 lossf = torch.nn.MSELoss()
 dset  = torch.utils.data.TensorDataset( crd, ene, grd )
 dload = torch.utils.data.DataLoader( dset, batch_size = bsize, shuffle = True )
@@ -123,7 +127,7 @@ for epoch in range( nepoc ):
         optim.step()
         tlos += loss.item()
     alos = tlos / len( dload )
-    sched.step()
+    sched.step( alos )
     if( alos < blos ):
         mol.engines["ml"].save()
         print( f"Epoch {epoch+1:5d}/{nepoc:5d}, Loss: {alos:.8f} << Checkpoint" )

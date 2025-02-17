@@ -101,8 +101,7 @@ class run( object ):
     def get_func( self, mol ) -> float:
         crd = torch.tensor( mol.coor[self.sel], dtype=torch.float32, device=self.dev ).unsqueeze( 0 )
         inp = xcoul_info( crd, self.env )
-        tmp = ( self.dsp[1] - self.dsp[0] ) / 2.0
-        out = ( float( self( inp ).cpu().numpy().ravel()[0] ) + 1.0 ) * tmp + self.dsp[0]
+        out = ( float( self( inp ).cpu().numpy().ravel()[0] ) + 1.0 ) * ( self.dsp[1] - self.dsp[0] ) / 2.0 + self.dsp[0]
         mol.func += out
         return( out )
 
@@ -117,12 +116,11 @@ class run( object ):
         crd = torch.tensor( crd, dtype=torch.float32, device=self.dev ).unsqueeze( 0 )
         crd.requires_grad = True
         inp = xcoul_info( crd, self.env )
-        tmp = ( self.dsp[1] - self.dsp[0] ) / 2.0
         out = self( inp )
         grd = torch.autograd.grad( out.sum(), crd )[0]
-        out = ( float( out.detach().cpu().numpy().ravel()[0] ) + 1.0 ) * tmp + self.dsp[0]
+        out = ( float( out.detach().cpu().numpy().ravel()[0] ) + 1.0 ) * ( self.dsp[1] - self.dsp[0] ) / 2.0 + self.dsp[0]
         mol.func += out
-        mol.grad[self.sel] += numpy.dot( grd.detach().cpu().numpy()[0] * tmp, mat )
+        mol.grad[self.sel] += numpy.dot( ( grd.detach().cpu().numpy()[0] + 1.0 ) * ( self.dsp[3] - self.dsp[2] ) / 2.0 + self.dsp[2], mat )
         return( out )
 
 
@@ -157,7 +155,7 @@ class scheduler:
         lr = self.min_lr + 0.5 * ( self.max_lr - self.min_lr ) * ( 1 + numpy.cos( fraction_to_restart * numpy.pi ) )
         return( lr )
 
-    def step( self ):
+    def step( self, fake = None ):
         self.batch_since_restart += 1
         lr = self.clr()
         for param_group in self.optimizer.param_groups:
