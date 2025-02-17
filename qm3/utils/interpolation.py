@@ -405,7 +405,7 @@ def savitzky_golay( y: numpy.array, points: typing.Optional[int] = 0 ) -> numpy.
 
 
 class gpr( object ):
-    def __init__( self, x: numpy.array, y: numpy.array, se2 = 1.e-8 ):
+    def __init__( self, x: numpy.array, y: numpy.array, se2: typing.Optional[float] = 1.e-8 ):
 # ------------------------------------------------------------------------------------
 #\begin{align}
 #&y' = y_{c} \left( x' \right) = K_{1xN}^T \; \left[ C^{-1} \; y \right]_{NxP} \\
@@ -444,7 +444,7 @@ class gpr( object ):
         self.update( numpy.array( [ 1. for i in range( self.m + 2 ) ] ) )
 
     
-    def update( self, parm: numpy.array, se2 = 1.e-8 ):
+    def update( self, parm: numpy.array, se2: typing.Optional[float] = 1.e-8 ):
         if( parm.shape[0] != self.m + 2 ):
             print( "GPR [update]: wrong parameters vector dimension" )
             return
@@ -489,7 +489,7 @@ class gpr( object ):
         return( numpy.sum( numpy.square( dd ) ) / self.n, numpy.array( g ) * 2.0 / self.n )
 
 
-    def on_fire( self, nit = 30, tol = 1.e-6 ):
+    def on_fire( self, nit: typing.Optional[int] = 30, tol: typing.Optional[float] = 1.e-6 ) -> tuple:
         stp = 1.0
         cnt = 0
         alp = 0.1

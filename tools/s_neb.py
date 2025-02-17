@@ -64,6 +64,7 @@ def neb_path( igrd: object, node: int, gues: list, kumb: float, gtol: float ):
         grad[i] += gum - numpy.sum( tau * grad[i] ) * tau
     norm = numpy.linalg.norm( grad )
     grms = norm / ndeg
+    gold = float( "inf" )
     print( "%30.5lf%20.10lf"%( numpy.sum( func ), grms ) )
     itr  = 0
     while( itr < snum and grms > gtol ):
@@ -111,6 +112,11 @@ def neb_path( igrd: object, node: int, gues: list, kumb: float, gtol: float ):
         itr += 1
         if( itr % pfrq == 0 ):
             print( "%10d%20.5lf%20.10lf%20.10lf"%( itr, numpy.sum( func ), grms, ssiz ) )
+
+        if( gold < grms ):
+            break
+        gold = grms
+
     if( itr % pfrq != 0 ):
         print( "%10d%20.5lf%20.10lf%20.10lf"%( itr + 1, numpy.sum( func ), grms, ssiz ) )
     return( coor, func )
@@ -128,7 +134,7 @@ except:
 try:
     gtol = float( os.environ["NEB_GTOL"] )
 except:
-    gtol = 0.1 * dime
+    gtol = 0.05 * dime
 print( dime, kumb, gtol )
 
 
