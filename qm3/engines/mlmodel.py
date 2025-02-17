@@ -4,6 +4,7 @@ import  numpy
 import  torch
 import  torch.nn
 import  torch.optim
+import  os
 
 
 def xcoul_info( crd: torch.tensor, env: torch.tensor ) -> torch.tensor:
@@ -57,8 +58,9 @@ class ml_atom( torch.nn.Module ):
         torch.save( self.state_dict(), self.name  )
 
     def load( self, device: str ):
-        self.load_state_dict( torch.load( self.name, map_location=torch.device( device ) ) )
-        self.eval()
+        if( os.path.isfile( self.name ) ):
+            self.load_state_dict( torch.load( self.name, map_location=torch.device( device ) ) )
+            self.eval()
 
 
 class run( object ):
