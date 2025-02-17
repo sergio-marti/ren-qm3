@@ -60,8 +60,7 @@ grd = numpy.array( grd )
 #
 dev = torch.device( "cuda" if torch.cuda.is_available() else "cpu" )
 print( dev )
-rng = numpy.array( [ numpy.min( ene ) - 4.184, numpy.max( ene ) + 4.184,
-                     numpy.min( grd ) * 2.0, numpy.max( ene ) * 2.0 ] )
+rng = numpy.array( [ numpy.min( ene ) - 4.184, numpy.max( ene ) + 4.184 ] )
 numpy.savetxt( "eref", rng )
 print( rng )
 ene = torch.tensor( ene, dtype=torch.float32 ).to( dev ).unsqueeze( -1 )
@@ -89,8 +88,7 @@ print( net )
 with open( "network", "wt" ) as f:
     f.write( " ".join( [ str( i ) for i in net ] ) + "\n" )
 ene = ( ene - rng[0] ) / ( rng[1] - rng[0] ) * 2.0 - 1.0
-#grd = grd * 2.0 / ( rng[1] - rng[0] )
-grd = ( grd - rng[2] ) / ( rng[3] - rng[2] ) * 2.0 - 1.0
+grd = grd * 2.0 / ( rng[1] - rng[0] )
 print( env.shape, ene.shape, crd.shape, grd.shape )
 
 # ------------------------------------------------------------------------
