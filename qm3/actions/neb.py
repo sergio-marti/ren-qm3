@@ -77,7 +77,9 @@ class neb( object ):
                     tau = dpM * dcM + dpm * dcm
                 else:
                     tau = dpm * dcM + dpM * dcm
-            tau /= numpy.linalg.norm( tau )
+            tmp = numpy.linalg.norm( tau )
+            if( tmp > 0.0 ):
+                tau /= tmp
 #            fum = self.kumb * numpy.sum( ( dcm - dcM ) * tau )
 #            gum = fum * tau
 #            return( tau, fum * numpy.sum( ( dcm - dcM ) * tau ), gum )
