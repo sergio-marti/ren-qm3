@@ -154,6 +154,7 @@ class string( object ):
         # initialize variables
         self.ccrd = numpy.zeros( self.ncrd, dtype=numpy.float64 )
         self.cdif = numpy.zeros( self.ncrd, dtype=numpy.float64 )
+        self.cmet = numpy.zeros( ( self.ncrd, self.ncrd ), dtype=numpy.float64 )
         self.initialize_averages()
 
 
@@ -175,14 +176,14 @@ class string( object ):
         grad.shape = ( self.jcol // 3, 3 )
         mol.grad[list( self.jidx.keys() ),:] += grad
         # calculate current metric tensor (eq. 7 @ 10.1016/j.cplett.2007.08.017)
-        cmet = numpy.zeros( ( self.ncrd, self.ncrd ), dtype=numpy.float64 )
+        self.cmet = numpy.zeros( ( self.ncrd, self.ncrd ), dtype=numpy.float64 )
         for i in range( self.ncrd ):
             for j in range( i, self.ncrd ):
-                cmet[i,j] = numpy.sum( jaco[i,:] * jaco[j,:] ) #@ / self.mass )
-                cmet[j,i] = cmet[i,j]
+                self.cmet[i,j] = numpy.sum( jaco[i,:] * jaco[j,:] ) #@ / self.mass )
+                self.cmet[j,i] = self.cmet[i,j]
         # accumulate
         self.nstp += 1.0
-        self.amet += cmet
+        self.amet += self.cmet
         self.adif += self.cdif
 
 
