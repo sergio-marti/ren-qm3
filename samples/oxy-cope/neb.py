@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import  os
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["OPENMM_CPU_THREADS"] = "1"
@@ -58,9 +59,14 @@ if( opar.node == 0 ):
 opar.barrier()
 
 if( opar.node == 0 ):
+    def backup( obj, stp ):
+        g = numpy.round( numpy.linalg.norm( obj.grad ) / numpy.sqrt( obj.natm * 3 ), 2 )
+        if( g < 4 ):
+            os.system( "tar -cf o-%.2lf.tar node.??"%( g ) )
+        sys.stdout.flush()
+
     obj = qm3.actions.neb.neb( gues, 200, opar )
-    obj.current_step = lambda i: sys.stdout.flush()
-    qm3.actions.minimize.fire( obj, print_frequency = 1, gradient_tolerance = len( gues ) * 0.1 )
+    qm3.actions.minimize.fire( obj, step_number = 500, print_frequency = 1, gradient_tolerance = 0.5, current_step = backup )
     opar.barrier()
     for who in range( 1, opar.ncpu ):
         opar.send_i4( who, [ 0 ] )
