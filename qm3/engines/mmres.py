@@ -432,47 +432,64 @@ class colvar_s( object ):
         for i in range( 1, self.nwin ):
             vec = self.rcrd[i] - self.rcrd[i-1]
             vec.shape = ( self.ncrd, 1 )
-            self.arcl[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( self._met[i], vec ) ) )
+            self.arcl[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( self._met[i], vec ) )[0,0] )
         self.delz = self.arcl.sum() / float( self.nwin - 1.0 )
-        if( redistribute ):
-            arcl = numpy.cumsum( self.arcl )
-            equi = numpy.array( [ arcl[-1] / ( self.nwin - 1.0 ) * i for i in range( self.nwin ) ] )
-            fcrd = numpy.zeros( ( self.nwin, self.ncrd ) )
+        try:
+            import  matplotlib.pyplot as plt
+            import  matplotlib.backends.backend_pdf
+            pyplot_pdf = matplotlib.backends.backend_pdf.PdfPages( "colvar_s.pdf" )
+            plt.clf()
+            plt.grid( True )
             for i in range( self.ncrd ):
-                #inte = qm3.utils.interpolation.cubic_spline( arcl, self.rcrd[:,i] )
-                inte = qm3.utils.interpolation.gaussian( arcl, self.rcrd[:,i], 0.15 )
-                fcrd[:,i] = numpy.array( [ inte.calc( x )[0] for x in equi ] )
-            try:
-                import matplotlib.pyplot as plt
+                plt.plot( self.rcrd[:,i], '.-' )
+            plt.tight_layout()
+            pyplot_pdf.savefig()
+            plt.clf()
+            plt.grid( True )
+            plt.plot( self.arcl[1:], 'o-' )
+            plt.tight_layout()
+            pyplot_pdf.savefig()
+            pyplot_flg = True
+        except:
+            pyplot_flg = False
+        if( redistribute ):
+            old_arc = numpy.cumsum( self.arcl )
+            old_crd = self.rcrd.copy()
+            for ite in range( 10 ):
+                arcl = numpy.cumsum( self.arcl )
+                equi = numpy.array( [ arcl[-1] / ( self.nwin - 1.0 ) * i for i in range( self.nwin ) ] )
+                fcrd = numpy.zeros( ( self.nwin, self.ncrd ) )
+                for i in range( self.ncrd ):
+                    inte = qm3.utils.interpolation.cubic_spline( arcl, self.rcrd[:,i] )
+                    fcrd[:,i] = numpy.array( [ inte.calc( x )[0] for x in equi ] )
+                self.rcrd = fcrd.copy()
+                self.arcl = numpy.zeros( self.nwin, dtype=numpy.float64 )
+                for i in range( 1, self.nwin ):
+                    vec = self.rcrd[i] - self.rcrd[i-1]
+                    vec.shape = ( self.ncrd, 1 )
+                    self.arcl[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( self._met[i], vec ) ) )
+                self.delz = self.arcl.sum() / float( self.nwin - 1.0 )
+                if( pyplot_flg ):
+                    plt.clf()
+                    plt.grid( True )
+                    plt.plot( self.arcl[1:], 'o-', label = "%.6lf"%( numpy.mean( self.arcl[1:] ) ) )
+                    plt.legend( loc = "upper right", fontsize = "small" )
+                    plt.tight_layout()
+                    pyplot_pdf.savefig()
+                if( numpy.std( self.arcl[1:] ) / numpy.mean( self.arcl[1:] ) < 0.02 ):
+                    break
+            if( pyplot_flg ):
+                cur_arc = numpy.cumsum( self.arcl )
                 plt.clf()
                 plt.grid( True )
                 for i in range( self.ncrd ):
-                    plt.plot( self.rcrd[:,i], 'o' )
-                for i in range( self.ncrd ):
-                    plt.plot( fcrd[:,i], '.-' )
+                    plt.plot( old_arc, old_crd[:,i], 'o' )
+                    plt.plot( cur_arc, self.rcrd[:,i], '.-' )
                 plt.tight_layout()
-                plt.savefig( "colvar_s.pdf" )
-            except:
-                pass
-            self.rcrd = fcrd.copy()
-            self.arcl = numpy.zeros( self.nwin, dtype=numpy.float64 )
-            for i in range( 1, self.nwin ):
-                vec = self.rcrd[i] - self.rcrd[i-1]
-                vec.shape = ( self.ncrd, 1 )
-                self.arcl[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( self._met[i], vec ) ) )
-            self.delz = self.arcl.sum() / float( self.nwin - 1.0 )
-        else:
-            try:
-                import matplotlib.pyplot as plt
-                plt.clf()
-                plt.grid( True )
-                for i in range( self.ncrd ):
-                    plt.plot( self.rcrd[:,i], '.-' )
-                plt.tight_layout()
-                plt.savefig( "colvar_s.pdf" )
-            except:
-                pass
-        print( ">> mean: %.6lf ± %.6lf / delz: %.6lf"%( numpy.mean( self.arcl ), numpy.std( self.arcl ), self.delz ) )
+                pyplot_pdf.savefig()
+        if( pyplot_flg ):
+            pyplot_pdf.close()
+        print( ">> delz: %.6lf"%( self.delz ) )
         # ----------------------------------------------------
         cdst = numpy.zeros( self.nwin, dtype=numpy.float64 )
         for i in range( self.nwin ):
