@@ -33,15 +33,28 @@ geo_s = numpy.loadtxt( "geom.clr" )
 obj   = qm3.utils.interpolation.gaussian( geo_s[:,0], geo_s[:,1] - geo_s[:,2], 0.1 )
 crd_s = numpy.array( [ obj.calc( x )[0] for x in pmf_s[:,0] ] )
 
-str_x = numpy.loadtxt( "string.cvar" )
-str_f = numpy.loadtxt( "string.mfep" ) / 4.184
-
 plt.clf()
 plt.grid( True )
 plt.plot( pes[:,0] - pes[:,1], pes[:,2] - pes[0,2], '.-', label = "PES" )
 plt.plot( neb[:,0], neb[:,1], '.-', label = "NEB" )
 plt.plot( pmf[:,0], pmf[:,2], '.-', label = "PMF" )
-plt.plot( str_x[:,0] - str_x[:,1], str_f, '.-', label = "String" )
+
+str_x = numpy.loadtxt( "1n6_3k/string.cvar" )
+str_f = numpy.loadtxt( "1n6_3k/string.mfep" ) / 4.184
+plt.plot( str_x[:,0] - str_x[:,1], str_f, '.-', label = "String [1e-6/3k]" )
+
+str_x = numpy.loadtxt( "1n6_4k/string.cvar" )
+str_f = numpy.loadtxt( "1n6_4k/string.mfep" ) / 4.184
+plt.plot( str_x[:,0] - str_x[:,1], str_f, '.-', label = "String [1e-6/4k]" )
+
+str_x = numpy.loadtxt( "1n7_3k/string.cvar" )
+str_f = numpy.loadtxt( "1n7_3k/string.mfep" ) / 4.184
+plt.plot( str_x[:,0] - str_x[:,1], str_f, '.-', label = "String [1e-7/3k]" )
+
+str_x = numpy.loadtxt( "1n7_4k/string.cvar" )
+str_f = numpy.loadtxt( "1n7_4k/string.mfep" ) / 4.184
+plt.plot( str_x[:,0] - str_x[:,1], str_f, '.-', label = "String [1e-7/4k]" )
+
 plt.plot( crd_s, pmf_s[:,1], '.-', label = "PMF_s" )
 plt.legend( loc = "upper right", fontsize = "small" )
 plt.tight_layout()
