@@ -55,6 +55,10 @@ str_x = numpy.loadtxt( "1n7_4k/string.cvar" )
 str_f = numpy.loadtxt( "1n7_4k/string.mfep" ) / 4.184
 plt.plot( str_x[:,0] - str_x[:,1], str_f, '.-', label = "String [1e-7/4k]" )
 
+str_x = numpy.loadtxt( "from_pes/string.cvar" )
+str_f = numpy.loadtxt( "from_pes/string.mfep" ) / 4.184
+plt.plot( str_x[:,0] - str_x[:,1], str_f, '.-', label = "String:PES [1e-7/3k]" )
+
 plt.plot( crd_s, pmf_s[:,1], '.-', label = "PMF_s" )
 plt.legend( loc = "upper right", fontsize = "small" )
 plt.tight_layout()
