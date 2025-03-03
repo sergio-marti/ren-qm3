@@ -29,6 +29,8 @@ pes = numpy.loadtxt( "path.log" )
 
 pmf_s = numpy.loadtxt( "pmf_s.txt" )
 geo_s = numpy.loadtxt( "geom.clr" )
+pmf_s[:,1] -= pmf_s[1,1]
+
 #obj   = qm3.utils.interpolation.cubic_spline( geo_s[:,0], geo_s[:,1] - geo_s[:,2] )
 obj   = qm3.utils.interpolation.gaussian( geo_s[:,0], geo_s[:,1] - geo_s[:,2], 0.1 )
 crd_s = numpy.array( [ obj.calc( x )[0] for x in pmf_s[:,0] ] )

@@ -52,8 +52,8 @@ str_x = numpy.loadtxt( "from_pes/string.cvar" )
 plt.plot( str_x[:,0] - str_x[:,1], str_x[:,0], '.-', label = "String:PES [d1]" )
 plt.plot( str_x[:,0] - str_x[:,1], str_x[:,1], '.-', label = "String:PES [d2]" )
 
-plt.plot( crd_s[:,1] - crd_s[:,2], crd_s[:,1], '.-', label = "PMF_s [d1]" )
-plt.plot( crd_s[:,1] - crd_s[:,2], crd_s[:,2], '.-', label = "PMF_s [d2]" )
+plt.plot( crd_s[1:,1] - crd_s[1:,2], crd_s[1:,1], '.-', label = "PMF_s [d1]" )
+plt.plot( crd_s[1:,1] - crd_s[1:,2], crd_s[1:,2], '.-', label = "PMF_s [d2]" )
 
 plt.legend( loc = "upper right", fontsize = "small" )
 plt.tight_layout()

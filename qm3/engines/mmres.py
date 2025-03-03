@@ -369,14 +369,10 @@ class colvar_s( object ):
             str_crd: typing.Optional[str] = "",
             kumb: typing.Optional[float] = 0.0,
             xref: typing.Optional[float] = 0.0,
-            delz: typing.Optional[float] = 0.0,
-            exp2: typing.Optional[float] = False ):
-            #@mass: typing.Optional[bool] = False ):
+            delz: typing.Optional[float] = 0.0 ):
         self.xref = xref
         self.kumb = kumb
         self.delz = delz
-        self.exp2 = exp2
-        #@self.qmas = mass
         # parse config
         self.atom = numpy.loadtxt( str_cnf, dtype=numpy.int32 )
         if( len( self.atom.shape ) == 1 ):
@@ -396,24 +392,6 @@ class colvar_s( object ):
         else:
             self.rcrd = numpy.loadtxt( str_crd, dtype=numpy.float64 )
             self.nwin = self.rcrd.shape[0]
-        #@# store the the masses
-        #@if( self.qmas ):
-        #@    self.mass = mol.mass[list( self.jidx.keys() )]
-        #@else:
-        #@    self.mass = numpy.ones( len( self.jidx ), dtype=numpy.float64 )
-        #@self.mass = numpy.column_stack( ( self.mass, self.mass, self.mass ) ).reshape( self.jcol )
-        #W# define walls
-        #Wif( wall > 0.0 ):
-        #W    r_dsp = numpy.mean( numpy.abs( numpy.diff( self.rcrd, axis = 0 ) ), axis = 0 ) * 2.0
-        #W    r_min = numpy.min( self.rcrd, axis = 0 )
-        #W    r_max = numpy.max( self.rcrd, axis = 0 )
-        #W    print( "Colective variable s walls:", r_min - r_dsp )
-        #W    print( "                           ", r_max + r_dsp )
-        #W    for i in range( self.ncrd ):
-        #W        self.wall.append( distance( wall, r_min[i] + r_dsp[i],
-        #W                [ self.atom[i,0], self.atom[i,1] ], skip_BE = r_min[i] - r_dsp[i] ) )
-        #W        self.wall.append( distance( wall, r_max[i] - r_dsp[i],
-        #W                [ self.atom[i,0], self.atom[i,1] ], skip_LE = r_max[i] + r_dsp[i] ) )
 
 
     def append( self, mol: object ):
@@ -495,10 +473,7 @@ class colvar_s( object ):
         for i in range( self.nwin ):
             vec = ( self.rcrd[-1] - self.rcrd[i] ).reshape( ( self.ncrd, 1 ) )
             cdst[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( self._met[-1], vec ) ) )
-        if( self.exp2 ):
-            cexp = numpy.exp( - numpy.square( cdst / self.delz ) )
-        else:
-            cexp = numpy.exp( - cdst / self.delz )
+        cexp = numpy.exp( - cdst / self.delz )
         cval = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp ) / cexp.sum()
         dels = cval / self.nwin
         print( "Colective variable s range: [%.3lf - %.3lf: %.6lf]"%( 0.0, cval, dels ) )
@@ -532,10 +507,7 @@ class colvar_s( object ):
         for i in range( self.nwin ):
             vec = ( ccrd - self.rcrd[i] ).reshape( ( self.ncrd, 1 ) )
             cdst[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( imet, vec ) ) )
-        if( self.exp2 ):
-            cexp = numpy.exp( - numpy.square( cdst / self.delz ) )
-        else:
-            cexp = numpy.exp( - cdst / self.delz )
+        cexp = numpy.exp( - cdst / self.delz )
         cval = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp ) / cexp.sum()
         out  = 0.5 * self.kumb * math.pow( cval - self.xref, 2.0 )
         mol.func += out
@@ -552,10 +524,7 @@ class colvar_s( object ):
             cdst[i] = math.sqrt( numpy.dot( vec.T, mat ) )
             #jder[i] = 0.5 * ( numpy.dot( mat.T, jaco ) + numpy.dot( vec.T, numpy.dot( imet, jaco ) ) ).ravel() / cdst[i]
             jder[i] = numpy.dot( vec.T, numpy.dot( imet, jaco ) ).ravel() / cdst[i]
-        if( self.exp2 ):
-            cexp = numpy.exp( - numpy.square( cdst / self.delz ) )
-        else:
-            cexp = numpy.exp( - cdst / self.delz )
+        cexp = numpy.exp( - cdst / self.delz )
         sumd = cexp.sum()
         cval = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp ) / sumd
         diff = self.kumb * ( cval - self.xref )
@@ -564,10 +533,7 @@ class colvar_s( object ):
         sder = numpy.zeros( self.jcol, dtype=numpy.float64 )
         for i in range( self.jcol ):
             for j in range( self.nwin ):
-                if( self.exp2 ):
-                    sder[i] += diff * jder[j,i] * ( cval / self.delz - j ) * ( cexp[j] / sumd ) * ( cdst[j] / self.delz ) * 2.0
-                else:
-                    sder[i] += diff * jder[j,i] * ( cval / self.delz - j ) * ( cexp[j] / sumd )
+                sder[i] += diff * jder[j,i] * ( cval / self.delz - j ) * ( cexp[j] / sumd )
         sder.shape = ( self.jcol // 3, 3 )
         mol.grad[list( self.jidx.keys() ),:] += sder
         return( ( out, cval, ccrd ) )
@@ -607,7 +573,7 @@ class colvar_path( object ):
         for i in range( 1, self.nwin ):
             self.arcl[i] = numpy.sqrt( numpy.mean( numpy.sum( numpy.square( self.get_rmsd( self.refs[i-1], self.refs[i] )[0] ), axis = 1 ) ) )
         self.delz = self.arcl.sum() / float( self.nwin - 1.0 )
-        # fix this for the s value (instead of arc length), and allow exp2 also...
+        # fix this for the s value (instead of arc length)
         print( "Colective variable path range: [%.3lf - %.3lf: %.6lf]"%( 0.0, self.arcl.sum(), self.delz ) )
 
 
