@@ -8,6 +8,7 @@ import  openmm
 import  openmm.app
 import  openmm.unit
 import	qm3
+import  qm3.utils
 import  qm3.utils.parallel
 import  qm3.engines.openmm
 import  qm3.engines.xtb
@@ -56,6 +57,7 @@ mol.engines["umb"] = qm3.engines.mmres.multiple_distance( kb, rx, ww, [ 1.0, -1.
 mol.fdat = open( "dat.%02d"%( opar.node ), "wt" )
 mol.fdat.write( "%12.6lf%12.6lf\n"%( kb, rx ) )
 mol.fdat.flush()
+mol.fgeo = open( "geo.%02d"%( opar.node ), "wt" )
 
 # - restart
 #if( os.path.isfile( "rst.%02d"%( opar.node ) ) ):
@@ -65,9 +67,11 @@ mol.fdat.flush()
 #    mol.engines["mm"].update_coor( mol )
 
 def cstep( obj, stp ):
-    global  opar
+    global  opar, ww
     obj.fdat.write( "%12.6f\n"%( obj.rval["umb"][1] ) )
     obj.fdat.flush()
+    obj.fgeo.write( "%20.10lf%20.10lf\n"%( qm3.utils.distance( obj.coor[ww[0]], obj.coor[ww[1]] ), qm3.utils.distance( obj.coor[ww[2]], obj.coor[ww[3]] ) ) )
+    obj.fgeo.flush()
     if( stp % 1000 == 0 ):
         with open( "rst.%02d"%( opar.node ), "wb" ) as f:
             pickle.dump( obj.coor, f )
@@ -78,5 +82,6 @@ qm3.actions.dynamics.langevin_verlet( mol, step_size = 0.001, temperature = 300.
     current_step = cstep )
 
 mol.fdat.close()
+mol.fgeo.close()
 
 opar.stop()
