@@ -124,11 +124,17 @@ if( "train" in sys.argv or not os.path.isfile( "atom_C.pth" ) ):
     #sched = torch.optim.lr_scheduler.ReduceLROnPlateau( optim, factor = 0.5, patience = 50, min_lr = 1.e-7 )
     lossf = torch.nn.MSELoss()
     dset  = torch.utils.data.TensorDataset( crd, ene, grd )
-    dload = torch.utils.data.DataLoader( dset, batch_size = bsize, shuffle = True )
+    #dload = torch.utils.data.DataLoader( dset, batch_size = bsize, shuffle = True )
+    vsiz  = int( 0.2 * len( dset ) )
+    tsiz  = len( dset ) - vsiz
+    tset, vset = torch.utils.data.random_split( dset, [ tsiz, vsiz ], generator = torch.Generator().manual_seed( 69 ) )
+    tload = torch.utils.data.DataLoader( tset, batch_size = bsize, shuffle = True )
+    vload = torch.utils.data.DataLoader( vset, batch_size = bsize, shuffle = False )
+
     blos  = float( "inf" )
     for epoch in range( nepoc ):
         tlos = 0.0
-        for bx, bf, bg in dload:
+        for bx, bf, bg in tload:
             optim.zero_grad()
             bx.requires_grad_( True )
             bi = qm3.engines.mlmodel.xcoul_info( bx, env )
@@ -140,15 +146,25 @@ if( "train" in sys.argv or not os.path.isfile( "atom_C.pth" ) ):
             loss.backward()
             optim.step()
             tlos += loss.item()
-        alos = tlos / len( dload )
-        sched.step( alos )
-        if( alos < blos ):
+        tlos = tlos / len( tload )
+        vlos = 0.0
+        for bx, bf, bg in vload:
+            bx.requires_grad_( True )
+            bi = qm3.engines.mlmodel.xcoul_info( bx, env )
+            func = mol.engines["ml"]( bi )
+            grad = torch.autograd.grad( func.sum(), bx, create_graph=True )[0]
+            flos = lossf( func, bf )
+            glos = lossf( grad, bg )
+            vlos += ( flos + 10 * glos ).item()
+        vlos = vlos / len( vload )
+        sched.step( vlos )
+        if( vlos < blos ):
             mol.engines["ml"].save()
-            print( f"Epoch {epoch+1:5d}/{nepoc:5d}, Loss: {alos:.8f} << Checkpoint" )
-            blos = alos
+            print( f"Epoch {epoch+1:5d}/{nepoc:5d}, TLoss: {tlos:.8f}, VLoss: {vlos:.8f} << Checkpoint" )
+            blos = vlos
         else:
-            print( f"Epoch {epoch+1:5d}/{nepoc:5d}, Loss: {alos:.8f}" )
-        if( alos <= 0.45 ):
+            print( f"Epoch {epoch+1:5d}/{nepoc:5d}, TLoss: {tlos:.8f}, VLoss: {vlos:.8f}" )
+        if( vlos <= 0.45 ):
             break
         sys.stdout.flush()
 
