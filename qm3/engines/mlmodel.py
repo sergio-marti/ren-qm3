@@ -59,7 +59,7 @@ class ml_atom( torch.nn.Module ):
 
     def load( self, device: str ):
         if( os.path.isfile( self.name ) ):
-            self.load_state_dict( torch.load( self.name, map_location=torch.device( device ) ) )
+            self.load_state_dict( torch.load( self.name, map_location=torch.device( device ), weights_only=True ) )
             self.eval()
 
 
@@ -102,7 +102,7 @@ class run( object ):
         crd = torch.tensor( mol.coor[self.sel], dtype=torch.float32, device=self.dev ).unsqueeze( 0 )
         inp = xcoul_info( crd, self.env )
         tmp = ( self.dsp[1] - self.dsp[0] ) / 2.0
-        out = ( float( self( inp ).cpu().numpy().ravel()[0] ) + 1.0 ) * tmp + self.dsp[0]
+        out = ( float( self( inp ).detach().numpy().ravel()[0] ) + 1.0 ) * tmp + self.dsp[0]
         mol.func += out
         return( out )
 

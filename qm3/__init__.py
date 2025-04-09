@@ -256,7 +256,11 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
     def pdb_write( self, fdsc: typing.IO,
             sele: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
             endl: typing.Optional[str] = "END\n",
-            term: typing.Optional[str] = "" ):
+            term: typing.Optional[list] = [] ):
+        """
+        'term'  parameter should contain a list of regular expressions matching 'resn:resi:labl'
+                such as '.+:.+:OXT' or 'HOH:.+:H2'
+        """
         if( sele.sum() > 0 ):
             lsel = sele
         else:
@@ -270,7 +274,8 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
                     " " * ( len( self.labl[i] ) < 4 ) + self.labl[i],
                     self.resn[i], self.resi[i] % 10000, self.coor[i,0], self.coor[i,1], self.coor[i,2], 
                     0.0, 0.0, self.segn[i] ) )
-                if( self.labl[i] == term ):
+                tmp = "%s:%d:%s"%( self.resn[i], self.resi[i], self.labl[i] )
+                if( sum( [ 1 if ptr.match( tmp ) else 0 for ptr in term ] ) > 0 ):
                     fdsc.write( "TER\n" )
                 j += 1
         fdsc.write( endl )
