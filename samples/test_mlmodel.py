@@ -113,7 +113,6 @@ mol.engines["ml"] = qm3.engines.mlmodel.run( ref, rng, env,
                         numpy.ones( mol.natm, dtype=numpy.bool_ ),
                         [ qm3.data.symbol[i] for i in mol.anum ],
                         net, dev )
-mol.engines["ml"].load()
 
 if( "train" in sys.argv or not os.path.isfile( "atom_C.pth" ) ):
     bsize = ene.shape[0]
@@ -171,6 +170,7 @@ if( "train" in sys.argv or not os.path.isfile( "atom_C.pth" ) ):
 # ------------------------------------------------------------------------
 # check
 #
+mol.engines["ml"].load()
 mol.get_grad()
 print( "[AM1] -------------------------------------------------------" )
 print( o_func )
