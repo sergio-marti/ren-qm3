@@ -10,6 +10,7 @@ import  qm3.engines.mopac
 import  qm3.actions.dynamics
 import  qm3.engines.mlmodel
 import  io
+import  os
 
 mol = qm3.molecule()
 f = io.StringIO( """9
@@ -31,7 +32,6 @@ mol.engines["qm"] = qm3.engines.mopac.run( mol, "AM1", 0, 1 )
 mol.get_grad()
 o_func = mol.func
 o_grad = mol.grad.copy()
-mol.engines.pop( "qm" )
 
 dev = torch.device( "cuda" if torch.cuda.is_available() else "cpu" )
 print( dev )
@@ -40,7 +40,7 @@ ref = mol.coor - numpy.mean( mol.coor, axis = 0 )
 # ------------------------------------------------------------------------
 # build dataset
 #
-if( "build" in sys.argv ):
+if( "build" in sys.argv or not os.path.isfile( "dcd" ) ):
     ene = []
     crd = []
     grd = []
@@ -60,10 +60,12 @@ if( "build" in sys.argv ):
     crd = numpy.array( crd )
     grd = numpy.array( grd )
 
+mol.engines.pop( "qm" )
+
 # ------------------------------------------------------------------------
 # preprocess dataset
 #
-if( "process" in sys.argv ):
+if( "process" in sys.argv or not os.path.isfile( "eref" ) ):
     rng = numpy.array( [ numpy.min( ene ) - 4.184 * 3, numpy.max( ene ) + 4.184 * 3 ] )
     numpy.savetxt( "eref", rng )
     print( rng )
@@ -113,7 +115,7 @@ mol.engines["ml"] = qm3.engines.mlmodel.run( ref, rng, env,
                         net, dev )
 mol.engines["ml"].load()
 
-if( "train" in sys.argv ):
+if( "train" in sys.argv or not os.path.isfile( "atom_C.pth" ) ):
     bsize = ene.shape[0]
     nepoc = 99999
     optim = torch.optim.Adam( mol.engines["ml"].parameters(), lr = 1.e-3 )
