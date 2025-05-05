@@ -114,11 +114,69 @@ static void QMLJ__dealloc( oQMLJ *self ) {
 }
 
 
+static PyObject* QMLJ__get_func( PyObject *self, PyObject *args ) {
+    PyObject        *o_mol, *o_coor, *o_ener, *o_boxl;
+    PyArrayObject   *m_coor, *m_boxl;
+    long            i, j, k;
+    double          *coor = NULL, ener, *itm;
+    double          boxl[3], dr[3], r2, ss;
+    oQMLJ           *obj = NULL;
+
+    obj = (oQMLJ*) self;
+    if( PyArg_ParseTuple( args, "O", &o_mol ) ) {
+        o_boxl = PyObject_GetAttrString( o_mol, "boxl" );
+        m_boxl = (PyArrayObject*) PyArray_FROM_OT( o_boxl, NPY_DOUBLE );
+        for( k = 0; k < 3; k++ ) {
+            itm = (double*) PyArray_GETPTR1( m_boxl, k );
+            boxl[k] = *itm;
+        }
+        Py_DECREF( m_boxl );
+        Py_DECREF( o_boxl );
+
+        o_coor = PyObject_GetAttrString( o_mol, "coor" );
+        m_coor = (PyArrayObject*) PyArray_FROM_OT( o_coor, NPY_DOUBLE );
+        coor = (double*) malloc( 3 * obj->natm * sizeof( double ) );
+        for( k = 0, i = 0; i < obj->natm; i++ ) {
+            for( j = 0; j < 3; j++ ) {
+                itm = (double*) PyArray_GETPTR2( m_coor, i, j );
+                coor[k++] = *itm;
+            }
+        }
+        Py_DECREF( m_coor );
+        Py_DECREF( o_coor );
+
+        ener = 0.0;
+        for( i = 0; i < obj->ni; i++ ) {
+            r2 = 0.0;
+            for( k = 0; k < 3; k++ ) {
+                dr[k] = coor[3*obj->qm[i]+k] - coor[3*obj->mm[i]+k];
+//                if( dr[k] >    boxl[k] * 0.5 ) { dr[k] -= boxl[k]; }
+//                if( dr[k] <= - boxl[k] * 0.5 ) { dr[k] += boxl[k]; }
+                dr[k] -= boxl[k] * round( dr[k] / boxl[k] );
+                r2 += dr[k] * dr[k];
+            }
+            ss = ( obj->rmin[obj->qm[i]] + obj->rmin[obj->mm[i]] ) / sqrt( r2 );
+            ss = ss * ss * ss * ss * ss * ss;
+            ener += obj->epsi[obj->qm[i]] * obj->epsi[obj->mm[i]] * ss * ( ss - 2.0 ) * obj->sc[i];
+        }
+
+    	o_ener = PyObject_GetAttrString( o_mol, "func" );
+        ener  += PyFloat_AsDouble( o_ener );
+        Py_DECREF( o_ener );
+        PyObject_SetAttrString( o_mol, "func", PyFloat_FromDouble( ener ) );
+
+        free( coor );
+    }
+    Py_INCREF( Py_None );
+    return( Py_None );
+}
+
+
 static PyObject* QMLJ__get_grad( PyObject *self, PyObject *args ) {
-    PyObject        *o_mol, *o_coor, *o_boxl, *o_grad;
+    PyObject        *o_mol, *o_coor, *o_boxl, *o_grad, *o_ener;
     PyArrayObject   *m_coor, *m_grad, *m_boxl;
     long            i, j, k;
-    double          *coor = NULL, *grad = NULL, *itm;
+    double          *coor = NULL, ener, *grad = NULL, *itm;
     double          boxl[3], dr[3], r2, ss, df;
     oQMLJ           *obj = NULL;
 
@@ -147,6 +205,7 @@ static PyObject* QMLJ__get_grad( PyObject *self, PyObject *args ) {
         Py_DECREF( m_coor );
         Py_DECREF( o_coor );
 
+        ener = 0.0;
         for( i = 0; i < obj->ni; i++ ) {
             r2 = 0.0;
             for( k = 0; k < 3; k++ ) {
@@ -158,12 +217,18 @@ static PyObject* QMLJ__get_grad( PyObject *self, PyObject *args ) {
             }
             ss = ( obj->rmin[obj->qm[i]] + obj->rmin[obj->mm[i]] ) / sqrt( r2 );
             ss = ss * ss * ss * ss * ss * ss;
+            ener += obj->epsi[obj->qm[i]] * obj->epsi[obj->mm[i]] * ss * ( ss - 2.0 ) * obj->sc[i];
             df = 12.0 * obj->epsi[obj->qm[i]] * obj->epsi[obj->mm[i]] * ss * ( 1.0 - ss ) / r2 * obj->sc[i];
             for( k = 0; k < 3; k++ ) {
                 grad[3*obj->qm[i]+k] += df * dr[k];
 //                grad[3*obj->mm[i]+k] -= df * dr[k];
             }
         }
+
+    	o_ener = PyObject_GetAttrString( o_mol, "func" );
+        ener  += PyFloat_AsDouble( o_ener );
+        Py_DECREF( o_ener );
+        PyObject_SetAttrString( o_mol, "func", PyFloat_FromDouble( ener ) );
 
         o_grad = PyObject_GetAttrString( o_mol, "grad" );
         m_grad = (PyArrayObject*) PyArray_FROM_OT( o_grad, NPY_DOUBLE );
@@ -185,6 +250,7 @@ static PyObject* QMLJ__get_grad( PyObject *self, PyObject *args ) {
 
 
 static struct PyMethodDef QMLJ_methods [] = {
+    { "get_func", (PyCFunction)QMLJ__get_func, METH_VARARGS },
     { "get_grad", (PyCFunction)QMLJ__get_grad, METH_VARARGS },
     { 0, 0, 0 }
 };
