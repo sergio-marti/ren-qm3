@@ -8,6 +8,9 @@ import  os
 
 
 def xcoul_info( crd: torch.tensor, env: torch.tensor ) -> torch.tensor:
+    """
+    based on [10.1021/acs.jctc.4c01487]
+    """
     b_size, n_atoms, _ = crd.shape
     siz = env.shape[1]
     out = torch.zeros( ( b_size, n_atoms, siz * siz ), dtype=crd.dtype, device=crd.device )
