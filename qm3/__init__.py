@@ -879,3 +879,44 @@ try:
         return( view )
 except:
     pass
+
+
+
+try:
+    import  pyvista
+    import  qm3.utils._conn
+
+    def vBS( mol, bonds: typing.Optional[list] = [] ):
+        colors = { 1: "white",
+                   5: "darkseagreen", 6: "gray", 7: "blue", 8: "red", 9: "green",
+                  15: "orange", 16: "yellow", 17: "green",
+                  35: "darkred", 53: "purple" }
+        if( bonds == [] ):
+            bonds = qm3.utils._conn.connectivity( 2, mol.anum, mol.coor )
+        v_atm = pyvista.MultiBlock()
+        c_atm = []
+        for i in numpy.flatnonzero( mol.actv ):
+            v_atm.append( pyvista.Sphere( radius=qm3.data.r_vdw[mol.anum[i]]*0.3, center=mol.coor[i] ) )
+            c_atm.append( colors.get( mol.anum[i], "magenta" ) )
+        v_bnd = pyvista.MultiBlock()
+        c_bnd = []
+        for i,j in bonds:
+            if( mol.actv[i] and mol.actv[j] ):
+                p1, p2 = mol.coor[i], mol.coor[j]
+                mid = ( p1 + p2 ) / 2
+                vec = mid - p1
+                siz = numpy.linalg.norm( vec )
+                v_bnd.append( pyvista.Cylinder( center=p1+vec/2, direction=vec, height=siz, radius=0.15 ) )
+                c_bnd.append( colors.get( mol.anum[i], "magenta" ) )
+                vec = p2 - mid
+                siz = numpy.linalg.norm( vec )
+                v_bnd.append( pyvista.Cylinder( center=mid+vec/2, direction=vec, height=siz, radius=0.15 ) )
+                c_bnd.append( colors.get( mol.anum[j], "magenta" ) )
+        plot = pyvista.Plotter()
+        for i in range( len( v_atm ) ):
+            plot.add_mesh( v_atm[i], color=c_atm[i], smooth_shading=True )
+        for i in range( len( v_bnd ) ):
+            plot.add_mesh( v_bnd[i], color=c_bnd[i], smooth_shading=True )
+        plot.show()
+except:
+    pass

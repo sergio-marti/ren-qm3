@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import  sys
 import  numpy
 import  qm3
 import  qm3.utils._dcd
@@ -6,8 +7,11 @@ import  matplotlib.pyplot as plt
 import  matplotlib.backends.backend_pdf
 import  sklearn.decomposition
 
+flg_dccm = sum( [ "dccm"  == itm.lower() for itm in sys.argv ] ) > 0
+flg_mode = sum( [ "modes" == itm.lower() for itm in sys.argv ] ) > 0
+
 mol = qm3.molecule()
-mol.prmtop_read( open( "prmtop" ) )
+mol.prmtop_read( open( sys.argv[1] ) )
 
 idx = mol.labl == "CA"
 sel = numpy.logical_or( idx, mol.labl == "C" )
@@ -17,7 +21,7 @@ sel = numpy.flatnonzero( sel )
 idx = numpy.flatnonzero( numpy.in1d( sel, numpy.flatnonzero( idx ) ) )
 
 dcd = qm3.utils._dcd.dcd()
-dcd.open_read( "dcd" )
+dcd.open_read( sys.argv[2] )
 dcd.next( mol )
 
 ref = mol.coor[sel]
@@ -64,24 +68,25 @@ plt.tight_layout()
 plt.savefig( "rmsf.pdf" )
 plt.show()
 
-dif = numpy.array( dif )
-dr2 = numpy.sqrt( numpy.mean( numpy.sum( numpy.square( dif ), axis = 2 ), axis = 0 ) )
-img = numpy.zeros( ( dif.shape[1], dif.shape[1] ) )
-with open( "dccm.dat", "wt" ) as f:
-    for i in range( dif.shape[1] ):
-        for j in range( dif.shape[1] ):
-            img[i,j] = numpy.sum( dif[:,i,:] * dif[:,j,:] ) / ( dif.shape[0] * dr2[i] * dr2[j] )
-            f.write( "%10d%10d%20.10lf\n"%( i+1, j+1, img[i,j] ) )
-        f.write( "\n" )
-plt.clf()
-plt.grid( True )
-plt.imshow( img, cmap = "coolwarm" )
-plt.colorbar()
-plt.xlabel( "Residue $(C_{\\alpha})$" )
-plt.ylabel( "Residue $(C_{\\alpha})$" )
-plt.tight_layout()
-plt.savefig( "dccm.pdf" )
-plt.show()
+if( flg_dccm ):
+    dif = numpy.array( dif )
+    dr2 = numpy.sqrt( numpy.mean( numpy.sum( numpy.square( dif ), axis = 2 ), axis = 0 ) )
+    img = numpy.zeros( ( dif.shape[1], dif.shape[1] ) )
+    with open( "dccm.dat", "wt" ) as f:
+        for i in range( dif.shape[1] ):
+            for j in range( dif.shape[1] ):
+                img[i,j] = numpy.sum( dif[:,i,:] * dif[:,j,:] ) / ( dif.shape[0] * dr2[i] * dr2[j] )
+                f.write( "%10d%10d%20.10lf\n"%( i+1, j+1, img[i,j] ) )
+            f.write( "\n" )
+    plt.clf()
+    plt.grid( True )
+    plt.imshow( img, cmap = "coolwarm" )
+    plt.colorbar()
+    plt.xlabel( "Residue $(C_{\\alpha})$" )
+    plt.ylabel( "Residue $(C_{\\alpha})$" )
+    plt.tight_layout()
+    plt.savefig( "dccm.pdf" )
+    plt.show()
 
 crd = numpy.array( crd )
 crd.shape = ( crd.shape[0], crd.shape[1] * crd.shape[2] )
@@ -90,22 +95,26 @@ red = pca.fit_transform( crd )
 with open( "pca.dat", "wt" ) as f:
     for i in range( crd.shape[0] ):
         f.write( "%12.6lf%12.6lf\n"%( red[i,0], red[i,1] ) )
-val, vec = numpy.linalg.eigh( pca.get_covariance() )
-print( val[-2:] )
-lbl = qm3.data.symbol[mol.anum[sel]]
-for k in [1, 2]:
-    with open( "mode%d.xyz"%( k ), "wt" ) as f:
-        mod = vec[:,-k].reshape( ( lbl.shape[0], 3 ) )
-        for i in range( 28 ):
-            f.write( "%d\n\n"%( lbl.shape[0] ) )
-            # empirical factor... :d
-            fac = 8.5 * numpy.sin( numpy.pi * float( i ) / 14 )
-            for j in range( lbl.shape[0] ):
-                f.write( "%-2s%20.10lf%20.10lf%20.10lf\n"%( lbl[j],
-                    ref[j,0] + fac * mod[j,0],
-                    ref[j,1] + fac * mod[j,1],
-                    ref[j,2] + fac * mod[j,2] ) )
+
+if( flg_mode ):
+    val, vec = numpy.linalg.eigh( pca.get_covariance() )
+    print( val[-2:] )
+    lbl = qm3.data.symbol[mol.anum[sel]]
+    for k in [1, 2]:
+        with open( "mode%d.xyz"%( k ), "wt" ) as f:
+            mod = vec[:,-k].reshape( ( lbl.shape[0], 3 ) )
+            for i in range( 28 ):
+                f.write( "%d\n\n"%( lbl.shape[0] ) )
+                # empirical factor... :d
+                fac = 8.5 * numpy.sin( numpy.pi * float( i ) / 14 )
+                for j in range( lbl.shape[0] ):
+                    f.write( "%-2s%20.10lf%20.10lf%20.10lf\n"%( lbl[j],
+                        ref[j,0] + fac * mod[j,0],
+                        ref[j,1] + fac * mod[j,1],
+                        ref[j,2] + fac * mod[j,2] ) )
+
 pdf = matplotlib.backends.backend_pdf.PdfPages( "pca.pdf" )
+
 plt.clf()
 plt.grid( True )
 plt.xlabel( "Cartesian coordinate PCA" )
@@ -119,6 +128,7 @@ plt.legend( loc = "upper right", fontsize = "small" )
 plt.tight_layout()
 pdf.savefig()
 plt.show()
+
 plt.clf()
 plt.grid( True )
 plt.scatter( red[:,0], red[:,1], marker = "o", c = numpy.arange( crd.shape[0] ) )
@@ -130,4 +140,28 @@ cbar.set_label( "Time" )
 plt.tight_layout()
 pdf.savefig()
 plt.show()
+
+i_min = numpy.min( red, axis = 0 )
+i_max = numpy.max( red, axis = 0 )
+npt = 100
+tmp = numpy.linspace( i_min, i_max, npt )
+inc = tmp[1] - tmp[0]
+dat = numpy.zeros( ( npt, npt ) )
+for l in range( red.shape[0] ):
+    i,j = numpy.round( ( red[l] - i_min ) / inc, 0 ).astype( numpy.int32 )
+    dat[j,i] += 1.0
+dat[dat == 0.0] = 0.1
+dat = - 8.314 * 300 / 4184 * numpy.log( dat / numpy.max( dat ) )
+dat -= numpy.max( dat )
+x, y = numpy.meshgrid( tmp[:,0], tmp[:,1] )
+plt.clf()
+plt.grid( True )
+plt.xlabel( "PC1" )
+plt.ylabel( "PC2" )
+plt.contourf( x, y, dat, cmap = "Spectral" )
+plt.colorbar( label = "∆FEL (kcal/mol)")
+plt.tight_layout()
+pdf.savefig()
+plt.show()
+
 pdf.close()
