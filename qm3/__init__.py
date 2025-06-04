@@ -887,7 +887,7 @@ try:
     import  pyvista
     import  qm3.utils._conn
 
-    def vBS( mol, bonds: typing.Optional[list] = [] ):
+    def vBS( mol, bonds: typing.Optional[list] = [], display: typing.Optional[bool] = True ):
         colors = { 1: "white",
                    5: "darkseagreen", 6: "gray", 7: "blue", 8: "red", 9: "lightgreen",
                   15: "orange", 16: "yellow", 17: "green",
@@ -897,7 +897,7 @@ try:
         v_atm = pyvista.MultiBlock()
         c_atm = []
         for i in numpy.flatnonzero( mol.actv ):
-            v_atm.append( pyvista.Sphere( radius=qm3.data.r_vdw[mol.anum[i]]*0.3, center=mol.coor[i] ) )
+            v_atm.append( pyvista.Sphere( radius=qm3.data.r_vdw[mol.anum[i]]*0.2, center=mol.coor[i] ) )
             c_atm.append( colors.get( mol.anum[i], "magenta" ) )
         v_bnd = pyvista.MultiBlock()
         c_bnd = []
@@ -907,18 +907,20 @@ try:
                 mid = ( p1 + p2 ) / 2
                 vec = mid - p1
                 siz = numpy.linalg.norm( vec )
-                v_bnd.append( pyvista.Cylinder( center=p1+vec/2, direction=vec, height=siz, radius=0.15 ) )
+                v_bnd.append( pyvista.Cylinder( center=p1+vec/2, direction=vec, height=siz, radius=0.1 ) )
                 c_bnd.append( colors.get( mol.anum[i], "magenta" ) )
                 vec = p2 - mid
                 siz = numpy.linalg.norm( vec )
-                v_bnd.append( pyvista.Cylinder( center=mid+vec/2, direction=vec, height=siz, radius=0.15 ) )
+                v_bnd.append( pyvista.Cylinder( center=mid+vec/2, direction=vec, height=siz, radius=0.1 ) )
                 c_bnd.append( colors.get( mol.anum[j], "magenta" ) )
         plot = pyvista.Plotter()
         for i in range( len( v_atm ) ):
             plot.add_mesh( v_atm[i], color=c_atm[i], smooth_shading=True )
         for i in range( len( v_bnd ) ):
             plot.add_mesh( v_bnd[i], color=c_bnd[i], smooth_shading=True )
-        plot.show()
-        return( plot )
+        if( display ):
+            plot.show()
+        else:
+            return( plot )
 except:
     pass
