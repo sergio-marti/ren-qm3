@@ -25,6 +25,8 @@ H2K = 627.509474062034 # Ha >> kcal.mol-1
 H2J = 2625.49963947555 # Ha >> kJ.mol-1
 R2D = 180.0/math.pi    # Radians to dregrees
 
+DEB = 0.2081943        # 1 Debye = 0.2081943 e.Ang
+
 
 MXLAT = 1.0e300
 

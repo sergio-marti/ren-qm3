@@ -299,7 +299,7 @@ def rrho( mol: object, freq: numpy.array,
         yy += mass[i] * ( mol.coor[sele[i],1] - mc[1] ) * ( mol.coor[sele[i],1] - mc[1] )
         yz += mass[i] * ( mol.coor[sele[i],1] - mc[1] ) * ( mol.coor[sele[i],2] - mc[2] )
         zz += mass[i] * ( mol.coor[sele[i],2] - mc[2] ) * ( mol.coor[sele[i],2] - mc[2] )
-    val, vec = numpy.linalg.eigh( numpy.array( [ yy+zz, -xy, -xz, -xy, xx+zz, -yz, -xz, -yz, xx+yy ] ).reshape( ( 3, 3 ) ) )
+    val, vec = numpy.linalg.eigh( numpy.array( [ [ yy+zz, -xy, -xz ], [ -xy, xx+zz, -yz ], [ -xz, -yz, xx+yy ] ] ) )
     t = ( 8.0 * math.pi * math.pi * qm3.data.KB * temp ) / ( qm3.data.H * qm3.data.H * qm3.data.NA ) * 1.0e-23
     if( math.fabs( val[0] ) < 1.e-10 ):
         qr = t * 0.5 * ( val[1] + val[2] ) / symm

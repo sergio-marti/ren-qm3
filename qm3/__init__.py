@@ -748,6 +748,7 @@ Residue     1  SER
     def to_principal_axes( self, geometrical: typing.Optional[bool] = False ):
         """
         Transforms the whole molecule, using the inertia moments and center of the active selection
+        (returns the rotational constants in GHz)
         """
         if( geometrical ):
             mass = numpy.ones( ( self.natm, 1 ), dtype=numpy.float64 )
@@ -763,14 +764,14 @@ Residue     1  SER
             yy += mass[i] * self.coor[i,1] * self.coor[i,1]
             yz += mass[i] * self.coor[i,1] * self.coor[i,2]
             zz += mass[i] * self.coor[i,2] * self.coor[i,2]
-        val, vec = numpy.linalg.eigh( numpy.array( [ yy+zz, -xy, -xz, -xy, xx+zz, -yz, -xz, -yz, xx+yy ] ).reshape( ( 3, 3 ) ) )
+        val, vec = numpy.linalg.eigh( numpy.array( [ [ yy+zz, -xy, -xz ], [ -xy, xx+zz, -yz ], [ -xz, -yz, xx+yy ] ] ) )
         #vec = vec[:,numpy.argsort( val )]
         if( numpy.linalg.det( vec ) < 0.0 ):
-            #vec[:,0] = - vec[:,0]
             vec[:,1] = - vec[:,1]
         for i in range( self.natm ):
             self.coor[i] = numpy.dot( self.coor[i], vec ) 
-        return( cen, vec )
+        cte = qm3.data.NA * 1.e14 * qm3.data.H / ( 8 * numpy.pi * numpy.pi )
+        return( cen, cte / val, vec )
 
 
     def superimpose( self, cref: numpy.array ):
@@ -888,7 +889,7 @@ try:
 
     def vBS( mol, bonds: typing.Optional[list] = [] ):
         colors = { 1: "white",
-                   5: "darkseagreen", 6: "gray", 7: "blue", 8: "red", 9: "green",
+                   5: "darkseagreen", 6: "gray", 7: "blue", 8: "red", 9: "lightgreen",
                   15: "orange", 16: "yellow", 17: "green",
                   35: "darkred", 53: "purple" }
         if( bonds == [] ):

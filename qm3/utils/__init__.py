@@ -1,6 +1,7 @@
 import  math
 import  numpy
 import  typing
+import  collections
 import  qm3.data
 
 
@@ -87,6 +88,30 @@ def dihedral( ci: numpy.array, cj: numpy.array, ck: numpy.array, cl: numpy.array
     cl:       array( 3 )
     """
     return( dihedralRAD( ci, cj, ck, cl ) * qm3.data.R2D )
+
+
+def find_cycles( bonds: list, max_length: typing.Optional[int] = 6 ) -> list:
+    conn = collections.defaultdict( list )
+    for u, v in bonds:
+        conn[u].append( v )
+        conn[v].append( u )
+    cycles = set()
+    def __rfc( start, current, visited, path ):
+        if( len( path ) > max_length ):
+            return
+        for neigh in conn[current]:
+            if( neigh == start and len( path ) >= 3 ):
+                cycles.add( tuple( sorted( path ) ) )
+            elif( neigh not in visited ):
+                visited.add( neigh )
+                path.append( neigh )
+                __rfc( start, neigh, visited, path )
+                path.pop()
+                visited.remove( neigh )
+    for node in conn:
+        __rfc( node, node, set( [ node ] ), [ node ] )
+    return( [ list( c ) for c in cycles ] )
+
 
 # =================================================================================================
 
