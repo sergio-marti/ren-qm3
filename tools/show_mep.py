@@ -4,7 +4,9 @@ import  numpy
 import  scipy
 import  skimage
 import  pyvista
+import  io
 import  qm3
+import  qm3.data
 import  qm3.utils._conn
 
 
@@ -25,15 +27,17 @@ def parse_cube( fname ):
         t = f.readline().split(); nx = int( t[0] ); dx = float( t[1] ) * a0
         t = f.readline().split(); ny = int( t[0] ); dy = float( t[2] ) * a0
         t = f.readline().split(); nz = int( t[0] ); dz = float( t[3] ) * a0
+        b = "%d\n\n"%( n )
         for i in range( n ):
-            f.readline()
+            t = f.readline().split()
+            b += "%s%12.6lf%12.6lf%12.6lf\n"%( qm3.data.symbol[int(t[0])], float( t[2] ) * a0, float( t[3] ) * a0, float( t[4] ) * a0 )
         o = numpy.array( [ float( t ) for t in f.read().split() ] )
-        return( l0, ( nx, ny, nz ), ( dx, dy, dz ), o )
+        return( b, l0, ( nx, ny, nz ), ( dx, dy, dz ), o )
 
 
 who = sys.argv[1]
 
-v, n, d, den = parse_cube( who + ".den.cube" )
+b, v, n, d, den = parse_cube( who + ".den.cube" )
 den.shape = n
 vert, face, norm, valu = skimage.measure.marching_cubes( den, level = 0.04 )
 verT = numpy.empty_like( vert )
@@ -41,7 +45,7 @@ verT[:, 0] = v[0] + vert[:, 0] * d[0]
 verT[:, 1] = v[1] + vert[:, 1] * d[1]
 verT[:, 2] = v[2] + vert[:, 2] * d[2]
 
-v, n, d, esp = parse_cube( who + ".esp.cube" )
+esp = parse_cube( who + ".esp.cube" )[-1]
 esp.shape = n
 
 col = scipy.ndimage.map_coordinates( esp, vert.T, order=1, mode='nearest' )
@@ -60,13 +64,15 @@ col_min = max( numpy.min( xol ), avr - 2 * rms )
 col_max = min( numpy.max( xol ), avr + 2 * rms )
 print( col_min, col_max )
 
+#col_min = 0.13866256182161965
+#col_max = 0.48106167595525307
+
 facx = numpy.hstack( ( numpy.full( ( face.shape[0], 1 ), 3 ), face ) ).astype( numpy.int32 )
 mesh = pyvista.PolyData( verT, facx )
 mesh.point_data["MEP"] = col
 
 mol = qm3.molecule()
-mol.mol2_read( open( sys.argv[1] + ".mol2" ) )
-mol.labl = numpy.array( [ a.title() for a in mol.labl ] )
+mol.xyz_read( io.StringIO( b ) )
 mol.guess_atomic_numbers()
 
 colors = { 1: "white",

@@ -919,5 +919,6 @@ try:
         for i in range( len( v_bnd ) ):
             plot.add_mesh( v_bnd[i], color=c_bnd[i], smooth_shading=True )
         plot.show()
+        return( plot )
 except:
     pass
