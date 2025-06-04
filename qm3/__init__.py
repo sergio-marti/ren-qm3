@@ -764,7 +764,7 @@ Residue     1  SER
             yy += mass[i] * self.coor[i,1] * self.coor[i,1]
             yz += mass[i] * self.coor[i,1] * self.coor[i,2]
             zz += mass[i] * self.coor[i,2] * self.coor[i,2]
-        val, vec = numpy.linalg.eigh( numpy.array( [ [ yy+zz, -xy, -xz ], [ -xy, xx+zz, -yz ], [ -xz, -yz, xx+yy ] ] ) )
+        val, vec = numpy.linalg.eigh( numpy.array( [ yy+zz, -xy, -xz, -xy, xx+zz, -yz, -xz, -yz, xx+yy ] ).reshape( ( 3, 3 ) ) )
         #vec = vec[:,numpy.argsort( val )]
         if( numpy.linalg.det( vec ) < 0.0 ):
             vec[:,1] = - vec[:,1]
