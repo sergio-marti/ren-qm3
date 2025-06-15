@@ -28,7 +28,7 @@ class molecule( object ):
         self.rlim = None # dtype=numpy.int32
         self.actv = None # dtype=numpy.bool_
         self.indx = None
-        self.engines = {}
+        self.engines = collections.OrderedDict()
         self.func = 0.0
         self.grad = None # dtype=numpy.float64
         self.rval = {}
@@ -249,7 +249,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             self.chrg = numpy.zeros( self.natm, dtype=numpy.float64 )
             self.mass = numpy.zeros( ( self.natm, 1 ), dtype=numpy.float64 )
             self.actv = numpy.ones( ( self.natm, 1 ), dtype=numpy.bool_ )
-            self.engines = {}
+            self.engines = collections.OrderedDict()
             self.rebuild()
 
 
@@ -313,7 +313,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             self.actv = numpy.ones( ( self.natm, 1 ), dtype=numpy.bool_ )
             self.rlim = numpy.array( [ 0, self.natm ], dtype=numpy.int32 )
             self.indx = None
-            self.engines = {}
+            self.engines = collections.OrderedDict()
 
 
     def xyz_write( self, fdsc: typing.IO,
@@ -363,7 +363,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         self.actv = numpy.ones( ( self.natm, 1 ), dtype=numpy.bool_ )
         self.rlim = numpy.array( [ 0, self.natm ], dtype=numpy.int32 )
         self.indx = None
-        self.engines = {}
+        self.engines = collections.OrderedDict()
 
 
     def mol2_read( self, fdsc: typing.IO ):
@@ -398,7 +398,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         self.chrg = numpy.array( chrg, dtype=numpy.float64 )
         self.mass = numpy.zeros( ( self.natm, 1 ), dtype=numpy.float64 )
         self.actv = numpy.ones( ( self.natm, 1 ), dtype=numpy.bool_ )
-        self.engines = {}
+        self.engines = collections.OrderedDict()
         self.rebuild()
 
 
@@ -521,7 +521,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
         self.actv = numpy.ones( ( self.natm, 1 ), dtype=numpy.bool_ )
         self.rlim = numpy.array( [ 0, self.natm ], dtype=numpy.int32 )
         self.indx = None
-        self.engines = {}
+        self.engines = collections.OrderedDict()
 
 
     def fdynamo_read( self, fdsc ):
@@ -582,7 +582,7 @@ Residue     1  SER
         self.mass = qm3.data.mass[self.anum]
         self.chrg = numpy.zeros( self.natm, dtype=numpy.float64 )
         self.actv = numpy.ones( ( self.natm, 1 ), dtype=numpy.bool_ )
-        self.engines = {}
+        self.engines = collections.OrderedDict()
         self.rebuild()
 
 # =================================================================================================
@@ -619,7 +619,7 @@ Residue     1  SER
                 self.resn = numpy.array( resn, dtype=qm3.data.strsiz )
                 self.anum = numpy.zeros( self.natm, dtype=numpy.int16 )
                 self.actv = numpy.ones( ( self.natm, 1 ), dtype=numpy.bool_ )
-                self.engines = {}
+                self.engines = collections.OrderedDict()
                 self.rebuild()
 
 
@@ -685,7 +685,7 @@ Residue     1  SER
                     self.resi[j] = i + 1
                     self.resn[j] = resn[i]
             self.actv = numpy.ones( ( self.natm, 1 ), dtype=numpy.bool_ )
-            self.engines = {}
+            self.engines = collections.OrderedDict()
             self.rebuild()
 
 # =================================================================================================
@@ -838,9 +838,10 @@ try:
             wframe: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
             cpk: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
             label: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
-            center: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ) ):
+            center: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
+            vsize: typing.Optional[list] = [ 1280, 720 ] ):
 
-        view = qm3._py3Dmol.view()
+        view = qm3._py3Dmol.view( width = vsize[0], height = vsize[1] )
         view.clear()
         f = io.StringIO()
         if( frmt == "pdb" ):
@@ -887,18 +888,22 @@ try:
     import  pyvista
     import  qm3.utils._conn
 
-    def vBS( mol, bonds: typing.Optional[list] = [], display: typing.Optional[bool] = True ):
+    def vBS( mol, bonds: typing.Optional[list] = [],
+                  label: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
+                  display: typing.Optional[bool] = True, vsize: typing.Optional[list] = [ 1280, 720 ] ):
         colors = { 1: "white",
                    5: "darkseagreen", 6: "gray", 7: "blue", 8: "red", 9: "lightgreen",
                   15: "orange", 16: "yellow", 17: "green",
                   35: "darkred", 53: "purple" }
-        if( bonds == [] ):
-            bonds = qm3.utils._conn.connectivity( 2, mol.anum, mol.coor )
+
         v_atm = pyvista.MultiBlock()
         c_atm = []
         for i in numpy.flatnonzero( mol.actv ):
             v_atm.append( pyvista.Sphere( radius=qm3.data.r_vdw[mol.anum[i]]*0.2, center=mol.coor[i] ) )
             c_atm.append( colors.get( mol.anum[i], "magenta" ) )
+
+        if( bonds == [] ):
+            bonds = qm3.utils._conn.connectivity( 2, mol.anum, mol.coor )
         v_bnd = pyvista.MultiBlock()
         c_bnd = []
         for i,j in bonds:
@@ -913,11 +918,18 @@ try:
                 siz = numpy.linalg.norm( vec )
                 v_bnd.append( pyvista.Cylinder( center=mid+vec/2, direction=vec, height=siz, radius=0.1 ) )
                 c_bnd.append( colors.get( mol.anum[j], "magenta" ) )
-        plot = pyvista.Plotter()
+
+        plot = pyvista.Plotter( window_size = vsize )
         for i in range( len( v_atm ) ):
             plot.add_mesh( v_atm[i], color=c_atm[i], smooth_shading=True )
         for i in range( len( v_bnd ) ):
             plot.add_mesh( v_bnd[i], color=c_bnd[i], smooth_shading=True )
+
+        if( label.sum() > 0 ):
+            l_atm = pyvista.PolyData( mol.coor[label] )
+            l_atm["labels"] = [ str( i ) for i in numpy.flatnonzero( label ) ]
+            plot.add_point_labels( l_atm, "labels", bold = False, point_size = 0, font_size = 10, always_visible = True, shape_color = "#ffffff", shape_opacity= 0.3 )
+
         if( display ):
             plot.show()
         else:
