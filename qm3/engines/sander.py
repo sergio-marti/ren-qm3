@@ -58,12 +58,13 @@ class netcdf( object ):
     def next( self, mol: object ) -> bool:
         out = False
         if( self.mult ):
-            if( self.cfrm >= 0 and self.cfrm < self.coor.shape[0] ):
+            if( self.cfrm >= 0 and self.cfrm < self.coor.shape[0] and self.coor.shape[1] == mol.natm ):
                 out = True
-                mol.coor = self.coor[self.cfrm].copy()
+                mol.coor = self.coor.data[self.cfrm].copy()
                 self.cfrm += 1
         else:
-            mol.coor = self.coor.copy()
+            if( self.coor.shape[0] == mol.natm ):
+                mol.coor = self.coor.data.copy()
         return( out )
 
 
