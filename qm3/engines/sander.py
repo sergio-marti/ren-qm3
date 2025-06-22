@@ -2,6 +2,7 @@ import  numpy
 import  typing
 import  qm3.data
 import  sander
+import  scipy.io
 
 
 
@@ -31,6 +32,45 @@ def coordinates_write( mol, fdsc: typing.IO ):
         fdsc.write( "\n" )
     fdsc.write( "%12.7lf%12.7lf%12.7lf%12.7lf%12.7lf%12.7lf\n"%( mol.boxl[0], mol.boxl[1], mol.boxl[2], 90.0, 90.0, 90.0 ) )
 
+
+
+class netcdf( object ):
+    def __init__( self, fname: str ):
+        self.fdsc = scipy.io.netcdf_file( fname, "r" )
+        self.coor = self.fdsc.variables["coordinates"]
+        self.mult = len( self.coor.shape ) == 3
+        self.cfrm = 0
+        print( "* [%s] "%( fname ) + ( 55 - len( fname ) ) * "-" )
+        if( self.mult ):
+            print( "+ \tNFrames: %ld"%( self.coor.shape[0] ) )
+            print( "+ \tAtoms: %ld"%( self.coor.shape[1] ) )
+        else:
+            print( "+ \tNFrames: %ld"%( 1 ) )
+            print( "+ \tAtoms: %ld"%( self.coor.shape[0] ) )
+        print( 60 * "-" )
+
+
+    def goto( self, frame: int ):
+        if( frame >= 0 and frame < self.coor.shape[0] and self.mult ):
+            self.cfrm = frame
+
+
+    def next( self, mol: object ) -> bool:
+        out = False
+        if( self.mult ):
+            if( self.cfrm >= 0 and self.cfrm < self.coor.shape[0] ):
+                out = True
+                mol.coor = self.coor[self.cfrm].copy()
+                self.cfrm += 1
+        else:
+            mol.coor = self.coor.copy()
+        return( out )
+
+
+    def close( self ):
+        del( self.coor )
+        self.fdsc.close()
+          
 
 
 class run( object ):
