@@ -38,6 +38,9 @@ class netcdf( object ):
     def __init__( self, fname: str ):
         self.fdsc = scipy.io.netcdf_file( fname, "r" )
         self.coor = self.fdsc.variables["coordinates"]
+        self.boxl = None
+        if( "cell_lengths" in self.fdsc.variables ):
+            self.boxl = self.fdsc.variables["cell_lengths"]
         self.mult = len( self.coor.shape ) == 3
         self.cfrm = 0
         print( "* [%s] "%( fname ) + ( 55 - len( fname ) ) * "-" )
@@ -61,15 +64,21 @@ class netcdf( object ):
             if( self.cfrm >= 0 and self.cfrm < self.coor.shape[0] and self.coor.shape[1] == mol.natm ):
                 out = True
                 mol.coor = self.coor.data[self.cfrm].copy()
+                if( self.boxl != None ):
+                    mol.boxl = self.boxl.data[self.cfrm].copy()
                 self.cfrm += 1
         else:
             if( self.coor.shape[0] == mol.natm ):
                 mol.coor = self.coor.data.copy()
+                if( self.boxl != None ):
+                    mol.boxl = self.boxl.data.copy()
         return( out )
 
 
     def close( self ):
         del( self.coor )
+        if( self.boxl != None ):
+            del( self.boxl )
         self.fdsc.close()
           
 
