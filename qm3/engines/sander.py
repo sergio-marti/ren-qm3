@@ -87,7 +87,8 @@ class run( object ):
     def __init__( self, prmtop: str, mol: object,
                         qm_mask: typing.Optional[str] = "",
                         qm_meth: typing.Optional[str] = "AM1",
-                        qm_chrg: typing.Optional[int] = 0 ):
+                        qm_chrg: typing.Optional[int] = 0,
+                        qm_cut: typing.Optional[float] = 12.0 ):
         """
         Amber masks:
 
@@ -126,7 +127,9 @@ class run( object ):
             qm_inp.qmmask = qm_mask
             qm_inp.qm_theory = qm_meth
             qm_inp.qmcharge = qm_chrg
-            qm_inp.qmcut = 10
+            qm_inp.qmcut = qm_cut
+            if( qm_meth.lower() == "extern" ):
+                qm_inp.qm_ewald = 0
             self.obj = sander.setup( prmtop,
                 mol.coor.ravel(), [ mol.boxl[0], mol.boxl[1], mol.boxl[2], 90.0, 90.0, 90.0 ], mm_inp, qm_inp )
 
