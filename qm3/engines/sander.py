@@ -117,6 +117,8 @@ class run( object ):
         (:1 <:3.0) & :WAT   "all water molecules within 3 Angs from residue 1"
 
         """
+        if( sander.is_setup() ):
+            sander.cleanup()
         if( qm_mask == "" ):
             self.obj = sander.setup( prmtop,
                 mol.coor.ravel(), [ mol.boxl[0], mol.boxl[1], mol.boxl[2], 90.0, 90.0, 90.0 ], sander.pme_input() )
@@ -132,11 +134,6 @@ class run( object ):
                 qm_inp.qm_ewald = 0
             self.obj = sander.setup( prmtop,
                 mol.coor.ravel(), [ mol.boxl[0], mol.boxl[1], mol.boxl[2], 90.0, 90.0, 90.0 ], mm_inp, qm_inp )
-
-
-    def stop( self ):
-        if( sander.is_setup() ):
-            sander.cleanup()
 
 
     def update_coor( self, mol: object ):

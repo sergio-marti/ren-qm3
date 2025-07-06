@@ -8,9 +8,9 @@ obabel -imol2 $lig -opdbqt --partialcharge eem | grep -E -v "^USER|^TER" > lig.x
 
 rm -f borra.*
 cat > inp << EOD
-source leaprc.gaff
-source oldff/leaprc.ff03
+source leaprc.protein.ff14SB
 source leaprc.water.tip3p
+source leaprc.gaff
 prt = loadpdb $prt
 saveamberparm prt borra.prmtop borra.tmp.inpcrd
 quit
