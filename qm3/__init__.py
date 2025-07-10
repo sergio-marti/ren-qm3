@@ -110,6 +110,32 @@ class molecule( object ):
         return( out )
 
 
+    def con_sel( self, bonds: list, index: int, skip: typing.Optional[list] = [] ) -> numpy.array:
+        """
+        bonds list can be obtained via:    qm3.utils._conn.connectivity( 4, m.anum, m.coor, 0.12 )
+
+        connectivity of atoms in the skip list won't be followed
+        """
+        # --------------------------------------
+        con = [ [] for i in range( self.natm ) ]
+        for i,j in bonds:
+            con[i].append( j )
+            con[j].append( i )
+        # --------------------------------------
+        tmp = [ index ]
+        lst = 0
+        while( len( tmp ) > lst ):
+            lst = len( tmp )
+            for i in tmp:
+                for j in con[i]:
+                    if( not j in skip and not j in tmp ):
+                        tmp.append( j )
+        # --------------------------------------
+        out = numpy.zeros( self.natm, dtype=numpy.bool_ )
+        out[tmp] = True
+        return( out )
+
+
     def copy( self,
             sele: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ) ):
         if( sele.sum() > 0 ):
