@@ -22,7 +22,7 @@ class run( object ):
 #        for i in range( mol.natm ):
 #            self.chg[i] = mol.chrg[i]
 #        self.lmp.scatter_atoms( "q", 1, 1, self.chg )
-        self.lmp.scatter_atoms( "x", 1, 3, mol.chrg.ctypes.data_as( ctypes.POINTER( ctypes.c_float ) ) )
+        self.lmp.scatter_atoms( "q", 1, 1, mol.chrg.ctypes.data_as( ctypes.POINTER( ctypes.c_float ) ) )
 
 
     def update_coor( self, mol: object ):
