@@ -91,7 +91,7 @@ class run( qm3.engines.template ):
                 l += 1
 
 
-    def get_func( self, mol, density = False ):
+    def get_func( self, mol ):
         self.update_coor( mol )
         self.lib.qm3_sqm_calc_( ctypes.c_int( self.siz ), self.vec )
         mol.func += self.vec[0]

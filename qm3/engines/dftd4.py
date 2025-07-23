@@ -66,7 +66,7 @@ class run( object ):
             k += 1
 
 
-    def get_func( self, mol, density = False ):
+    def get_func( self, mol ):
         self.update_coor( mol )
         self.lib.qm3_dftd4_calc_( ctypes.c_int( self.all ), ctypes.c_int( self.siz ), self.vec )
         mol.func += self.vec[0]

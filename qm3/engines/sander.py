@@ -120,7 +120,7 @@ class run( object ):
         if( sander.is_setup() ):
             sander.cleanup()
         if( qm_mask == "" ):
-            self.obj = sander.setup( prmtop,
+            sander.setup( prmtop,
                 mol.coor.ravel(), [ mol.boxl[0], mol.boxl[1], mol.boxl[2], 90.0, 90.0, 90.0 ], sander.pme_input() )
         else:
             mm_inp = sander.pme_input()
@@ -132,7 +132,7 @@ class run( object ):
             qm_inp.qmcut = qm_cut
             if( qm_meth.lower() == "extern" ):
                 qm_inp.qm_ewald = 0
-            self.obj = sander.setup( prmtop,
+            sander.setup( prmtop,
                 mol.coor.ravel(), [ mol.boxl[0], mol.boxl[1], mol.boxl[2], 90.0, 90.0, 90.0 ], mm_inp, qm_inp )
 
 
