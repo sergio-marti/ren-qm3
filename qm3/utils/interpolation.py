@@ -5,6 +5,7 @@ import  typing
 
 
 def find_center( rx: float, x: numpy.array ) -> int:
+    # return( min( numpy.searchsorted( x, rx ), x.shape[0] - 2 ) )
     try:
         w = numpy.where( x <= rx )[0][-1]
     except:
