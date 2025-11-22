@@ -37,7 +37,7 @@ class neb( object ):
 
     J. Chem. Phys. v113, p9978 (2000) [doi:10.1063/1.1323224]
     """
-    def __init__( self, guess: list, kumb: float, opar: object ):
+    def __init__( self, guess: list, kumb: float, opar: object, frozen: typing.Optional[bool] = False ):
         if( opar.ncpu < 2 ):
             raise ValueError( "neb: current implementation requires at least 2 processes" )
         self.kumb = kumb
@@ -59,6 +59,7 @@ class neb( object ):
         for i in range( 1, self.opar.ncpu ):
             self.opar.send_i4( i, [ len( self.chnk[i] ) ] )
             self.opar.send_i4( i, self.chnk[i] )
+        self.froz = frozen
 
 
     def get_grad( self ):
@@ -122,3 +123,7 @@ class neb( object ):
                     self.coor[jj:jj+self.dime] )
 #            self.func += fum * 0.5
             self.grad[ii:jj] += gum - numpy.sum( tau * self.grad[ii:jj] ) * tau
+        # keep first and last nodes frozen
+        if( self.froz ):
+            self.grad[0:self.dime,:] = 0.0
+            self.grad[-self.dime:,:] = 0.0
