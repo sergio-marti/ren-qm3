@@ -1,5 +1,6 @@
 module qm3
     use dftd4, only: structure_type, new, d4_model, new_d4_model, rational_damping_param, get_dispersion, realspace_cutoff
+    use mctc_env, only : error_type
     implicit none
     public
     real*8, parameter   :: x__Bohr = 1.0d0 / 0.52917721093d0
@@ -7,6 +8,7 @@ module qm3
     type( structure_type ) :: mol
     type( d4_model ) :: d4
     type( rational_damping_param ) :: param
+    type(error_type), allocatable :: error
 end module qm3
 
 
@@ -26,7 +28,7 @@ subroutine qm3_dftd4_init( nat, siz, dat )
     xyz = 0.0d0
     call new( mol, atn, xyz )
     mol%charge = dat(0)
-    call new_d4_model( d4, mol, ga = 3.0d0, gc = 2.0d0, wf = 6.0d0 )
+    call new_d4_model( error, d4, mol, ga = 3.0d0, gc = 2.0d0, wf = 6.0d0 )
     param = rational_damping_param( s6 = dat(nat+1), s8 = dat(nat+2), s9 = 1.0d0, a1 = dat(nat+3), a2 = dat(nat+4), alp = 16.0d0 )
     deallocate( atn, xyz )
 end subroutine qm3_dftd4_init

@@ -6,6 +6,9 @@ import  inspect
 import  qm3.data
 import  qm3.engines
 
+#
+# >> check the new python interface of dftd4
+#
 
 class run( object ):
     def __init__( self, mol: object, parm: dict,
