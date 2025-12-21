@@ -448,26 +448,26 @@ def modified_sinc_filter( data: numpy.array, m: int, n: typing.Optional[int] = 2
 
 class gpr( object ):
     def __init__( self, x: numpy.array, y: numpy.array, se2: typing.Optional[float] = 1.e-8 ):
-# ------------------------------------------------------------------------------------
-#\begin{align}
-#&y' = y_{c} \left( x' \right) = K_{1xN}^T \; \left[ C^{-1} \; y \right]_{NxP} \\
-#&f\left(x_{i},x_{j}\right) = a_1 \sum_{d=1}^{P}{ x_{i,d} \cdot x_{j,d}} + v_{o}\; \text{exp} \left[ - \sum_{d=1}^{P}{\eta_{d}\left( x_{i,d} - x_{j,d} \right)^2} \right] \\
-#&K_i = f\left(x',x_{i}\right)\;\;\;\;\;\;
-#C_{i,j} = f\left(x_{i},x_{j}\right) + \sigma_{\varepsilon}^{2}\cdot \delta_{i,j} \\
-#&L = \frac{1}{M}\sum_{k=1}^{M}{ \left( y'_k - y_k \right)^2} \;\;\;\;\;\; \frac{\partial L}{\partial \zeta} = \frac{2}{M}\sum_{k=1}^{M}{ \left( y'_k - y_k \right)} \frac{\partial y'_k}{\partial \zeta} \\
-#&\frac{\partial y'_k}{\partial \zeta} = \left[\frac{\partial K}{\partial \zeta}\right]^T \left[ C^{-1} \; y\right] - K^T \left[ C^{-1} \frac{\partial C}{\partial \zeta} C^{-1} \right] y \\
-#&\frac{\partial K_{i}}{\partial a_{1}} = \sum_{d=1}^{P}{ x'_{d} \cdot x_{i,d}}
-#\;\;\;\;\;\;
-#\frac{\partial K_{i}}{\partial v_{o}} =  \text{exp} \left[ - \sum_{d=1}^{P}{\eta_{d}\left( x'_{d} - x_{i,d} \right)^2} \right]
-#\;\;\;\;\;\;
-#\frac{\partial K_{i}}{\partial \eta_{k}} = -2 \; v_{o}\; \text{exp} \left[ - \sum_{d=1}^{P}{\eta_{d}\left( x'_{d} - x_{i,d} \right)^2} \right]\;\left( x'_{k} - x_{i,k} \right) \\
-#&\frac{\partial C_{i,j}}{\partial a_{1}} = \sum_{d=1}^{P}{ x_{i,d} \cdot x_{j,d}}
-#\;\;\;\;\;\;
-#\frac{\partial C_{i,j}}{\partial v_{o}} =  \text{exp} \left[ - \sum_{d=1}^{P}{\eta_{d}\left( x_{i,d} - x_{j,d} \right)^2} \right]
-#\;\;\;\;\;\;
-#\frac{\partial C_{i,j}}{\partial \eta_{k}} = -2 \; v_{o}\; \text{exp} \left[ - \sum_{d=1}^{P}{\eta_{d}\left( x_{i,d} - x_{j,d} \right)^2} \right]\;\left( x_{i,k} - x_{j,k} \right)
-#\end{align}
-# ------------------------------------------------------------------------------------
+        """
+\begin{aligned}
+&y' = y_{c} \left( x' \right) = K_{1xN}^T \; \left[ C^{-1} \; y \right]_{NxP} \\
+&f\left(x_{i},x_{j}\right) = a_1 \sum_{d=1}^{P}{ x_{i,d} \cdot x_{j,d}} + v_{o}\; \text{exp} \left[ - \sum_{d=1}^{P}{\eta_{d}\left( x_{i,d} - x_{j,d} \right)^2} \right] \\
+&K_i = f\left(x',x_{i}\right)\;\;\;\;\;\;
+C_{i,j} = f\left(x_{i},x_{j}\right) + \sigma_{\varepsilon}^{2}\cdot \delta_{i,j} \\
+&L = \frac{1}{M}\sum_{k=1}^{M}{ \left( y'_k - y_k \right)^2} \;\;\;\;\;\; \frac{\partial L}{\partial \zeta} = \frac{2}{M}\sum_{k=1}^{M}{ \left( y'_k - y_k \right)} \frac{\partial y'_k}{\partial \zeta} \\
+&\frac{\partial y'_k}{\partial \zeta} = \left[\frac{\partial K}{\partial \zeta}\right]^T \left[ C^{-1} \; y\right] - K^T \left[ C^{-1} \frac{\partial C}{\partial \zeta} C^{-1} \right] y \\
+&\frac{\partial K_{i}}{\partial a_{1}} = \sum_{d=1}^{P}{ x'_{d} \cdot x_{i,d}}
+\;\;\;\;\;\;
+\frac{\partial K_{i}}{\partial v_{o}} =  \text{exp} \left[ - \sum_{d=1}^{P}{\eta_{d}\left( x'_{d} - x_{i,d} \right)^2} \right]
+\;\;\;\;\;\;
+\frac{\partial K_{i}}{\partial \eta_{k}} = -2 \; v_{o}\; \text{exp} \left[ - \sum_{d=1}^{P}{\eta_{d}\left( x'_{d} - x_{i,d} \right)^2} \right]\;\left( x'_{k} - x_{i,k} \right) \\
+&\frac{\partial C_{i,j}}{\partial a_{1}} = \sum_{d=1}^{P}{ x_{i,d} \cdot x_{j,d}}
+\;\;\;\;\;\;
+\frac{\partial C_{i,j}}{\partial v_{o}} =  \text{exp} \left[ - \sum_{d=1}^{P}{\eta_{d}\left( x_{i,d} - x_{j,d} \right)^2} \right]
+\;\;\;\;\;\;
+\frac{\partial C_{i,j}}{\partial \eta_{k}} = -2 \; v_{o}\; \text{exp} \left[ - \sum_{d=1}^{P}{\eta_{d}\left( x_{i,d} - x_{j,d} \right)^2} \right]\;\left( x_{i,k} - x_{j,k} \right)
+\end{aligned}
+        """
         self.x = x.copy()
         self.y = y.copy()
         self.n = self.x.shape[0]
