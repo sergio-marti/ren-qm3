@@ -6,6 +6,9 @@ import	qm3
 import  qm3.engines.lammps
  
 
+cwd = os.path.abspath( os.path.dirname( sys.argv[0] ) ) + os.sep
+
+
 mol = qm3.molecule()
 box = numpy.array( [ 25.965, 29.928, 28.080 ] )
 

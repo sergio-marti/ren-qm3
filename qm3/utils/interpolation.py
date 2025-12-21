@@ -1,5 +1,6 @@
 import  math
 import  numpy
+import  scipy
 import  typing
 
 
@@ -402,6 +403,46 @@ def savitzky_golay( y: numpy.array, points: typing.Optional[int] = 0 ) -> numpy.
         for i in range( m+1, 2*m+1 ):
             f.append( numpy.sum( cf[i] * y[-points:]  ) / wf[i] )
         return( numpy.array( f ) )
+
+
+
+def modified_sinc_filter( data: numpy.array, m: int, n: typing.Optional[int] = 2,
+                         alpha: typing.Optional[float] = 4.0 ) -> numpy.array:
+    """
+    m       Kernel half-width (the total size is 2 * m + 1)
+    n       Filter degree (even integer: 2, 4, 6, 8, 10, ...)
+    alpha   Gaussian width parameter
+
+    ACS Meas. Sci. Au v2, p185 (2022) [doi:10.1021/acsmeasuresciau.1c00054]
+    """
+    # table 1
+    kappa = { 6: [ ( 0, 0.00172, 0.02437, 1.64375 ) ],
+              8: [ ( 0, 0.00440, 0.08821, 2.35938 ), ( 1, 0.00615, 0.02472, 3.63594 ) ],
+             10: [ ( 0, 0.00118, 0.04219, 2.74688 ), ( 1, 0.00367, 0.12780, 2.77031 ) ] }
+    if( n % 2 != 0 ):
+        return( None )
+    # eq 5
+    x = numpy.arange( -m, m + 1, dtype=float ) / ( m + 1 )
+    # eq 4
+    w = numpy.exp( - alpha * numpy.square( x ) )
+    w += numpy.exp( - alpha * numpy.square( x + 2.0 ) )
+    w += numpy.exp( - alpha * numpy.square( x - 2.0 ) )
+    w -= 2.0 * numpy.exp( - alpha )
+    w -= numpy.exp( - 9.0 * alpha )
+    # eq 7 (main)
+    z = numpy.sinc( ( n + 4 ) / 2.0 * numpy.pi * x )
+    # eq 7 (correction)
+    c = 0.0
+    if( n >= 6 and n in kappa ):
+        nu = 1 if( (n // 2) % 2 != 0 ) else 2
+        for ki, ai, bi, ci in kappa[n]:
+            c += ( ai / m + bi / ( ci * m ) ** 3 ) * numpy.sin( ( 2.0 * ( ki + 1 ) + nu ) * numpy.pi * x )
+    elif( n >= 6 ):
+        print( f"-- No correction coeficients available for n={n}" )
+    # eq 7
+    krn = w * ( z + c )
+    # convolve normalized kernel
+    return( scipy.signal.convolve( data, krn / numpy.sum( krn ), mode = "same" ) )
 
 
 
