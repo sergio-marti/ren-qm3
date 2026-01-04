@@ -448,7 +448,7 @@ def modified_sinc_filter( data: numpy.array, m: int, n: typing.Optional[int] = 2
 
 class gpr( object ):
     def __init__( self, x: numpy.array, y: numpy.array, se2: typing.Optional[float] = 1.e-8 ):
-        """
+        r"""
 \begin{aligned}
 &y' = y_{c} \left( x' \right) = K_{1xN}^T \; \left[ C^{-1} \; y \right]_{NxP} \\
 &f\left(x_{i},x_{j}\right) = a_1 \sum_{d=1}^{P}{ x_{i,d} \cdot x_{j,d}} + v_{o}\; \text{exp} \left[ - \sum_{d=1}^{P}{\eta_{d}\left( x_{i,d} - x_{j,d} \right)^2} \right] \\
@@ -568,3 +568,5 @@ C_{i,j} = f\left(x_{i},x_{j}\right) + \sigma_{\varepsilon}^{2}\cdot \delta_{i,j}
             print( itr, fcn, ssz, prm )
             hst.append( fcn )
         return( prm, hst )
+
+
