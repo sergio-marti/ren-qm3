@@ -433,7 +433,7 @@ def modified_sinc_filter( data: numpy.array, m: int, n: typing.Optional[int] = 2
     z = numpy.sinc( ( n + 4 ) / 2.0 * numpy.pi * x )
     # eq 7 (correction)
     c = 0.0
-    if( n >= 6 and n in kappa ):
+    if( n in kappa ):
         nu = 1 if( (n // 2) % 2 != 0 ) else 2
         for ki, ai, bi, ci in kappa[n]:
             c += ( ai / m + bi / ( ci * m ) ** 3 ) * numpy.sin( ( 2.0 * ( ki + 1 ) + nu ) * numpy.pi * x )
@@ -534,7 +534,7 @@ C_{i,j} = f\left(x_{i},x_{j}\right) + \sigma_{\varepsilon}^{2}\cdot \delta_{i,j}
     def on_fire( self, nit: typing.Optional[int] = 30,
                        tol: typing.Optional[float] = 1.e-6,
                        stp: typing.Optional[float] = 1.0,
-                       prt: typing.Optional[bool] = True ) -> tuple:
+                       prt: typing.Optional[int] = 2 ) -> tuple:
         cnt = 0
         alp = 0.1
         itr = 0
@@ -544,8 +544,6 @@ C_{i,j} = f\left(x_{i},x_{j}\right) + \sigma_{\varepsilon}^{2}\cdot \delta_{i,j}
         fcn, grd = self.gloss( prm )
         gnm = numpy.linalg.norm( grd )
         hst = []
-        if( prt ):
-            print( fcn, prm )
         while( itr < nit and ssz > tol ):
             if( - numpy.sum( vel * grd ) > 0.0 ):
                 tmp = numpy.linalg.norm( vel )
@@ -568,9 +566,11 @@ C_{i,j} = f\left(x_{i},x_{j}\right) + \sigma_{\varepsilon}^{2}\cdot \delta_{i,j}
             fcn, grd = self.gloss( prm )
             gnm = numpy.linalg.norm( grd ) 
             itr += 1
-            if( prt ):
+            if( prt == 2 ):
                 print( itr, fcn, ssz, prm )
             hst.append( fcn )
+        if( prt == 1 ):
+            print( itr, fcn, ssz, prm )
         return( prm, hst )
 
 
