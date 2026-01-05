@@ -531,8 +531,10 @@ C_{i,j} = f\left(x_{i},x_{j}\right) + \sigma_{\varepsilon}^{2}\cdot \delta_{i,j}
         return( numpy.sum( numpy.square( dd ) ) / self.n, numpy.array( g ) * 2.0 / self.n )
 
 
-    def on_fire( self, nit: typing.Optional[int] = 30, tol: typing.Optional[float] = 1.e-6 ) -> tuple:
-        stp = 1.0
+    def on_fire( self, nit: typing.Optional[int] = 30,
+                       tol: typing.Optional[float] = 1.e-6,
+                       stp: typing.Optional[float] = 1.0,
+                       prt: typing.Optional[bool] = True ) -> tuple:
         cnt = 0
         alp = 0.1
         itr = 0
@@ -542,7 +544,8 @@ C_{i,j} = f\left(x_{i},x_{j}\right) + \sigma_{\varepsilon}^{2}\cdot \delta_{i,j}
         fcn, grd = self.gloss( prm )
         gnm = numpy.linalg.norm( grd )
         hst = []
-        print( fcn, prm )
+        if( prt ):
+            print( fcn, prm )
         while( itr < nit and ssz > tol ):
             if( - numpy.sum( vel * grd ) > 0.0 ):
                 tmp = numpy.linalg.norm( vel )
@@ -565,7 +568,8 @@ C_{i,j} = f\left(x_{i},x_{j}\right) + \sigma_{\varepsilon}^{2}\cdot \delta_{i,j}
             fcn, grd = self.gloss( prm )
             gnm = numpy.linalg.norm( grd ) 
             itr += 1
-            print( itr, fcn, ssz, prm )
+            if( prt ):
+                print( itr, fcn, ssz, prm )
             hst.append( fcn )
         return( prm, hst )
 
