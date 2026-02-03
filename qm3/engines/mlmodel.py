@@ -44,9 +44,9 @@ def ebuild( crd: torch.tensor, chg: torch.tensor, n_dst: int, n_pot: typing.Opti
 
 
 class ml_atom( torch.nn.Module ):
-    def __init__( self, knd: str, net: list ):
+    def __init__( self, knd: str, net: list, name: str ):
         super().__init__()
-        self.name  = f"atom_{knd}.pth"
+        self.name  = f"{name}atom_{knd}.pth"
         mod = []
         for i in range( len( net ) - 1 ):
             mod.append( torch.nn.Linear( net[i], net[i+1] ) )
@@ -68,7 +68,8 @@ class ml_atom( torch.nn.Module ):
 
 class run( object ):
     def __init__( self, xref: numpy.array, eref: numpy.array, desc: torch.tensor,
-                        sele: numpy.array, labl: list, netw: list, device: str ):
+                        sele: numpy.array, labl: list, netw: list, device: str,
+                        name: typing.Optional[str] = "" ):
         self.dev = device
         self.ref = xref.copy()
         self.dsp = eref.copy()
@@ -76,7 +77,7 @@ class run( object ):
         self.sel = numpy.flatnonzero( sele )
         self.lbl = labl[:]
         self.knd = list( set( labl ) )
-        self.net = { i: ml_atom( i, netw ) for i in self.knd }
+        self.net = { i: ml_atom( i, netw, name ) for i in self.knd }
         print( "Erng:", self.dsp )
         print( "Kind:", self.knd )
         print( "Atom:", self.lbl )
