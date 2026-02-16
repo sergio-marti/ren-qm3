@@ -296,7 +296,7 @@ ATOM   7923  H2  WAT  2632     -12.115  -9.659  -9.455  1.00  0.00
             term: typing.Optional[list] = [] ):
         """
         'term'  parameter should contain a list of regular expressions matching 'resn:resi:labl'
-                such as '.+:.+:OXT' or 'HOH:.+:H2'
+                such as r'.+:.+:OXT' or r'HOH:.+:H2'
         """
         if( sele.sum() > 0 ):
             lsel = sele
@@ -733,6 +733,7 @@ Residue     1  SER
         self.grad = numpy.zeros( ( self.natm, 3 ), dtype=numpy.float64 )
         for itm in self.engines:
             self.rval[itm] = self.engines[itm].get_func( self )
+        return( self.func )
 
 
     def get_grad( self ):
@@ -742,6 +743,7 @@ Residue     1  SER
         for itm in self.engines:
             self.rval[itm] = self.engines[itm].get_grad( self )
         self.grad *= self.actv.astype( numpy.float64 )
+        return( self.func )
 
 # =================================================================================================
 

@@ -120,10 +120,13 @@ class run( object ):
         if( sander.is_setup() ):
             sander.cleanup()
         if( qm_mask == "" ):
+            mm_inp = sander.pme_input()
+            mm_inp.cut = 10.0
             sander.setup( prmtop,
-                mol.coor.ravel(), [ mol.boxl[0], mol.boxl[1], mol.boxl[2], 90.0, 90.0, 90.0 ], sander.pme_input() )
+                mol.coor.ravel(), [ mol.boxl[0], mol.boxl[1], mol.boxl[2], 90.0, 90.0, 90.0 ], mm_inp )
         else:
             mm_inp = sander.pme_input()
+            mm_inp.cut = 10.0
             mm_inp.ifqnt = 1
             qm_inp = sander.QmInputOptions()
             qm_inp.qmmask = qm_mask
