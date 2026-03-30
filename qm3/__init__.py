@@ -155,7 +155,7 @@ class molecule( object ):
             lsel = numpy.ones( self.natm, dtype=numpy.bool_ )
         out = molecule()
         out.natm = lsel.sum()
-        out.boxl = numpy.array( [ qm3.data.MXLAT, qm3.data.MXLAT, qm3.data.MXLAT ] )
+        out.boxl = self.boxl.copy() #numpy.array( [ qm3.data.MXLAT, qm3.data.MXLAT, qm3.data.MXLAT ] )
         out.labl = self.labl[lsel]
         out.coor = self.coor[lsel]
         out.segn = self.segn[lsel]
