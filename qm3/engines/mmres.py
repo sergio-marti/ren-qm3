@@ -369,7 +369,8 @@ class colvar_s( object ):
             str_crd: typing.Optional[str] = "",
             kumb: typing.Optional[float] = 0.0,
             xref: typing.Optional[float] = 0.0,
-            delz: typing.Optional[float] = 0.0 ):
+            delz: typing.Optional[float] = 0.0,
+            mass: typing.Optional[bool] = False ):
         self.xref = xref
         self.kumb = kumb
         self.delz = delz
@@ -385,6 +386,11 @@ class colvar_s( object ):
             self.jidx[self.atom[i,1]] = True
         self.jidx = { jj: ii for ii,jj in enumerate( sorted( self.jidx ) ) }
         self.jcol = 3 * len( self.jidx )
+        if( mass ):
+            self.mass = mol.mass[list( self.jidx.keys() )]
+        else:
+            self.mass = numpy.ones( len( self.jidx ), dtype=numpy.float64 )
+        self.mass = 1.0 / numpy.repeat( self.mass, 3 )
         # load previous equi-distributed string
         if( str_crd == "" ):
             self.rcrd = []
@@ -496,7 +502,8 @@ class colvar_s( object ):
         cmet = numpy.zeros( ( self.ncrd, self.ncrd ), dtype=numpy.float64 )
         for i in range( self.ncrd ):
             for j in range( i, self.ncrd ):
-                cmet[i,j] = numpy.sum( jaco[i,:] * jaco[j,:] ) #@ / self.mass )
+                #cmet[i,j] = numpy.sum( jaco[i,:] * jaco[j,:] )
+                cmet[i,j] = numpy.sum( jaco[i,:] * jaco[j,:] * self.mass )
                 cmet[j,i] = cmet[i,j]
         return( ( ccrd, jaco, numpy.linalg.inv( cmet ) ) )
 

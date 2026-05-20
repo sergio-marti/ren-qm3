@@ -28,7 +28,7 @@ long randint( FILE *fd, long a, long b ) {
 void wham( long try, long n_win, long n_bin, double kbt, double *_ss, double *_nn,
 			double *_uu, double *_eu, double *_ff, double *_fo, double *_rr, double *pmf, double *rms ) {
 	double t, r, f_tol = 1.e-3;
-	long i, j, k, f, mxit = 10000;
+	long i, j, k, f, mxit = 40000;
 
 	for( i = 0; i < n_bin; i++ ) { _rr[i] = 0.0; }
 	f = 0;

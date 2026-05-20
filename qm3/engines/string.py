@@ -126,7 +126,7 @@ class string( object ):
     J. Comput. Chem. v35, p1672 (2014) [doi:10.1002/jcc.23673]
     J. Phys. Chem. A v121, p9764 (2017) [doi:10.1021/acs.jpca.7b10842]
     """
-    def __init__( self, mol: object, node: int, str_cnf: typing.IO ):
+    def __init__( self, mol: object, node: int, str_cnf: typing.IO, mass: typing.Optional[bool] = False ):
         self.node = node
         # parse config
         tmp = str_cnf.readline().strip().split()
@@ -144,13 +144,15 @@ class string( object ):
 #        self.jidx = collections.OrderedDict( { jj: ii for ii,jj in enumerate( sorted( self.jidx ) ) } )
         self.jidx = { jj: ii for ii,jj in enumerate( sorted( self.jidx ) ) }
         self.jcol = 3 * len( self.jidx )
+        if( mass ):
+            self.mass = mol.mass[list( self.jidx.keys() )]
+        else:
+            self.mass = numpy.ones( len( self.jidx ), dtype=numpy.float64 )
+        self.mass = 1.0 / numpy.repeat( self.mass, 3 )
         # load my initial reference 
         tmp = numpy.array( [ float( i ) for i in str_cnf.read().strip().split() ], dtype=numpy.float64 )
         tmp.shape = ( self.nwin, self.ncrd )
         self.rcrd = tmp[self.node,:]
-        #@# store the masses (and their square root)
-        #@self.mass = mol.mass[list( self.jidx.keys() )]
-        #@self.mass = numpy.column_stack( ( self.mass, self.mass, self.mass ) ).reshape( self.jcol )
         # initialize variables
         self.ccrd = numpy.zeros( self.ncrd, dtype=numpy.float64 )
         self.cdif = numpy.zeros( self.ncrd, dtype=numpy.float64 )
@@ -179,7 +181,8 @@ class string( object ):
         self.cmet = numpy.zeros( ( self.ncrd, self.ncrd ), dtype=numpy.float64 )
         for i in range( self.ncrd ):
             for j in range( i, self.ncrd ):
-                self.cmet[i,j] = numpy.sum( jaco[i,:] * jaco[j,:] ) #@ / self.mass )
+                #self.cmet[i,j] = numpy.sum( jaco[i,:] * jaco[j,:] )
+                self.cmet[i,j] = numpy.sum( jaco[i,:] * jaco[j,:] * self.mass )
                 self.cmet[j,i] = self.cmet[i,j]
         # accumulate
         self.nstp += 1.0

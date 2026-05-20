@@ -110,8 +110,9 @@ class run( qm3.engines.template ):
                 h = h[0:i,0:i] * self.ch
         else:
             f = open( "orca.out", "rt" )
-            mol.func += self.ce * float( re.compile( "FINAL SINGLE POINT ENERGY[\\ ]*([0-9\\.\\-]+)" ).findall( f.read() )[0] )
+            out = self.ce * float( re.compile( "FINAL SINGLE POINT ENERGY[\\ ]*([0-9\\.\\-]+)" ).findall( f.read() )[0] )
             f.close()
+            mol.func += out
         # parse orca output in search for "^CHELPG Charges" (only if chelpg is found in self.inp)
         for ff in glob.glob( "orca.*" ):
             if( ff != "orca.gbw" and ff != "orca.ges" ):
