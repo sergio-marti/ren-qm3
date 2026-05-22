@@ -661,7 +661,7 @@ Residue     1  SER
 
 
     def prmtop_read( self, fdsc: typing.IO ):
-        __frmt = re.compile( "[aAiIeEdD]([0-9]+)" )
+        __frmt = re.compile( r"[aAiIeEdD]([0-9]+)" )
         init = ( self.natm == 0 )
         nres = 0
         rlim = []

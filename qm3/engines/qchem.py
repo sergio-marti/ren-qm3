@@ -17,7 +17,7 @@ class run( qm3.engines.template ):
         self.cg  = self.ce / qm3.data.A0
         self.exe = "bash r.qchem"
         self.inp = fdsc.read()
-        self.pat = re.compile( "The QM part of the energy is[\\ ]+([0-9\\.\\-]+)" )
+        self.pat = re.compile( r"The QM part of the energy is[\ ]+([0-9\.\-]+)" )
         self.__dq = numpy.zeros( mol.natm )
         # redistribute MM-charge on the remaining atoms of the group
         for i,j in self.lnk:
