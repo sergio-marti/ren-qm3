@@ -1,0 +1,36 @@
+import  os
+from    setuptools import setup, Extension
+from    setuptools.command.build_ext import build_ext
+import  numpy
+
+cuda_home = os.environ.get( 'CUDA_HOME', '/usr' )
+nvcc_path = os.path.join( cuda_home, 'bin', 'nvcc' )
+
+class CUDA_BuildExt(build_ext):
+    def build_extensions(self):
+        self.compiler.src_extensions.append( '.cu' )
+        default_compile = self.compiler._compile
+        
+        def custom_compile(obj, src, ext, cc_args, extra_postargs, pp_opts):
+            if( os.path.splitext( src )[1] == '.cu' ):
+                postargs = [ '-O3', '--shared', '--compiler-options', "'-fPIC'" ]
+                self.compiler.spawn( [ nvcc_path, '-c', src, '-o', obj ] + postargs + [ f"{d}" for d in cc_args ] )
+            else:
+                default_compile( obj, src, ext, cc_args, extra_postargs, pp_opts )
+        
+        self.compiler._compile = custom_compile
+        super().build_extensions()
+
+module_cuda = Extension( '_molmech',
+    sources = [ 'molmech_cuda.cu' ],
+    include_dirs = [ numpy.get_include(), os.path.join( cuda_home, 'include' ) ],
+    library_dirs = [ os.path.join( cuda_home, 'lib64 ') ],
+    libraries = [ 'cudart' ],
+    extra_compile_args = { 'cxx': [ '-O3' ] },
+)
+
+setup(
+    name = "Molecular Mechanics", 
+    ext_modules = [ module_cuda ],
+    cmdclass = { 'build_ext': CUDA_BuildExt }
+)
