@@ -2,12 +2,47 @@ from distutils.core import setup, Extension
 
 import  numpy
 
-setup( 
-    name = "Molecular Mechanics", 
-    ext_modules = [ 
-        Extension( "_molmech",
+kind = "pthreads"
+kind = "omp"
+kind = "ocl"
+
+if( kind == "ocl" ):
+    setup( 
+        name = "Molecular Mechanics", 
+        ext_modules = [ 
+            Extension( "_molmech",
+                sources = [ "qm3/engines/molmech_ocl.c" ],
+                include_dirs = [ numpy.get_include(), '-fopenmp' ],
+                extra_compile_args = [ '-O3', '-fopenmp' ],
+            extra_link_args = [ '-fopenmp', '-lOpenCL' ]
+           )
+        ]
+    )
+
+elif( kind == "omp" ):
+    setup( 
+        name = "Molecular Mechanics", 
+        ext_modules = [ 
+            Extension( "_molmech",
+                sources = [ "qm3/engines/molmech_omp.c" ],
+                include_dirs = [ numpy.get_include(), '-fopenmp' ],
+                extra_compile_args = [ '-O3', '-fopenmp' ],
+                extra_link_args = [ '-fopenmp' ]
+           )
+        ]
+    )
+
+else:
+    setup( 
+        name = "Molecular Mechanics", 
+        ext_modules = [ 
+            Extension( "_molmech",
             sources = [ "qm3/engines/molmech.c" ],
             include_dirs = [ numpy.get_include() ]
-       )
-    ]
-)
+           )
+        ]
+    )
+
+
+
+

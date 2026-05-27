@@ -1,5 +1,6 @@
 import  math
 import  numpy
+import  scipy
 import  typing
 import  collections
 import  re
@@ -865,6 +866,43 @@ Residue     1  SER
                 for j in [0, 1, 2]:
                     if( math.fabs( tmp[j] ) > 0 ):
                         self.coor[self.rlim[i]:self.rlim[i+1],j] -= self.boxl[j] * tmp[j]
+
+
+    def sasa(self, npoints: int = 100, pradius: float = 1.4) -> numpy.array:
+        """
+        Solvent Accessible Surface Area (SASA) per atom using Shrake-Rupley algorithm
+        """
+        phi = numpy.pi * ( 5.0 ** 0.5 - 1.0 )
+        sphere_template = numpy.zeros( ( npoints, 3 ) )
+        for i in range( npoints ):
+            y = 1.0 - ( i / float( npoints - 1 ) ) * 2.0 if npoints > 1 else 0.0
+            radius = numpy.sqrt( 1.0 - y * y )
+            theta = phi * i
+            sphere_template[i] = [ numpy.cos( theta ) * radius, y, numpy.sin( theta ) * radius ]
+        effective_radii = qm3.data.r_vdw[self.anum] + pradius
+        max_r = numpy.max( effective_radii )
+        tree = scipy.spatial.cKDTree( self.coor )
+        sasa_per_atom = numpy.zeros( self.natm, dtype=numpy.float64 )
+        for i in range( self.natm ):
+            pos_i = self.coor[i]
+            R_i = effective_radii[i]
+            neighbor_indices = tree.query_ball_point( pos_i, r = R_i + max_r )
+            if( i in neighbor_indices ):
+                neighbor_indices.remove( i )
+            if( not neighbor_indices ):
+                sasa_per_atom[i] = 4.0 * numpy.pi * ( R_i ** 2 )
+                continue
+            test_points = pos_i + sphere_template * R_i
+            neighbor_coors = self.coor[neighbor_indices]
+            neighbor_radii_sq = effective_radii[neighbor_indices] ** 2
+            diff = test_points[:, numpy.newaxis, :] - neighbor_coors[numpy.newaxis, :, :]
+            dists_sq = numpy.sum( diff ** 2, axis=2 )
+            buried_matrix = dists_sq < neighbor_radii_sq[numpy.newaxis, :]
+            point_buried = numpy.any( buried_matrix, axis=1 )
+            exposed_points = numpy.sum( ~point_buried )
+            fraction_exposed = exposed_points / npoints
+            sasa_per_atom[i] = fraction_exposed * ( 4.0 * numpy.pi * ( R_i ** 2 ) )
+        return( sasa_per_atom )
 
 
 
