@@ -114,9 +114,9 @@ class run( qm3.engines.template ):
             f.close()
             mol.func += out
         # parse orca output in search for "^CHELPG Charges" (only if chelpg is found in self.inp)
-        for ff in glob.glob( "orca.*" ):
-            if( ff != "orca.gbw" and ff != "orca.ges" ):
-                os.unlink( ff )
+        #for ff in glob.glob( "orca.*" ):
+        #    if( ff != "orca.gbw" and ff != "orca.ges" ):
+        #        os.unlink( ff )
         return( ( out, h ) )
 
 

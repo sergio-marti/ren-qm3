@@ -1,0 +1,35 @@
+import	numpy
+import	qm3
+import  qm3.utils.eint
+import  sys
+import  os
+
+
+cwd = os.path.abspath( os.path.dirname( sys.argv[0] ) ) + os.sep
+
+
+mol = qm3.molecule()
+mol.pdb_read( open( cwd + "charmm.pdb" ) )
+mol.psf_read( open( cwd + "charmm.psf" ) )
+mol.guess_atomic_numbers()
+
+sqm = mol.resn == "WAT"
+for a in [ "C6", "C9", "H11", "H12", "H13", "H14", "H15" ]:
+    sqm[mol.indx["A"][1][a]] = True
+sqm = numpy.logical_not( sqm )
+smm = mol.sph_sel( sqm, 12 )
+sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"], [ mol.indx["A"][1]["H11"], mol.indx["A"][1]["H12"] ] ) ]
+
+with open( "inp", "wt" ) as f:
+    f.write ( "5\n1\n3\n2\n0\nq\n" )
+os.system( f"./multiwfn {sys.argv[1]} < inp > /dev/null" )
+
+smm[sqm] = False
+chg = mol.chrg.copy()
+for i,j,k in sla:
+    smm[j] = False
+    for l in k:
+        chg[l] += mol.chrg[j] / len( k )
+
+rho = qm3.utils.eint.read_rho_cube( open( "density.cub", "rt" ), +1, False )
+print( "rho x mm_chrg:", qm3.utils.eint.calc_rho_eint( rho, mol.coor[smm], chg[smm] ) )
