@@ -180,7 +180,8 @@ class molecule( object ):
             mass = []
             anum = []
             for i in range( self.natm ):
-                anum.append( qm3.data.rsymbol["".join( [ j for j in self.labl[i] if j.isalpha() ] ).title()] )
+                #anum.append( qm3.data.rsymbol["".join( [ j for j in self.labl[i] if j.isalpha() ] ).title()] )
+                anum.append( qm3.data.rsymbol[re.sub( r"\d", "", self.labl[i] ).title()] )
                 mass.append( qm3.data.mass[anum[i]] )
             self.anum = numpy.array( anum, dtype=numpy.int16 )
             self.mass = numpy.array( mass, dtype=numpy.float64 ).reshape( ( self.natm, 1 ) )

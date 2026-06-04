@@ -61,6 +61,16 @@ class run( object ):
         [doi:10.1002/jcc.540100804]
 
         uses FORMAL CHARGES (integers, fractional only for carboxylates) present in mol.chrg
+
+        alternatively (*not* exactly the same names and *not* perfect...):
+
+        from    openbabel import pybel
+        import  io
+        f = io.StringIO()
+        mol.xyz_write( f )
+        f.seek( 0 )
+        obl = pybel.readstring( "xyz", f.read() )
+        mol.type = [ atm.type for atm in obl.atoms ]
         """
         def __any( lst_a, lst_b ):
             return( len( set( lst_a ).intersection( set( lst_b ) ) ) > 0 )
@@ -163,6 +173,53 @@ class run( object ):
         mat = numpy.array( mat ).reshape( ( mol.natm + 1, mol.natm + 1 ) )
         vec = numpy.array( vec ).reshape( ( mol.natm + 1, ) )
         mol.chrg = numpy.linalg.solve( mat, vec )[0:mol.natm]
+
+
+    # far from being perfect, but it will generally work for biological stuff...
+    def guess_net_charge( self, mol, overwrite = False ):
+        chrg = numpy.zeros( mol.natm )
+        for i in range( mol.natm ):
+            # quaternary amine: +1.0
+            if( mol.type[i] == "N.4" and len( self.conn[i] ) == 4 ):
+                chrg[i] = +1.0
+            # arginine / histidine blocks
+            elif( mol.type[i] == "C.2" ):
+                n_atom = [ j for j in self.conn[i] if mol.type[j] == "N.3" ]
+                if( len( n_atom ) == 3 ):
+                    for j in n_atom:
+                        if( len( [ k for k in self.conn[j] if mol.type[k] == "H" ] ) == 2 ):
+                            chrg[j] = +0.5
+                elif( len( n_atom ) == 2 ):
+                    if( len( [ k for k in self.conn[i] if mol.type[k] in [ "C.3", "O.3", "Hn" ] ] ) == 1 ):
+                        chrg[n_atom[0]] = +0.5
+                        chrg[n_atom[1]] = +0.5
+            elif( mol.type[i] == "C.ar" ):
+                n_atom = [ j for j in self.conn[i] if mol.type[j] == "N.3" ]
+                c_atom = [ j for j in self.conn[i] if mol.type[j] == "C.ar" ]
+                if( len( n_atom ) == 2 and len( c_atom ) == 1 ):
+                    x_atom = [ j for j in self.conn[c_atom[0]] if mol.type[j] == "C.ar" and j != i ]
+                    if( len( x_atom ) > 0 ):
+                        chrg[n_atom[0]] = +0.5
+                        chrg[n_atom[1]] = +0.5
+            # carboxylate: -0.5 * 2
+            elif( mol.type[i] in [ "O.co2", "O.2" ] and len( self.conn[i] ) == 1 ):
+                c_atom = self.conn[i][0]
+                if( mol.type[c_atom] in [ "C.ar", "C.co" ] ):
+                    if( len( [ j for j in self.conn[c_atom] if j != i and mol.type[j] in [ "O.co2", "O.2" ] ] ) > 0 ):
+                        chrg[i] = -0.5
+            # phospate: -1.0 / O.2
+            elif( mol.type[i] == "P.3" ):
+                o_atom = [ j for j in self.conn[i] if mol.type[j] == "O.2" ]
+                for j in range( 0, len( o_atom ) - 1 ):
+                    chrg[o_atom[j]] = -1.0
+            # sulfonates: -1.0 / O.2
+            elif( mol.type[i] == "S.o2" ):
+                o_atom = [ j for j in self.conn[i] if mol.type[j] == "O.2" ]
+                for j in range( 0, len( o_atom ) - 2 ):
+                    chrg[o_atom[j]] = -1.0
+        if( overwrite ):
+            mol.chrg = chrg.copy()
+        return( int( numpy.sum( chrg ) ) )
 
 
     """
