@@ -502,7 +502,6 @@ fprintf(stderr,"CEN: %8ld%8ld%8ld\n",cnt[0],cnt[1],cnt[2]);
         }
         vol *= dsp * dsp * dsp;
 fprintf(stderr,"VOL: %lf _A^3\n",vol );
-
         
         free( rad ); free( crd );
         free( grd ); free( col_grd );
