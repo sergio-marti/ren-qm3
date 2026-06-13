@@ -2,10 +2,26 @@ from distutils.core import setup, Extension
 
 import	numpy
 
-setup( 
-	name = "Molecular and cavity volume", 
-	ext_modules = [ 
-		Extension( "_volume", sources = [ "qm3/utils/volume.c" ],
-		include_dirs = [ numpy.get_include() ] )
-	]
-)
+kind = "serial"
+kind = "omp"
+
+if( kind == "omp" ):
+    setup( 
+    	name = "Molecular and cavity volume", 
+    	ext_modules = [ 
+    		Extension( "_volume",
+                sources = [ "qm3/utils/volume_omp.c" ],
+                include_dirs = [ numpy.get_include(), '-fopenmp' ],
+                extra_compile_args = [ '-O3', '-fopenmp' ],
+                extra_link_args = [ '-fopenmp' ]
+            )
+    	]
+    )
+else:
+    setup( 
+    	name = "Molecular and cavity volume", 
+    	ext_modules = [ 
+    		Extension( "_volume", sources = [ "qm3/utils/volume.c" ],
+    		include_dirs = [ numpy.get_include() ] )
+    	]
+    )

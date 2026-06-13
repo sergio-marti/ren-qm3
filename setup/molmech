@@ -14,7 +14,7 @@ if( kind == "ocl" ):
                 sources = [ "qm3/engines/molmech_ocl.c" ],
                 include_dirs = [ numpy.get_include() ],
                 extra_compile_args = [ '-O3' ],
-            extra_link_args = [ '-lOpenCL' ]
+                extra_link_args = [ '-lOpenCL' ]
            )
         ]
     )

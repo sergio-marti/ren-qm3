@@ -13,6 +13,9 @@ box  = [ 42.320, 47.736, 43.057 ]
 #    box = [ float( t[1] ), float( t[5] ), float( t[9] ) ]
 print( box )
 
+#>>  read AMBER restart file
+#_crd = openmm.app.AmberInpcrdFile( "model.rst" )
+
 _top = openmm.app.amberprmtopfile.AmberPrmtopFile( "start.prmtop" )
 
 _sys = _top.createSystem(
@@ -32,6 +35,9 @@ _sys.setDefaultPeriodicBoxVectors(
     openmm.Vec3( box[0], 0.0, 0.0 ) * openmm.unit.angstrom,
     openmm.Vec3( 0.0, box[1], 0.0 ) * openmm.unit.angstrom,
     openmm.Vec3( 0.0, 0.0, box[2] ) * openmm.unit.angstrom )
+
+#a,b,c = _crd.getBoxVectors()
+#_sys.setDefaultPeriodicBoxVectors( a, b, c )
 
 #>> freeze atoms
 #for i in range( 55 ):
@@ -67,6 +73,9 @@ _sim = openmm.app.Simulation( _top.topology, _sys, _int, openmm.Platform.getPlat
 # -------------------------------------------------------------------------------------
 #>> load XML state
 #_sim.loadState( "start.xml" )
+
+#>> load AMBER coordinates
+#_sim.context.setPositions( _crd.positions )
 
 #>> load PDB (should be centered at the edge...)
 #_sim.context.setPositions( openmm.app.pdbfile.PDBFile( "start.pdb" ).getPositions() )

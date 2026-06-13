@@ -54,11 +54,11 @@ subroutine qm3_dftb_calc( nQM, nMM, siz, dat )
 	end do
 
 	call dftbp%setGeometry( qm_crd )
-	call dftbp%setExternalCharges( mm_crd, mm_chg )
+    if( nMM > 0 ) call dftbp%setExternalCharges( mm_crd, mm_chg )
 	call dftbp%getEnergy( ener )
 	call dftbp%getGrossCharges( qm_chg )
 	call dftbp%getGradients( qm_grd )
-	call dftbp%getExtChargeGradients( mm_grd )
+	if( nMM > 0 ) call dftbp%getExtChargeGradients( mm_grd )
 
 	dat(0) = ener * x__Ener
 	do i = 1, nQM

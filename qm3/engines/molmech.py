@@ -176,7 +176,7 @@ class run( object ):
 
 
     # far from being perfect, but it will generally work for biological stuff...
-    def guess_net_charge( self, mol, overwrite = False ):
+    def guess_global_charge( self, mol, overwrite = False ):
         chrg = numpy.zeros( mol.natm )
         for i in range( mol.natm ):
             # quaternary amine: +1.0
