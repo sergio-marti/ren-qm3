@@ -6,9 +6,6 @@ import  inspect
 import  qm3.data
 import  qm3.engines
 
-#
-# >> check the new python interface of dftd4
-#
 
 class run( object ):
     def __init__( self, mol: object, parm: dict,
@@ -88,3 +85,88 @@ class run( object ):
                 mol.grad[i,j] += g[l]
                 l += 1
         return( self.vec[0] )
+
+
+
+
+try:
+    import  dftd4.interface
+    import  atexit
+
+    class native( object ):
+        def __init__( self, mol: object, param, chrg: typing.Optional[int] = 0,
+                sel_QM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
+                link: typing.Optional[list] = [] ):
+            self.cx  = 1.0 / qm3.data.A0
+            self.ce  = qm3.data.H2J
+            self.cg  = self.ce / qm3.data.A0
+            if( type( param ) == str ):
+                self.prm = dftd4.interface.DampingParam( method = param, atm = True )
+            else:
+                self.prm = param
+            if( sel_QM.sum() > 0 ):
+                self.sel = numpy.flatnonzero( sel_QM )
+            else:
+                self.sel = numpy.arange( mol.natm )
+            self.lnk = link[:]
+            anu = []
+            crd = []
+            for i in self.sel:
+                crd.append( mol.coor[i] * self.cx )
+                anu.append( mol.anum[i] )
+            self.vla = []
+            k = len( self.sel )
+            for i in range( len( self.lnk ) ):
+                c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
+                crd.append( c * self.cx )
+                anu.append( 1 )
+                self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
+                k += 1
+            self.mdl = dftd4.interface.DispersionModel( numbers = numpy.array( anu ), positions = numpy.array( crd ), charge = chrg )
+            atexit.register( self.clean )
+
+
+        def clean( self ):
+            del( self.prm )
+            del( self.mdl )
+
+
+        def update_coor( self, mol ):
+            crd = []
+            for i in self.sel:
+                crd.append( mol.coor[i] * self.cx )
+            self.vla = []
+            k = len( self.sel )
+            for i in range( len( self.lnk ) ):
+                c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
+                crd.append( c * self.cx )
+                self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
+                k += 1
+            self.mdl.update( positions = numpy.array( crd ) )
+
+    
+        def get_func( self, mol ):
+            self.update_coor( mol )
+            out = self.mdl.get_dispersion( self.prm, grad = False )
+            ene = float( out["energy"] ) * self.ce
+            mol.func += ene
+            return( ene )
+    
+    
+        def get_grad( self, mol ):
+            self.update_coor( mol )
+            out = self.mdl.get_dispersion( self.prm, grad = True )
+            ene = float( out["energy"] ) * self.ce
+            mol.func += ene
+            g = out["gradient"].ravel() * self.cg
+            qm3.engines.Link_grad( self.vla, g )
+            l = 0
+            for i in self.sel:
+                for j in [0, 1, 2]:
+                    mol.grad[i,j] += g[l]
+                    l += 1
+            return( ene )
+
+
+except:
+    pass

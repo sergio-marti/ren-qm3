@@ -21,6 +21,7 @@ for a in [ "C6", "C9", "H11", "H12", "H13", "H14", "H15" ]:
 sqm = numpy.logical_not( sqm )
 sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"] ) ]
 
+# p_b3lyp/get_d4eeq_bjatm_parameter [dftd4/src/dftd4/param.f90]
 prm = { "chrg": 1.0, "s6": 1.00, "s8": 2.02929367, "a1": 0.40868035, "a2": 4.53807137  }
 mol.engines["qm"] = qm3.engines.dftd4.run( mol, prm, sqm, sla )
 
@@ -28,3 +29,11 @@ mol.get_grad()
 print( round( mol.func, 1 ), "/ -37.5" )
 print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 4.5" )
 print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 2.7" )
+
+if( hasattr( qm3.engines.dftd4, "native" ) ):
+    print( "[==== native ====]" )
+    mol.engines["qm"] = qm3.engines.dftd4.native( mol, "b3lyp", 1, sqm, sla )
+    mol.get_grad()
+    print( round( mol.func, 1 ), "/ -37.5" )
+    print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 4.5" )
+    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 2.7" )
