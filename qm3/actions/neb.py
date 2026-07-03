@@ -127,3 +127,83 @@ class neb( object ):
         if( self.froz ):
             self.grad[0:self.dime,:] = 0.0
             self.grad[-self.dime:,:] = 0.0
+
+
+
+class sneb(object):
+    """
+    the value of 'kumb' should be approx the same of the potential energy barrier
+
+    when optimizing the whole band, set the 'gradient_tolerance' equal to 0.1 * nodes (_kJ/mol.A)
+
+    this implementation is supposed to run at least in 2 processes:
+        node = 0 is intended to carry out the corresponding obj definition and minimization
+        node = 1..N are intended to perform gradient calculations (ONE AT ONCE)
+        (see samples/test_sneb.py)
+
+    J. Chem. Phys. v113, p9978 (2000) [doi:10.1063/1.1323224]
+    """
+    def __init__(self, guess: list, kumb: float, opar: object, frozen: typing.Optional[bool] = False):
+        if( opar.ncpu < 2 ):
+            raise ValueError("neb: current implementation requires at least 2 processes")
+        self.kumb = kumb
+        self.node = len(guess)
+        self.dime = guess[0].shape[0]
+        self.opar = opar
+        self.natm = self.dime * self.node
+        self.actv = numpy.ones((self.natm, 1), dtype=numpy.bool_)
+        self.coor = numpy.zeros((self.natm, 3), dtype=numpy.float64)
+        for i in range(self.node):
+            ii = i * self.dime
+            self.coor[ii:ii+self.dime] = guess[i]
+        self.froz = frozen
+
+
+    def get_grad(self):
+        def __calc_tau(potm, poti, potp, crdm, crdi, crdp):
+            dcM = crdp - crdi
+            dcm = crdi - crdm
+            dpM = max(math.fabs(potp - poti), math.fabs(potm - poti))
+            dpm = min(math.fabs(potp - poti), math.fabs(potm - poti))
+            if( potp > poti and poti > potm ):
+                tau = dcM.copy()
+            elif( potp < poti and poti < potm ):
+                tau = dcm.copy()
+            else:
+                if( potp > potm ):
+                    tau = dpM * dcM + dpm * dcm
+                else:
+                    tau = dpm * dcM + dpM * dcm
+            tmp = numpy.linalg.norm(tau)
+            if( tmp > 0.0 ):
+                tau /= tmp
+            gum = self.kumb * numpy.sum((dcm - dcM) * tau) * tau
+            return(tau, gum)
+        vpot = [0.0 for _ in range(self.node)]
+        self.grad = numpy.zeros((self.natm, 3), dtype=numpy.float64)
+        for i in range(self.node):
+            who = (i % (self.opar.ncpu - 1)) + 1
+            ii = i * self.dime
+            tmp = self.coor[ii:ii+self.dime].ravel().tolist()
+            self.opar.send_i4(who, [1])
+            self.opar.send_r8(who, tmp)
+            fun = self.opar.recv_r8(who, 1)
+            tmp = self.dime * 3
+            grd = numpy.array(self.opar.recv_r8(who, tmp))
+            grd.shape = (self.dime, 3)
+            vpot[i] = fun[0]
+            self.grad[ii:ii+self.dime] = grd
+        self.func = sum(vpot)
+        # ---------------------------------------------
+        for who in range(1, self.node - 1):
+            ii = who * self.dime
+            jj = ii + self.dime
+            tau, gum = __calc_tau(vpot[who-1], vpot[who], vpot[who+1],
+                                  self.coor[ii-self.dime:ii],
+                                  self.coor[ii:jj],
+                                  self.coor[jj:jj+self.dime])
+            self.grad[ii:jj] += gum - numpy.sum(tau * self.grad[ii:jj]) * tau
+        if( self.froz ):
+            self.grad[0:self.dime, :] = 0.0
+            self.grad[-self.dime:, :] = 0.0
+
