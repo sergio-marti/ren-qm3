@@ -9,9 +9,8 @@ import  qm3.actions.minimize
 import  qm3.actions.neb
 import  io
 import  sys
+import  time
 
-# export OMPI_MCA_mpi_yield_when_idle=1
-# export OMPI_MCA_opal_yield_when_blocked=1
 # mpirun --oversubscribe -n 23 python3 test_sneb.py
 opar = qm3.utils.parallel.client_mpi()
 
@@ -125,6 +124,8 @@ if( opar.node == 0 ):
         opar.send_i4( who, [ 0 ] )
 
 else:
+    while( not opar.probe( 0 ) ):
+        time.sleep( 0.02 )
     sele = numpy.flatnonzero( mol.actv.ravel() )
     size = len( sele )
     flag = opar.recv_i4( 0, 1 )[0]
@@ -145,6 +146,8 @@ else:
         opar.send_r8( 0, vpot )
         opar.send_r8( 0, mol.grad[sele].ravel().tolist() )
         # wait for more
+        while( not opar.probe( 0 ) ):
+            time.sleep( 0.02 )
         flag = opar.recv_i4( 0, 1 )[0]
 
 opar.barrier()

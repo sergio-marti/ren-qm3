@@ -172,5 +172,8 @@ try:
         def recv_i4( self, src, siz ):
             return( qm3.utils._mpi.recv_i4( src, siz ) )
 
+        def probe( self, src ):
+            return( qm3.utils._mpi.probe( src ) )
+
 except:
     pass

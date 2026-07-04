@@ -97,6 +97,18 @@ static PyObject* __recv_i4( PyObject *self, PyObject *args ) {
 }
 
 
+static PyObject* __probe( PyObject *self, PyObject *args ) {
+    int         who, flag;
+    MPI_Status  sts;
+
+    if( PyArg_ParseTuple( args, "i", &who ) ) {
+        MPI_Iprobe( who, MPI_ANY_TAG, MPI_COMM_WORLD, &flag, &sts );
+        return( PyLong_FromLong( flag ) );
+    }
+    return( PyLong_FromLong( 0 ) );
+}
+
+
 static struct PyMethodDef methods [] = {
     { "init", (PyCFunction)__init, METH_NOARGS },
     { "stop", (PyCFunction)__stop, METH_NOARGS },
@@ -105,6 +117,7 @@ static struct PyMethodDef methods [] = {
     { "recv_r8", (PyCFunction)__recv_r8, METH_VARARGS },
     { "send_i4", (PyCFunction)__send_i4, METH_VARARGS },
     { "recv_i4", (PyCFunction)__recv_i4, METH_VARARGS },
+    { "probe", (PyCFunction)__probe, METH_VARARGS },
     { 0, 0, 0 }
 };
 
