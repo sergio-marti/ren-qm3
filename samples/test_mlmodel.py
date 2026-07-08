@@ -134,7 +134,7 @@ if( "train" in sys.argv or not os.path.isfile( "_egnn_model.pth" ) ):
     tload = torch.utils.data.DataLoader( tset, batch_size = bsize, shuffle = True )
     vload = torch.utils.data.DataLoader( vset, batch_size = bsize, shuffle = False )
 
-    scal  = ( rng[1] - rng[0] ) / ( 2.0 * 4.184 )
+    scal  = ( rng[1] - rng[0] ) / ( 2.0 * 4.184 ) # kcal/mol(Ang)
     blos  = float( "inf" )
     for epoch in range( nepoc ):
         tlos = 0.0
@@ -172,7 +172,7 @@ if( "train" in sys.argv or not os.path.isfile( "_egnn_model.pth" ) ):
         sched.step( vlos )
         rene = numpy.sqrt( vene ) * scal
         rgrd = numpy.sqrt( vgrd ) * scal
-        print( f"Epoch {epoch+1:5d}/{nepoc:5d}, RMS_ene: {rene:8.4f}, RMS_grd: {rgrd:8.4f} [kcal/mol(Ang)], VLoss: {vlos:8.4f}", end = "" )
+        print( f"Epoch {epoch+1:5d}/{nepoc:5d}, RMS_ene: {rene:8.4f}, RMS_grd: {rgrd:8.4f}, VLoss: {vlos:8.4f}", end = "" )
         if( vlos < blos ):
             mol.engines["ml"].save()
             print( f" << Checkpoint" )
