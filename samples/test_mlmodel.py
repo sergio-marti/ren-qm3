@@ -86,44 +86,47 @@ if( "process" in sys.argv or not os.path.isfile( "eref" ) ):
     torch.save( crd, "crd.pt" )
     grd = torch.tensor( numpy.array( gtmp ), dtype=torch.float32 ).to( dev )
     torch.save( grd, "grd.pt" )
-    env = qm3.engines.mlmodel.ebuild( crd, torch.zeros( crd.shape[1], dtype=torch.float32 ).to( dev ), 8 ).to( dev )
-    torch.save( env, "env.pt" )
-    print( env )
-    net = [ env.shape[1] * env.shape[1], 256, 256, 128 ]
-    print( net )
-    with open( "network", "wt" ) as f:
-        f.write( " ".join( [ str( i ) for i in net ] ) + "\n" )
+    #: env = qm3.engines.mlmodel.ebuild( crd, torch.zeros( crd.shape[1], dtype=torch.float32 ).to( dev ), 8 ).to( dev )
+    #: torch.save( env, "env.pt" )
+    #: print( env )
+    #: net = [ env.shape[1] * env.shape[1], 256, 256, 128 ]
+    #: print( net )
+    #: with open( "network", "wt" ) as f:
+    #:     f.write( " ".join( [ str( i ) for i in net ] ) + "\n" )
 else:
     rng = numpy.loadtxt( "eref" )
-    with open( "network", "rt" ) as f:
-        net = [ int( i ) for i in f.readline().split() ]
-    env = torch.load( "env.pt", map_location=dev, weights_only=True )
+    #: with open( "network", "rt" ) as f:
+    #:     net = [ int( i ) for i in f.readline().split() ]
+    #: env = torch.load( "env.pt", map_location=dev, weights_only=True )
     ene = torch.load( "ene.pt", map_location=dev, weights_only=True )
     crd = torch.load( "crd.pt", map_location=dev, weights_only=True )
     grd = torch.load( "grd.pt", map_location=dev, weights_only=True )
 
 ene = ( ene - rng[0] ) / ( rng[1] - rng[0] ) * 2.0 - 1.0
 grd = grd * 2.0 / ( rng[1] - rng[0] )
-print( env.shape, ene.shape, crd.shape, grd.shape )
+#: print( env.shape, ene.shape, crd.shape, grd.shape )
+print( ene.shape, crd.shape, grd.shape )
 
 # ------------------------------------------------------------------------
 # train
 #
-mol.engines["ml"] = qm3.engines.mlmodel.run( ref, rng, env,
-                        numpy.ones( mol.natm, dtype=numpy.bool_ ),
-                        [ qm3.data.symbol[i] for i in mol.anum ],
-                        net, dev )
+#: mol.engines["ml"] = qm3.engines.mlmodel.run( ref, rng, env,
+#:                         numpy.ones( mol.natm, dtype=numpy.bool_ ),
+#:                         [ qm3.data.symbol[i] for i in mol.anum ],
+#:                         net, dev )
+mol.engines["ml"] = qm3.engines.mlmodel.run_egnn( ref, rng,
+                        numpy.ones( mol.natm, dtype=numpy.bool_ ), mol.anum, dev )
 
-if( "train" in sys.argv or not os.path.isfile( "atom_C.pth" ) ):
+#: if( "train" in sys.argv or not os.path.isfile( "atom_C.pth" ) ):
+if( "train" in sys.argv or not os.path.isfile( "_egnn_model.pth" ) ):
     bsize = ene.shape[0]
     nepoc = 99999
     optim = torch.optim.Adam( mol.engines["ml"].parameters(), lr = 1.e-3 )
-    sched = qm3.engines.mlmodel.scheduler( optim, min_lr = 1.e-7, max_lr = 1.e-3, steps_per_epoch = 1, lr_decay = 0.9,
-                                            cycle_length = 100, mult_factor = 1.5 )
-    #sched = torch.optim.lr_scheduler.ReduceLROnPlateau( optim, factor = 0.5, patience = 50, min_lr = 1.e-7 )
+    ##sched = qm3.engines.mlmodel.scheduler( optim, min_lr = 1.e-7, max_lr = 1.e-3, steps_per_epoch = 1, lr_decay = 0.9,
+    ##                                        cycle_length = 100, mult_factor = 1.5 )
+    sched = torch.optim.lr_scheduler.ReduceLROnPlateau( optim, factor = 0.5, patience = 50, min_lr = 1.e-7 )
     lossf = torch.nn.MSELoss()
     dset  = torch.utils.data.TensorDataset( crd, ene, grd )
-    #dload = torch.utils.data.DataLoader( dset, batch_size = bsize, shuffle = True )
     vsiz  = int( 0.2 * len( dset ) )
     tsiz  = len( dset ) - vsiz
     tset, vset = torch.utils.data.random_split( dset, [ tsiz, vsiz ], generator = torch.Generator().manual_seed( 69 ) )
@@ -136,8 +139,10 @@ if( "train" in sys.argv or not os.path.isfile( "atom_C.pth" ) ):
         for bx, bf, bg in tload:
             optim.zero_grad()
             bx.requires_grad_( True )
-            bi = qm3.engines.mlmodel.xcoul_info( bx, env )
-            func = mol.engines["ml"]( bi )
+            #: bi = qm3.engines.mlmodel.xcoul_info( bx, env )
+            #: func = mol.engines["ml"]( bi )
+            anum = torch.tensor(mol.anum, dtype=torch.long, device=dev).unsqueeze(0).expand(bx.shape[0], -1)
+            func = mol.engines["ml"]( anum, bx )
             grad = torch.autograd.grad( func.sum(), bx, create_graph=True )[0]
             flos = lossf( func, bf )
             glos = lossf( grad, bg )
@@ -149,9 +154,11 @@ if( "train" in sys.argv or not os.path.isfile( "atom_C.pth" ) ):
         vlos = 0.0
         for bx, bf, bg in vload:
             bx.requires_grad_( True )
-            bi = qm3.engines.mlmodel.xcoul_info( bx, env )
-            func = mol.engines["ml"]( bi )
-            grad = torch.autograd.grad( func.sum(), bx, create_graph=True )[0]
+            #: bi = qm3.engines.mlmodel.xcoul_info( bx, env )
+            #: func = mol.engines["ml"]( bi )
+            anum = torch.tensor(mol.anum, dtype=torch.long, device=dev).unsqueeze(0).expand(bx.shape[0], -1)
+            func = mol.engines["ml"]( anum, bx )
+            grad = torch.autograd.grad( func.sum(), bx, create_graph=True )[0] # >> cambiar por create_graph = False
             flos = lossf( func, bf )
             glos = lossf( grad, bg )
             vlos += ( flos + 10 * glos ).item()
@@ -175,7 +182,8 @@ mol.get_grad()
 print( "[AM1] -------------------------------------------------------" )
 print( o_func )
 print( o_grad )
-print( "[ML] --------------------------------------------------------" )
+#: print( "[ML] --------------------------------------------------------" )
+print( "[ML (EGNN)] -------------------------------------------------" )
 print( mol.func )
 print( mol.grad )
 print( "-------------------------------------------------------------" )

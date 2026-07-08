@@ -130,6 +130,158 @@ class run( object ):
         return( out )
 
 
+# -------------------------------------------------------------------------------------------------------------
+
+
+class CosineCutoff(torch.nn.Module):
+    def __init__(self, cutoff: float = 5.0):
+        super().__init__()
+        self.cutoff = cutoff
+
+    def forward(self, distances: torch.Tensor) -> torch.Tensor:
+        mask = (distances <= self.cutoff).to(distances.dtype)
+        cutoff_val = 0.5 * (torch.cos(distances * numpy.pi / self.cutoff) + 1.0)
+        return cutoff_val * mask
+
+
+class EGNNLayer(torch.nn.Module):
+    def __init__(self, node_dim: int, hidden_dim: int = 64, act_fn=torch.nn.Tanh()):
+        super().__init__()
+        # phi_m: [h_i, h_j, d_ij^2] -> mensaje m_ij
+        self.message_mlp = torch.nn.Sequential(
+            torch.nn.Linear(node_dim * 2 + 1, hidden_dim),
+            act_fn,
+            torch.nn.Linear(hidden_dim, hidden_dim),
+            act_fn
+        )
+        # phi_x: m_ij -> escalar ponderador del vector de diferencia cartesiano (sin sesgo)
+        self.coord_mlp = torch.nn.Sequential(
+            torch.nn.Linear(hidden_dim, hidden_dim),
+            act_fn,
+            torch.nn.Linear(hidden_dim, 1, bias=False)
+        )
+        # phi_h: [h_i, m_i] -> nuevo h_i
+        self.node_mlp = torch.nn.Sequential(
+            torch.nn.Linear(node_dim + hidden_dim, hidden_dim),
+            act_fn,
+            torch.nn.Linear(hidden_dim, node_dim)
+        )
+
+    def forward(self, h: torch.Tensor, x: torch.Tensor, cutoff_fn: CosineCutoff) -> typing.Tuple[torch.Tensor, torch.Tensor]:
+        b_size, n_atoms, node_dim = h.shape
+        
+        # 1. Distancias y vectores relativos
+        coord_diff = x.unsqueeze(2) - x.unsqueeze(1)
+        dist_sq = torch.sum(coord_diff ** 2, dim=-1, keepdim=True)
+        dist = torch.sqrt(dist_sq + 1e-8)
+        
+        # 2. Paso de Mensajes
+        h_i = h.unsqueeze(2).expand(-1, -1, n_atoms, -1)
+        h_j = h.unsqueeze(1).expand(-1, n_atoms, -1, -1)
+        edge_feat = torch.cat([h_i, h_j, dist_sq], dim=-1)
+        messages = self.message_mlp(edge_feat)
+        
+        w_cutoff = cutoff_fn(dist)
+        messages = messages * w_cutoff
+        
+        # Ignorar auto-interacciones (diagonal)
+        diag_mask = 1.0 - torch.eye(n_atoms, device=x.device).unsqueeze(0).unsqueeze(-1)
+        messages = messages * diag_mask
+        
+        # 3. Actualización de Coordenadas (Equivariante)
+        edge_weights = self.coord_mlp(messages) * w_cutoff * diag_mask
+        x_update = torch.sum(coord_diff * edge_weights, dim=2)
+        x_new = x + x_update
+        
+        # 4. Actualización de Nodos (Invariante)
+        m_i = torch.sum(messages, dim=2)
+        h_new = self.node_mlp(torch.cat([h, m_i], dim=-1)) + h
+        
+        return h_new, x_new
+
+
+class EGNNModel(torch.nn.Module):
+    def __init__(self, num_atom_types: int = 100, embedding_dim: int = 32, 
+                 hidden_dim: int = 64, num_layers: int = 3, cutoff: float = 6.0):
+        super().__init__()
+        self.cutoff_fn = CosineCutoff(cutoff=cutoff)
+        self.embedding = torch.nn.Embedding(num_atom_types, embedding_dim)
+        self.layers = torch.nn.ModuleList([
+            EGNNLayer(node_dim=embedding_dim, hidden_dim=hidden_dim, act_fn=torch.nn.Tanh())
+            for _ in range(num_layers)
+        ])
+        self.energy_mlp = torch.nn.Sequential(
+            torch.nn.Linear(embedding_dim, hidden_dim),
+            torch.nn.Tanh(),
+            torch.nn.Linear(hidden_dim, 1)
+        )
+
+    def forward(self, atom_types: torch.Tensor, coordinates: torch.Tensor) -> torch.Tensor:
+        if atom_types.dim() == 1:
+            atom_types = atom_types.unsqueeze(0).expand(coordinates.shape[0], -1)
+        h = self.embedding(atom_types)
+        x = coordinates
+        for layer in self.layers:
+            h, x = layer(h, x, self.cutoff_fn)
+        atomic_energies = self.energy_mlp(h)
+        total_energy = torch.sum(atomic_energies, dim=1)
+        return total_energy
+
+
+class run_egnn(object):
+    def __init__(self, xref: numpy.array, eref: numpy.array,
+                       sele: numpy.array, anum: numpy.array,
+                       device: str, name: typing.Optional[str] = ""):
+        self.dev = device
+        self.dsp = eref.copy()
+        self.sel = numpy.flatnonzero(sele)
+        self.anu = torch.tensor(anum, dtype=torch.long, device=device)
+        self.net = EGNNModel(num_atom_types=100, embedding_dim=32, hidden_dim=64, num_layers=3, cutoff=5.0)
+        self.net.to(device)
+        
+        self.nam = f"{name}_egnn_model.pth"
+        print("Erng:", self.dsp)
+        print("Model Atom Types (Anum):", self.anu.tolist())
+
+    def parameters(self) -> list:
+        return list(self.net.parameters())
+
+    def save(self):
+        torch.save(self.net.state_dict(), self.nam)
+
+    def load(self):
+        if os.path.isfile(self.nam):
+            self.net.load_state_dict(torch.load(self.nam, map_location=torch.device(self.dev), weights_only=True))
+            self.net.eval()
+
+    def __call__(self, atom_types: torch.Tensor, coordinates: torch.Tensor) -> torch.Tensor:
+        return self.net(atom_types, coordinates)
+
+    def get_func(self, mol) -> float:
+        crd = torch.tensor(mol.coor[self.sel], dtype=torch.float32, device=self.dev).unsqueeze(0)
+        atom_types = self.anu.unsqueeze(0)
+        out = self.model(atom_types, crd)
+        tmp = (self.dsp[1] - self.dsp[0]) / 2.0
+        energy_val = (float(out.detach().cpu().numpy().ravel()[0]) + 1.0) * tmp + self.dsp[0]
+        mol.func += energy_val
+        return energy_val
+
+    def get_grad(self, mol) -> float:
+        crd = torch.tensor(mol.coor[self.sel], dtype=torch.float32, device=self.dev).unsqueeze(0)
+        crd.requires_grad = True
+        atom_types = self.anu.unsqueeze(0)
+        out = self.net(atom_types, crd)
+        grd = torch.autograd.grad(out.sum(), crd)[0]
+        tmp = (self.dsp[1] - self.dsp[0]) / 2.0
+        energy_val = (float(out.detach().cpu().numpy().ravel()[0]) + 1.0) * tmp + self.dsp[0]
+        mol.func += energy_val
+        mol.grad[self.sel] += grd.detach().cpu().numpy()[0] * tmp
+        return energy_val
+
+
+# -------------------------------------------------------------------------------------------------------------
+
+
 class scheduler:
     def __init__( self, optimizer: torch.optim.Optimizer,
                  min_lr: float, max_lr: float, steps_per_epoch: int, 
