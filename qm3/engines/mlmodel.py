@@ -67,11 +67,12 @@ class ml_atom( torch.nn.Module ):
 
 
 class run( object ):
-    def __init__( self, xref: numpy.array, eref: numpy.array, desc: torch.tensor,
+    def __init__( self, #xref: numpy.array,
+                        eref: numpy.array, desc: torch.tensor,
                         sele: numpy.array, labl: list, netw: list, device: str,
                         name: typing.Optional[str] = "" ):
         self.dev = device
-        self.ref = xref.copy()
+        #self.ref = xref.copy()
         self.dsp = eref.copy()
         self.env = desc
         self.sel = numpy.flatnonzero( sele )
@@ -111,14 +112,15 @@ class run( object ):
         return( out )
 
     def get_grad( self, mol ) -> float:
-        crd = mol.coor[self.sel]
-        crd -= numpy.mean( crd, axis = 0 )
-        cov = numpy.dot( crd.T, self.ref )
-        r1, s, r2 = numpy.linalg.svd( cov )
-        if( numpy.linalg.det( cov ) < 0 ):
-            r2[2,:] *= -1.0
-        mat = numpy.linalg.inv( numpy.dot( r1, r2 ) )
-        crd = torch.tensor( crd, dtype=torch.float32, device=self.dev ).unsqueeze( 0 )
+        #crd = mol.coor[self.sel]
+        #crd -= numpy.mean( crd, axis = 0 )
+        #cov = numpy.dot( crd.T, self.ref )
+        #r1, s, r2 = numpy.linalg.svd( cov )
+        #if( numpy.linalg.det( cov ) < 0 ):
+        #    r2[2,:] *= -1.0
+        #mat = numpy.linalg.inv( numpy.dot( r1, r2 ) )
+        #crd = torch.tensor( crd, dtype=torch.float32, device=self.dev ).unsqueeze( 0 )
+        crd = torch.tensor( mol.coor[self.sel], dtype=torch.float32, device=self.dev ).unsqueeze( 0 )
         crd.requires_grad = True
         inp = xcoul_info( crd, self.env )
         tmp = ( self.dsp[1] - self.dsp[0] ) / 2.0
@@ -126,7 +128,8 @@ class run( object ):
         grd = torch.autograd.grad( out.sum(), crd )[0]
         out = ( float( out.detach().cpu().numpy().ravel()[0] ) + 1.0 ) * tmp + self.dsp[0]
         mol.func += out
-        mol.grad[self.sel] += numpy.dot( grd.detach().cpu().numpy()[0] * tmp, mat )
+        #mol.grad[self.sel] += numpy.dot( grd.detach().cpu().numpy()[0] * tmp, mat )
+        mol.grad[self.sel] += grd.detach().cpu().numpy()[0] * tmp
         return( out )
 
 
@@ -229,9 +232,7 @@ class EGNNModel(torch.nn.Module):
 
 
 class run_egnn(object):
-    def __init__(self, xref: numpy.array, eref: numpy.array,
-                       sele: numpy.array, anum: numpy.array,
-                       device: str, name: typing.Optional[str] = ""):
+    def __init__(self, eref: numpy.array, sele: numpy.array, anum: numpy.array, device: str, name: typing.Optional[str] = ""):
         self.dev = device
         self.dsp = eref.copy()
         self.sel = numpy.flatnonzero(sele)
@@ -241,7 +242,7 @@ class run_egnn(object):
         
         self.nam = f"{name}_egnn_model.pth"
         print("Erng:", self.dsp)
-        print("Model Atom Types (Anum):", self.anu.tolist())
+        print("Model Atomic Numbers:", self.anu.tolist())
 
     def parameters(self) -> list:
         return list(self.net.parameters())

@@ -71,28 +71,32 @@ if( "process" in sys.argv or not os.path.isfile( "eref" ) ):
     print( rng )
     ene = torch.tensor( ene, dtype=torch.float32 ).to( dev ).unsqueeze( -1 )
     torch.save( ene, "ene.pt" )
-    ctmp = []
-    gtmp = []
-    for i in range( grd.shape[0] ):
-        cur = crd[i] - numpy.mean( crd[i], axis = 0 )
-        cov = numpy.dot( cur.T, ref )
-        r1, s, r2 = numpy.linalg.svd( cov )
-        if( numpy.linalg.det( cov ) < 0 ):
-            r2[2,:] *= -1.0
-        mat = numpy.dot( r1, r2 )
-        ctmp.append( numpy.dot( cur, mat ) )
-        gtmp.append( numpy.dot( grd[i], mat ) )
-    crd = torch.tensor( numpy.array( ctmp ), dtype=torch.float32 ).to( dev )
+    ## ctmp = []
+    ## gtmp = []
+    ## for i in range( grd.shape[0] ):
+    ##     cur = crd[i] - numpy.mean( crd[i], axis = 0 )
+    ##     cov = numpy.dot( cur.T, ref )
+    ##     r1, s, r2 = numpy.linalg.svd( cov )
+    ##     if( numpy.linalg.det( cov ) < 0 ):
+    ##         r2[2,:] *= -1.0
+    ##     mat = numpy.dot( r1, r2 )
+    ##     ctmp.append( numpy.dot( cur, mat ) )
+    ##     gtmp.append( numpy.dot( grd[i], mat ) )
+    ## crd = torch.tensor( numpy.array( ctmp ), dtype=torch.float32 ).to( dev )
+    ## torch.save( crd, "crd.pt" )
+    ## grd = torch.tensor( numpy.array( gtmp ), dtype=torch.float32 ).to( dev )
+    ## torch.save( grd, "grd.pt" )
+    ## env = qm3.engines.mlmodel.ebuild( crd, torch.zeros( crd.shape[1], dtype=torch.float32 ).to( dev ), 8 ).to( dev )
+    ## torch.save( env, "env.pt" )
+    ## print( env )
+    ## net = [ env.shape[1] * env.shape[1], 256, 256, 128 ]
+    ## print( net )
+    ## with open( "network", "wt" ) as f:
+    ##     f.write( " ".join( [ str( i ) for i in net ] ) + "\n" )
+    crd = torch.tensor( crd, dtype=torch.float32 ).to( dev )
     torch.save( crd, "crd.pt" )
-    grd = torch.tensor( numpy.array( gtmp ), dtype=torch.float32 ).to( dev )
+    grd = torch.tensor( grd, dtype=torch.float32 ).to( dev )
     torch.save( grd, "grd.pt" )
-    #: env = qm3.engines.mlmodel.ebuild( crd, torch.zeros( crd.shape[1], dtype=torch.float32 ).to( dev ), 8 ).to( dev )
-    #: torch.save( env, "env.pt" )
-    #: print( env )
-    #: net = [ env.shape[1] * env.shape[1], 256, 256, 128 ]
-    #: print( net )
-    #: with open( "network", "wt" ) as f:
-    #:     f.write( " ".join( [ str( i ) for i in net ] ) + "\n" )
 else:
     rng = numpy.loadtxt( "eref" )
     #: with open( "network", "rt" ) as f:
@@ -110,20 +114,17 @@ print( ene.shape, crd.shape, grd.shape )
 # ------------------------------------------------------------------------
 # train
 #
-#: mol.engines["ml"] = qm3.engines.mlmodel.run( ref, rng, env,
+#: mol.engines["ml"] = qm3.engines.mlmodel.run( rng, env,
 #:                         numpy.ones( mol.natm, dtype=numpy.bool_ ),
-#:                         [ qm3.data.symbol[i] for i in mol.anum ],
-#:                         net, dev )
-mol.engines["ml"] = qm3.engines.mlmodel.run_egnn( ref, rng,
-                        numpy.ones( mol.natm, dtype=numpy.bool_ ), mol.anum, dev )
+#:                         [ qm3.data.symbol[i] for i in mol.anum ], net, dev )
+mol.engines["ml"] = qm3.engines.mlmodel.run_egnn( rng, numpy.ones( mol.natm, dtype=numpy.bool_ ), mol.anum, dev )
 
 #: if( "train" in sys.argv or not os.path.isfile( "atom_C.pth" ) ):
 if( "train" in sys.argv or not os.path.isfile( "_egnn_model.pth" ) ):
     bsize = ene.shape[0]
     nepoc = 99999
     optim = torch.optim.Adam( mol.engines["ml"].parameters(), lr = 1.e-3 )
-    ##sched = qm3.engines.mlmodel.scheduler( optim, min_lr = 1.e-7, max_lr = 1.e-3, steps_per_epoch = 1, lr_decay = 0.9,
-    ##                                        cycle_length = 100, mult_factor = 1.5 )
+    ##sched = qm3.engines.mlmodel.scheduler( optim, min_lr = 1.e-7, max_lr = 1.e-3, steps_per_epoch = 1, lr_decay = 0.9, cycle_length = 100, mult_factor = 1.5 )
     sched = torch.optim.lr_scheduler.ReduceLROnPlateau( optim, factor = 0.5, patience = 50, min_lr = 1.e-7 )
     lossf = torch.nn.MSELoss()
     dset  = torch.utils.data.TensorDataset( crd, ene, grd )
@@ -133,6 +134,7 @@ if( "train" in sys.argv or not os.path.isfile( "_egnn_model.pth" ) ):
     tload = torch.utils.data.DataLoader( tset, batch_size = bsize, shuffle = True )
     vload = torch.utils.data.DataLoader( vset, batch_size = bsize, shuffle = False )
 
+    scal  = ( rng[1] - rng[0] ) / ( 2.0 * 4.184 )
     blos  = float( "inf" )
     for epoch in range( nepoc ):
         tlos = 0.0
@@ -151,26 +153,33 @@ if( "train" in sys.argv or not os.path.isfile( "_egnn_model.pth" ) ):
             optim.step()
             tlos += loss.item()
         tlos = tlos / len( tload )
-        vlos = 0.0
+        vene = 0.0
+        vgrd = 0.0
         for bx, bf, bg in vload:
             bx.requires_grad_( True )
             #: bi = qm3.engines.mlmodel.xcoul_info( bx, env )
             #: func = mol.engines["ml"]( bi )
             anum = torch.tensor(mol.anum, dtype=torch.long, device=dev).unsqueeze(0).expand(bx.shape[0], -1)
             func = mol.engines["ml"]( anum, bx )
-            grad = torch.autograd.grad( func.sum(), bx, create_graph=True )[0] # >> cambiar por create_graph = False
+            grad = torch.autograd.grad( func.sum(), bx, create_graph=False )[0]
             flos = lossf( func, bf )
             glos = lossf( grad, bg )
-            vlos += ( flos + 10 * glos ).item()
-        vlos = vlos / len( vload )
+            vene += flos.item()
+            vgrd += glos.item()
+        vene = vene / len( vload )
+        vgrd = vgrd / len( vload )
+        vlos = vene + 10 * vgrd
         sched.step( vlos )
+        rene = numpy.sqrt( vene ) * scal
+        rgrd = numpy.sqrt( vgrd ) * scal
+        print( f"Epoch {epoch+1:5d}/{nepoc:5d}, RMS_ene: {rene:8.3f}, RMS_grd: {rgrd:8.3f} [kcal/mol]", end = "" )
         if( vlos < blos ):
             mol.engines["ml"].save()
-            print( f"Epoch {epoch+1:5d}/{nepoc:5d}, TLoss: {tlos:.8f}, VLoss: {vlos:.8f} << Checkpoint" )
+            print( f" << Checkpoint [loss: {vlos:8.4f}]" )
             blos = vlos
         else:
-            print( f"Epoch {epoch+1:5d}/{nepoc:5d}, TLoss: {tlos:.8f}, VLoss: {vlos:.8f}" )
-        if( vlos <= 0.45 ):
+            print()
+        if( rene <= 0.5 and rgrd <= 1.5 ):
             break
         sys.stdout.flush()
 
