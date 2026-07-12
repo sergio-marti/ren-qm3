@@ -204,8 +204,8 @@ class EGNNLayer(torch.nn.Module):
 
 
 class EGNNModel(torch.nn.Module):
-    def __init__(self, num_atom_types: int = 100, embedding_dim: int = 32, 
-                 hidden_dim: int = 64, num_layers: int = 3, cutoff: float = 6.0):
+    def __init__(self, num_atom_types: int = 100, embedding_dim: int = 128, 
+                 hidden_dim: int = 128, num_layers: int = 4, cutoff: float = 6.0):
         super().__init__()
         self.cutoff_fn = CosineCutoff(cutoff=cutoff)
         self.embedding = torch.nn.Embedding(num_atom_types, embedding_dim)
@@ -232,12 +232,16 @@ class EGNNModel(torch.nn.Module):
 
 
 class run_egnn(object):
-    def __init__(self, eref: numpy.array, sele: numpy.array, anum: numpy.array, device: str, name: typing.Optional[str] = ""):
+    def __init__(self, eref: numpy.array, sele: numpy.array, anum: numpy.array, device: str, 
+                 egnn: typing.Optional[list] = [], name: typing.Optional[str] = ""):
         self.dev = device
         self.dsp = eref.copy()
         self.sel = numpy.flatnonzero(sele)
         self.anu = torch.tensor(anum, dtype=torch.long, device=device)
-        self.net = EGNNModel(num_atom_types=100, embedding_dim=32, hidden_dim=64, num_layers=3, cutoff=5.0)
+        if( len( egnn ) == 5 ):
+            self.net = EGNNModel(num_atom_types=egnn[0], embedding_dim=egnn[1], hidden_dim=egnn[2], num_layers=egnn[3], cutoff=egnn[4])
+        else:
+            self.net = EGNNModel()
         self.net.to(device)
         
         self.nam = f"{name}_egnn_model.pth"
@@ -261,9 +265,15 @@ class run_egnn(object):
     def get_func(self, mol) -> float:
         crd = torch.tensor(mol.coor[self.sel], dtype=torch.float32, device=self.dev).unsqueeze(0)
         atom_types = self.anu.unsqueeze(0)
-        out = self.model(atom_types, crd)
-        tmp = (self.dsp[1] - self.dsp[0]) / 2.0
-        energy_val = (float(out.detach().cpu().numpy().ravel()[0]) + 1.0) * tmp + self.dsp[0]
+        out = self.net(atom_types, crd)
+        # --------------------------------------------------------------------------------------
+        # -- ( ene - min[0] ) / ( max[1] - min[0] ) * 2.0 - 1.0
+        #tmp = (self.dsp[1] - self.dsp[0]) / 2.0
+        #energy_val = (float(out.detach().cpu().numpy().ravel()[0]) + 1.0) * tmp + self.dsp[0]
+        # --------------------------------------------------------------------------------------
+        # -- ( ene - mean[0] ) / std[1]
+        energy_val = float(out.detach().cpu().numpy().ravel()[0]) * self.dsp[1] + self.dsp[0]
+        # --------------------------------------------------------------------------------------
         mol.func += energy_val
         return energy_val
 
@@ -273,59 +283,72 @@ class run_egnn(object):
         atom_types = self.anu.unsqueeze(0)
         out = self.net(atom_types, crd)
         grd = torch.autograd.grad(out.sum(), crd)[0]
-        tmp = (self.dsp[1] - self.dsp[0]) / 2.0
-        energy_val = (float(out.detach().cpu().numpy().ravel()[0]) + 1.0) * tmp + self.dsp[0]
+        # --------------------------------------------------------------------------------------
+        # -- ( ene - min[0] ) / ( max[1] - min[0] ) * 2.0 - 1.0
+        #tmp = (self.dsp[1] - self.dsp[0]) / 2.0
+        #energy_val = (float(out.detach().cpu().numpy().ravel()[0]) + 1.0) * tmp + self.dsp[0]
+        # --------------------------------------------------------------------------------------
+        # -- ( ene - mean[0] ) / std[1]
+        energy_val = float(out.detach().cpu().numpy().ravel()[0]) * self.dsp[1] + self.dsp[0]
+        # --------------------------------------------------------------------------------------
         mol.func += energy_val
-        mol.grad[self.sel] += grd.detach().cpu().numpy()[0] * tmp
+        # --------------------------------------------------------------------------------------
+        # -- grd / ( max[1] - min[0] ) * 2.0
+        #mol.grad[self.sel] += grd.detach().cpu().numpy()[0] * tmp
+        # --------------------------------------------------------------------------------------
+        # -- grd / std[1]
+        mol.grad[self.sel] += grd.detach().cpu().numpy()[0] * self.dsp[1]
+        # --------------------------------------------------------------------------------------
         return energy_val
 
 
 # -------------------------------------------------------------------------------------------------------------
-
-
-class scheduler:
-    def __init__( self, optimizer: torch.optim.Optimizer,
-                 min_lr: float, max_lr: float, steps_per_epoch: int, 
-                 lr_decay: typing.Optional[int] = 1,
-                 cycle_length: typing.Optional[int] = 10,
-                 mult_factor: typing.Optional[int] = 2 ):
-        """
-            optimizer: PyTorch optimizer (e.g., torch.optim.Adam)
-            min_lr: Minimum learning rate.
-            max_lr: Initial maximum learning rate.
-            steps_per_epoch: Number of batches per epoch.
-            lr_decay: Decay factor for max_lr after each cycle.
-            cycle_length: Initial number of epochs per cycle.
-            mult_factor: Factor to scale cycle length after each cycle.
-        """
-        self.optimizer = optimizer
-        self.min_lr = min_lr
-        self.max_lr = max_lr
-        self.lr_decay = lr_decay
-        self.batch_since_restart = 0
-        self.next_restart = cycle_length * steps_per_epoch
-        self.steps_per_epoch = steps_per_epoch
-        self.cycle_length = cycle_length * steps_per_epoch
-        self.mult_factor = mult_factor
-        self.best_weights = None
-
-    def clr( self ):
-        fraction_to_restart = self.batch_since_restart / self.cycle_length
-        lr = self.min_lr + 0.5 * ( self.max_lr - self.min_lr ) * ( 1 + numpy.cos( fraction_to_restart * numpy.pi ) )
-        return( lr )
-
-    def step( self, fake = None ):
-        self.batch_since_restart += 1
-        lr = self.clr()
-        for param_group in self.optimizer.param_groups:
-            param_group["lr"] = lr
-        if self.batch_since_restart >= self.next_restart:
-            self.batch_since_restart = 0
-            self.cycle_length = int( self.cycle_length * self.mult_factor )
-            self.next_restart += self.cycle_length
-            self.max_lr *= self.lr_decay
-
-    def get_lr( self ):
-        return( [ param_group["lr"] for param_group in self.optimizer.param_groups ] )
-
-
+#
+#
+#class scheduler:
+#    def __init__( self, optimizer: torch.optim.Optimizer,
+#                 min_lr: float, max_lr: float, steps_per_epoch: int, 
+#                 lr_decay: typing.Optional[int] = 1,
+#                 cycle_length: typing.Optional[int] = 10,
+#                 mult_factor: typing.Optional[int] = 2 ):
+#        """
+#            optimizer: PyTorch optimizer (e.g., torch.optim.Adam)
+#            min_lr: Minimum learning rate.
+#            max_lr: Initial maximum learning rate.
+#            steps_per_epoch: Number of batches per epoch.
+#            lr_decay: Decay factor for max_lr after each cycle.
+#            cycle_length: Initial number of epochs per cycle.
+#            mult_factor: Factor to scale cycle length after each cycle.
+#        """
+#        self.optimizer = optimizer
+#        self.min_lr = min_lr
+#        self.max_lr = max_lr
+#        self.lr_decay = lr_decay
+#        self.batch_since_restart = 0
+#        self.next_restart = cycle_length * steps_per_epoch
+#        self.steps_per_epoch = steps_per_epoch
+#        self.cycle_length = cycle_length * steps_per_epoch
+#        self.mult_factor = mult_factor
+#        self.best_weights = None
+#
+#    def clr( self ):
+#        fraction_to_restart = self.batch_since_restart / self.cycle_length
+#        lr = self.min_lr + 0.5 * ( self.max_lr - self.min_lr ) * ( 1 + numpy.cos( fraction_to_restart * numpy.pi ) )
+#        return( lr )
+#
+#    def step( self, fake = None ):
+#        self.batch_since_restart += 1
+#        lr = self.clr()
+#        for param_group in self.optimizer.param_groups:
+#            param_group["lr"] = lr
+#        if self.batch_since_restart >= self.next_restart:
+#            self.batch_since_restart = 0
+#            self.cycle_length = int( self.cycle_length * self.mult_factor )
+#            self.next_restart += self.cycle_length
+#            self.max_lr *= self.lr_decay
+#
+#    def get_lr( self ):
+#        return( [ param_group["lr"] for param_group in self.optimizer.param_groups ] )
+#
+#
+# -------------------------------------------------------------------------------------------------------------

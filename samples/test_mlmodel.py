@@ -66,33 +66,19 @@ mol.engines.pop( "qm" )
 # preprocess dataset
 #
 if( "process" in sys.argv or not os.path.isfile( "eref" ) ):
-    rng = numpy.array( [ numpy.min( ene ) - 4.184 * 3, numpy.max( ene ) + 4.184 * 3 ] )
+    #rng = numpy.array( [ numpy.min( ene ) - 4.184 * 3, numpy.max( ene ) + 4.184 * 3 ] )
+    rng = numpy.array( [ numpy.mean( ene ), numpy.std( ene ) ] )
     numpy.savetxt( "eref", rng )
     print( rng )
     ene = torch.tensor( ene, dtype=torch.float32 ).to( dev ).unsqueeze( -1 )
     torch.save( ene, "ene.pt" )
-    ## ctmp = []
-    ## gtmp = []
-    ## for i in range( grd.shape[0] ):
-    ##     cur = crd[i] - numpy.mean( crd[i], axis = 0 )
-    ##     cov = numpy.dot( cur.T, ref )
-    ##     r1, s, r2 = numpy.linalg.svd( cov )
-    ##     if( numpy.linalg.det( cov ) < 0 ):
-    ##         r2[2,:] *= -1.0
-    ##     mat = numpy.dot( r1, r2 )
-    ##     ctmp.append( numpy.dot( cur, mat ) )
-    ##     gtmp.append( numpy.dot( grd[i], mat ) )
-    ## crd = torch.tensor( numpy.array( ctmp ), dtype=torch.float32 ).to( dev )
-    ## torch.save( crd, "crd.pt" )
-    ## grd = torch.tensor( numpy.array( gtmp ), dtype=torch.float32 ).to( dev )
-    ## torch.save( grd, "grd.pt" )
-    ## env = qm3.engines.mlmodel.ebuild( crd, torch.zeros( crd.shape[1], dtype=torch.float32 ).to( dev ), 8 ).to( dev )
-    ## torch.save( env, "env.pt" )
-    ## print( env )
-    ## net = [ env.shape[1] * env.shape[1], 256, 256, 128 ]
-    ## print( net )
-    ## with open( "network", "wt" ) as f:
-    ##     f.write( " ".join( [ str( i ) for i in net ] ) + "\n" )
+    #: env = qm3.engines.mlmodel.ebuild( crd, torch.zeros( crd.shape[1], dtype=torch.float32 ).to( dev ), 8 ).to( dev )
+    #: torch.save( env, "env.pt" )
+    #: print( env )
+    #: net = [ env.shape[1] * env.shape[1], 256, 256, 128 ]
+    #: print( net )
+    #: with open( "network", "wt" ) as f:
+    #:     f.write( " ".join( [ str( i ) for i in net ] ) + "\n" )
     crd = torch.tensor( crd, dtype=torch.float32 ).to( dev )
     torch.save( crd, "crd.pt" )
     grd = torch.tensor( grd, dtype=torch.float32 ).to( dev )
@@ -106,8 +92,10 @@ else:
     crd = torch.load( "crd.pt", map_location=dev, weights_only=True )
     grd = torch.load( "grd.pt", map_location=dev, weights_only=True )
 
-ene = ( ene - rng[0] ) / ( rng[1] - rng[0] ) * 2.0 - 1.0
-grd = grd * 2.0 / ( rng[1] - rng[0] )
+#ene = ( ene - rng[0] ) / ( rng[1] - rng[0] ) * 2.0 - 1.0
+#grd = grd * 2.0 / ( rng[1] - rng[0] )
+ene = ( ene - rng[0] ) / rng[1]
+grd /= rng[1]
 #: print( env.shape, ene.shape, crd.shape, grd.shape )
 print( ene.shape, crd.shape, grd.shape )
 
@@ -117,15 +105,16 @@ print( ene.shape, crd.shape, grd.shape )
 #: mol.engines["ml"] = qm3.engines.mlmodel.run( rng, env,
 #:                         numpy.ones( mol.natm, dtype=numpy.bool_ ),
 #:                         [ qm3.data.symbol[i] for i in mol.anum ], net, dev )
-mol.engines["ml"] = qm3.engines.mlmodel.run_egnn( rng, numpy.ones( mol.natm, dtype=numpy.bool_ ), mol.anum, dev )
+mol.engines["ml"] = qm3.engines.mlmodel.run_egnn( rng, numpy.ones( mol.natm, dtype=numpy.bool_ ), mol.anum, dev, [100, 32, 64, 3, 5.0] )
 
 #: if( "train" in sys.argv or not os.path.isfile( "atom_C.pth" ) ):
 if( "train" in sys.argv or not os.path.isfile( "_egnn_model.pth" ) ):
-    bsize = ene.shape[0]
+    #bsize = ene.shape[0]
+    bsize = 128
     nepoc = 99999
-    optim = torch.optim.Adam( mol.engines["ml"].parameters(), lr = 1.e-3 )
+    optim = torch.optim.Adam( mol.engines["ml"].parameters(), lr = 2.e-4 )
     ##sched = qm3.engines.mlmodel.scheduler( optim, min_lr = 1.e-7, max_lr = 1.e-3, steps_per_epoch = 1, lr_decay = 0.9, cycle_length = 100, mult_factor = 1.5 )
-    sched = torch.optim.lr_scheduler.ReduceLROnPlateau( optim, factor = 0.5, patience = 50, min_lr = 1.e-7 )
+    sched = torch.optim.lr_scheduler.ReduceLROnPlateau( optim, mode = 'min', factor = 0.5, patience = 15, min_lr = 1.e-7 )
     lossf = torch.nn.MSELoss()
     dset  = torch.utils.data.TensorDataset( crd, ene, grd )
     vsiz  = int( 0.2 * len( dset ) )
@@ -134,7 +123,8 @@ if( "train" in sys.argv or not os.path.isfile( "_egnn_model.pth" ) ):
     tload = torch.utils.data.DataLoader( tset, batch_size = bsize, shuffle = True )
     vload = torch.utils.data.DataLoader( vset, batch_size = bsize, shuffle = False )
 
-    scal  = ( rng[1] - rng[0] ) / ( 2.0 * 4.184 ) # kcal/mol(Ang)
+    #scal  = ( rng[1] - rng[0] ) / ( 2.0 * 4.184 ) # kcal/mol(Ang)
+    scal  = rng[1] / 4.184
     blos  = float( "inf" )
     for epoch in range( nepoc ):
         tlos = 0.0
@@ -168,18 +158,18 @@ if( "train" in sys.argv or not os.path.isfile( "_egnn_model.pth" ) ):
             vgrd += glos.item()
         vene = vene / len( vload )
         vgrd = vgrd / len( vload )
-        vlos = vene + 10 * vgrd
+        vlos = vene + 10.0 * vgrd
         sched.step( vlos )
         rene = numpy.sqrt( vene ) * scal
         rgrd = numpy.sqrt( vgrd ) * scal
         print( f"Epoch {epoch+1:5d}/{nepoc:5d}, RMS_ene: {rene:8.4f}, RMS_grd: {rgrd:8.4f}, VLoss: {vlos:8.4f}", end = "" )
         if( vlos < blos ):
             mol.engines["ml"].save()
-            print( f" << Checkpoint" )
+            print( " << Checkpoint" )
             blos = vlos
         else:
             print()
-        if( rene <= 0.5 and rgrd <= 1.5 ):
+        if( rgrd <= 1.5 ):
             break
         sys.stdout.flush()
 
