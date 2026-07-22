@@ -66,11 +66,12 @@ class ml_atom( torch.nn.Module ):
             self.eval()
 
 
-class run( object ):
+class run( torch.nn.Module ):
     def __init__( self, #xref: numpy.array,
                         eref: numpy.array, desc: torch.tensor,
                         sele: numpy.array, labl: list, netw: list, device: str,
                         name: typing.Optional[str] = "" ):
+        super().__init__()
         self.dev = device
         #self.ref = xref.copy()
         self.dsp = eref.copy()
@@ -231,9 +232,10 @@ class EGNNModel(torch.nn.Module):
         return total_energy
 
 
-class run_egnn(object):
+class run_egnn(torch.nn.Module):
     def __init__(self, eref: numpy.array, sele: numpy.array, anum: numpy.array, device: str, 
                  egnn: typing.Optional[list] = [], name: typing.Optional[str] = ""):
+        super().__init__()
         self.dev = device
         self.dsp = eref.copy()
         self.sel = numpy.flatnonzero(sele)
