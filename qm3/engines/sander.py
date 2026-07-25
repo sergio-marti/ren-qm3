@@ -46,10 +46,13 @@ class netcdf( object ):
         if( self.mult ):
             print( "+ \tNFrames: %ld"%( self.coor.shape[0] ) )
             print( "+ \tAtoms: %ld"%( self.coor.shape[1] ) )
+            out = self.coor.shape[0]
         else:
             print( "+ \tNFrames: %ld"%( 1 ) )
             print( "+ \tAtoms: %ld"%( self.coor.shape[0] ) )
+            out = 1
         print( 60 * "-" )
+        return( out )
 
 
     def goto( self, frame: int ):
