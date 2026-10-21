@@ -827,7 +827,9 @@ Residue     1  SER
         r1, ss, r2 = numpy.linalg.svd( covm )
         if( numpy.linalg.det( covm ) < 0 ):
             r2[2,:] *= -1.0
-        self.coor = numpy.dot( self.coor - lcen, numpy.dot( r1, r2 ) ) + rcen
+        lmat = numpy.dot( r1, r2 )
+        self.coor = numpy.dot( self.coor - lcen, lmat ) + rcen
+        return( rcen, lcen, lmat )
         
 
     def rotate( self, center: numpy.array, axis: numpy.array, theta: float ):

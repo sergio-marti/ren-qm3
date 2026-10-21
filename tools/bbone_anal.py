@@ -18,7 +18,8 @@ sel = numpy.logical_or( idx, mol.labl == "C" )
 sel = numpy.logical_or( sel, mol.labl == "N" )
 
 sel = numpy.flatnonzero( sel )
-idx = numpy.flatnonzero( numpy.in1d( sel, numpy.flatnonzero( idx ) ) )
+#idx = numpy.flatnonzero( numpy.in1d( sel, numpy.flatnonzero( idx ) ) )
+idx = numpy.flatnonzero( numpy.isin( sel, numpy.flatnonzero( idx ) ) )
 
 dcd = qm3.utils._dcd.dcd()
 dcd.open_read( sys.argv[2] )

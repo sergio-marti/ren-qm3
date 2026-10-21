@@ -6,12 +6,17 @@ readexclusions          yes
 1-4scaling              0.833333
 dielectric              1.0
 
-switching               on
-switchdist              12
-cutoff                  14
-pairlistdist            18
+#switching               on
+#switchdist              12
+#cutoff                  14
+#pairlistdist            18
+switching               off
+cutoff                  12
 stepspercycle           20
 #CUDASOAintegrate        on
+
+#tclForces on
+#tclForcesScript namd_lj.tcl
 
 PME                     on
 PMEGridSpacing          1.0
