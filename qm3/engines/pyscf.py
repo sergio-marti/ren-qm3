@@ -76,11 +76,11 @@ class run( qm3.engines.template ):
                     crd[i] -= mol.boxl * numpy.round( ( crd[i] - cen ) / mol.boxl, 0 )
             crd *= self.cx
             chg = mol.chrg[self.nbn] + self.__dq[self.nbn]
-            scf = pyscf.qmmm.mm_charge( dft, crd, chg, unit = "Bohr" )
+            scf = pyscf.qmmm.mm_charge( dft.density_fit(), crd, chg, unit = "Bohr" )
         else:
-            scf = dft
+            scf = dft.density_fit()
         pyscf.lib.num_threads( self.opt["nproc"] )
-        return( scf.density_fit() )
+        return( scf )
 
 
     def get_func( self, mol ):
@@ -104,7 +104,7 @@ class run( qm3.engines.template ):
         for i in self.sel:
             mol.chrg[i] = chg[k]
             k += 1
-        g = scf.Gradients().run( grid_response = True ).de.ravel().tolist()
+        g = scf.nuc_grad_method().run( grid_response = True ).de.ravel().tolist()
         g = numpy.array( g ).reshape( ( -1, 3 ) ) * self.cg
         mol.grad[self.sel,:] += g[:len( self.sel )]
         # link atoms: exact chain rule onto both the QM and the MM atom of each link
