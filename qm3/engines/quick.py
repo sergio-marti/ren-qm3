@@ -111,12 +111,10 @@ class run( qm3.engines.template ):
         out = func.value * self.ce
         mol.func += out
         qgrd = numpy.ctypeslib.as_array( qgrd, ( 3, self.nQM ) ).ravel() * self.cg
-        qm3.engines.Link_grad( self.vla, qgrd )
-        l = 0
-        for i in self.sel:
-            for j in [0, 1, 2]:
-                mol.grad[i,j] += qgrd[l]
-                l += 1
+        qgrd = numpy.array( qgrd ).reshape( ( -1, 3 ) )
+        mol.grad[self.sel,:] += qgrd[:len( self.sel )]
+        # link atoms: exact chain rule onto both the QM and the MM atom of each link
+        qm3.engines.Link_chain( mol, self.lnk, qgrd[len( self.sel ):] )
         mgrd = numpy.ctypeslib.as_array( mgrd, ( 3, self.nMM ) ).ravel() * self.cg
         l = 0
         for i in self.nbn:
