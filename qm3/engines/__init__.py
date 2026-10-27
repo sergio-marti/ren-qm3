@@ -37,6 +37,24 @@ def Link_coor( qm_i, mm_j, mol, dst = 1.1 ):
     return( mol.coor[qm_i] + vv, - vv )
 
 
+def Link_chain( mol, lnk, grd, dst = 1.1 ):
+    """
+    exact chain rule for the link atoms of Link_coor: H = Q + dst * ( M - Q ) / | M - Q |
+
+    grd: gradients on the link atoms (same order as lnk, units of mol.grad); they are
+    distributed onto the QM (Q) and MM (M) atoms of each link
+    """
+    for ( qm_i, mm_j ), gh in zip( lnk, grd ):
+        vec = mol.coor[mm_j] - mol.coor[qm_i]
+        siz = numpy.linalg.norm( vec )
+        vec /= siz
+        jac = dst / siz * ( numpy.eye( 3 ) - numpy.outer( vec, vec ) )
+        mol.grad[qm_i] += gh - numpy.dot( jac, gh )
+        mol.grad[mm_j] += numpy.dot( jac, gh )
+
+
+# kept for compatibility: it is not the derivative of the energy (no force on the MM atom of the link);
+# the engines use Link_chain
 def Link_grad( lnk, grd ):
     for qm_i,mm_j,vec in lnk:
         m = numpy.linalg.norm( vec )

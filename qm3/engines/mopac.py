@@ -111,12 +111,10 @@ class run( qm3.engines.template ):
             mol.chrg[i] = self.vec[l]
             l += 1
         g = [ self.vec[j] for j in range( 1, 3 * self.nQM + 1 ) ]
-        qm3.engines.Link_grad( self.vla, g )
-        l = 0
-        for i in self.sel:
-            for j in [0, 1, 2]:
-                mol.grad[i,j] += g[l]
-                l += 1
+        g = numpy.array( g ).reshape( ( -1, 3 ) )
+        mol.grad[self.sel,:] += g[:len( self.sel )]
+        # link atoms: exact chain rule onto both the QM and the MM atom of each link
+        qm3.engines.Link_chain( mol, self.lnk, g[len( self.sel ):] )
         l = 1 + 4 * self.nQM + self.nMM
         for i in self.nbn:
             for j in [0, 1, 2]:

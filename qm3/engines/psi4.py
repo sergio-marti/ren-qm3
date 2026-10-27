@@ -92,12 +92,10 @@ class run( qm3.engines.template ):
         g, wfn = psi4.gradient( self.met, return_wfn = True, external_potentials = self.aMM )
         mol.func += psi4.variable( "CURRENT ENERGY" ) * self.ce
         g = ( self.cg * g.to_array() ).ravel()
-        qm3.engines.Link_grad( self.vla, g )
-        k = 0
-        for i in self.sel:
-            for j in [0, 1, 2]:
-                mol.grad[i,j] += g[k]
-                k += 1
+        g = numpy.array( g ).reshape( ( -1, 3 ) )
+        mol.grad[self.sel,:] += g[:len( self.sel )]
+        # link atoms: exact chain rule onto both the QM and the MM atom of each link
+        qm3.engines.Link_chain( mol, self.lnk, g[len( self.sel ):] )
         if( len( self.nbn ) > 0 ):
             ef = psi4.core.OEProp( wfn )
             ef.add( "GRID_FIELD" )
