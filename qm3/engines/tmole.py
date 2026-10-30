@@ -46,10 +46,7 @@ class run( qm3.engines.template ):
         if( len( self.nbn ) > 0 ):
             f = open( "charges", "wt" )
             f.write( "$point_charges nocheck\n" )
-            for i in self.nbn:
-                tmp = mol.coor[i].copy()
-                if( self.img ):
-                    tmp -= mol.boxl * numpy.round( tmp / mol.boxl, 0 )
+            for i, tmp in zip( self.nbn, self.mm_coor( mol, numpy.zeros( 3 ) ) ):
                 tmp *= self.cx
                 f.write( "%20.10lf%20.10lf%20.10lf%12.4lf\n"%( tmp[0], tmp[1], tmp[2], mol.chrg[i] + self.__dq[i] ) )
             f.write( "$end" )

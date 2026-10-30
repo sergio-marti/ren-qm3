@@ -72,8 +72,9 @@ class template( object ):
         else:
             self.sel = numpy.arange( mol.natm )
 
-        # define whether using minimum image convention for the surrounding charges
+        # minimum image convention for the surrounding charges (see mm_coor)
         self.img = False
+        self.img_cell = None
 
         self.vla = []
         self.lnk = []
@@ -101,3 +102,32 @@ class template( object ):
         if( name == "img" ):
             print( "minimum image NBnd:", value )
         super( template, self ).__setattr__( name, value )
+
+
+    def mm_coor( self, mol, cen = None ):
+        """
+        coordinates of the surrounding charges (self.nbn) for a non-periodic embedding:
+
+        img = False     as they are
+        img = True      minimum image around cen (default: QM centroid), chosen again at every call: a charge
+                        crossing half a box jumps to the other side, so energy and QM forces are discontinuous
+                        along a trajectory (minimizations and single points are fine)
+        img = "fixed"   minimum image around the QM centroid chosen at the first call and kept (charges move
+                        continuously, the embedding is conservative along MD); reset_img() chooses it again,
+                        e.g. after wrapping the coordinates or when restarting from another structure
+        """
+        crd = mol.coor[self.nbn].copy()
+        if( self.img == "fixed" ):
+            if( self.img_cell is None ):
+                cen = numpy.mean( mol.coor[self.sel], axis = 0 )
+                self.img_cell = numpy.round( ( crd - cen ) / mol.boxl, 0 )
+            crd -= mol.boxl * self.img_cell
+        elif( self.img ):
+            if( cen is None ):
+                cen = numpy.mean( mol.coor[self.sel], axis = 0 )
+            crd -= mol.boxl * numpy.round( ( crd - cen ) / mol.boxl, 0 )
+        return( crd )
+
+
+    def reset_img( self ):
+        self.img_cell = None

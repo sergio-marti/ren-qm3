@@ -27,8 +27,6 @@ class run( qm3.engines.template ):
 
 
     def mk_input( self, mol, run ):
-        if( self.img ):
-            cen = numpy.mean( mol.coor[self.sel], axis = 0 )
         s_qm = ""
         for i in self.sel:
             s_qm += "%2s%20.10lf%20.10lf%20.10lf\n"%( qm3.data.symbol[mol.anum[i]],
@@ -46,10 +44,7 @@ class run( qm3.engines.template ):
             s_mm = "%pointcharges \"orca.pc\""
             f = open( "orca.pc", "wt" )
             f.write( "%d\n"%( len( self.nbn ) ) )
-            for i in self.nbn:
-                tmp = mol.coor[i].copy()
-                if( self.img ):
-                    tmp -= mol.boxl * numpy.round( ( tmp - cen ) / mol.boxl, 0 )
+            for i, tmp in zip( self.nbn, self.mm_coor( mol ) ):
                 f.write( "%12.4lf%20.10lf%20.10lf%20.10lf\n"%( mol.chrg[i] + self.__dq[i], tmp[0], tmp[1], tmp[2] ) )
             f.close()
         s_rn = ""

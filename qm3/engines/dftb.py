@@ -70,10 +70,7 @@ class run( qm3.engines.template ):
         if( len( self.nbn ) > 0 ):
             s_nq = str( len( self.nbn ) )
             g = open( "charges.dat", "wt" )
-            for i in self.nbn:
-                tmp = mol.coor[i].copy()
-                if( self.img ):
-                    tmp -= mol.boxl * numpy.round( tmp / mol.boxl, 0 )
+            for i, tmp in zip( self.nbn, self.mm_coor( mol, numpy.zeros( 3 ) ) ):
                 g.write( "%20.10lf%20.10lf%20.10lf%12.6lf\n"%( tmp[0], tmp[1], tmp[2], mol.chrg[i] ) )
             g.close()
         f = open( "dftb_in.hsd", "wt" )
@@ -86,8 +83,6 @@ class run( qm3.engines.template ):
 
 
     def update_coor( self, mol ):
-        if( self.img ):
-            cen = numpy.mean( mol.coor[self.sel], axis = 0 )
         l = 0
         for i in self.sel:
             for j in [0, 1, 2]:
@@ -103,10 +98,7 @@ class run( qm3.engines.template ):
             self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
             k += 1
         k = 3 * ( self.nQM + self.nMM )
-        for i in self.nbn:
-            tmp = mol.coor[i].copy()
-            if( self.img ):
-                tmp -= mol.boxl * numpy.round( ( tmp - cen ) / mol.boxl, 0 )
+        for i, tmp in zip( self.nbn, self.mm_coor( mol ) ):
             for j in [0, 1, 2]:
                 self.vec[l] = tmp[j]
                 l += 1

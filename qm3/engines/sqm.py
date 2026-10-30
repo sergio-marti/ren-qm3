@@ -33,8 +33,6 @@ class run( qm3.engines.template ):
 
 
     def mk_input( self, mol ):
-        if( self.img ):
-            cen = numpy.mean( mol.coor[self.sel], axis = 0 )
         s_qm = ""
         j = 0
         for i in self.sel:
@@ -52,10 +50,7 @@ class run( qm3.engines.template ):
         s_mm = ""
         if( len( self.nbn ) > 0 ):
             s_mm = "#EXCHARGES\n"
-            for i in self.nbn:
-                tmp = mol.coor[i].copy()
-                if( self.img ):
-                    tmp -= mol.boxl * numpy.round( ( tmp - cen ) / mol.boxl, 0 )
+            for i, tmp in zip( self.nbn, self.mm_coor( mol ) ):
                 s_mm += "%3d%4s%20.10lf%20.10lf%20.10lf%12.4lf\n"%( 1, "H",
                         tmp[0], tmp[1], tmp[2], mol.chrg[i] + self.__dq[i] )
             s_mm += "#END"
@@ -82,10 +77,7 @@ class run( qm3.engines.template ):
             self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
             k += 1
         l = 3 * self.nQM
-        for i in self.nbn:
-            tmp = mol.coor[i].copy()
-            if( self.img ):
-                tmp -= mol.boxl * numpy.round( tmp / mol.boxl, 0 )
+        for i, tmp in zip( self.nbn, self.mm_coor( mol, numpy.zeros( 3 ) ) ):
             for j in [0, 1, 2]:
                 self.vec[l] = tmp[j]
                 l += 1

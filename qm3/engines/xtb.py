@@ -63,10 +63,7 @@ class run( qm3.engines.template ):
             self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
             k += 1
         l = 3 + 5 * self.nQM + self.nMM
-        for i in self.nbn:
-            tmp = mol.coor[i].copy()
-            if( self.img ):
-                tmp -= mol.boxl * numpy.round( tmp / mol.boxl, 0 )
+        for i, tmp in zip( self.nbn, self.mm_coor( mol, numpy.zeros( 3 ) ) ):
             for j in [0, 1, 2]:
                 self.vec[l] = tmp[j]
                 l += 1

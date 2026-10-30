@@ -24,8 +24,6 @@ class run( qm3.engines.template ):
 
 
     def mk_input( self, mol, run ):
-        if( self.img ):
-            cen = numpy.mean( mol.coor[self.sel], axis = 0 )
         s_qm = ""
         for i in self.sel:
             s_qm += "%2s%20.10lf%20.10lf%20.10lf\n"%( qm3.data.symbol[mol.anum[i]],
@@ -43,10 +41,7 @@ class run( qm3.engines.template ):
             s_mm = "set bq:max_nbq %d\n"%( len( self.nbn ) + 1 )
             s_mm += "bq units angstroms\n  force nwchem.mmgrad\n  load nwchem.mmchrg units angstroms format 1 2 3 4\nend"
             g = open( "nwchem.mmchrg", "wt" )
-            for i in self.nbn:
-                tmp = mol.coor[i].copy()
-                if( self.img ):
-                    tmp -= mol.boxl * numpy.round( ( tmp - cen ) / mol.boxl, 0 )
+            for i, tmp in zip( self.nbn, self.mm_coor( mol ) ):
                 g.write( "%20.10lf%20.10lf%20.10lf%12.4lf\n"%( tmp[0], tmp[1], tmp[2], mol.chrg[i] + self.__dq[i] ) )
             g.close()
         if( self.inp.lower().find( "dft" ) > -1 ):
