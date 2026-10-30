@@ -63,10 +63,7 @@ class run( qm3.engines.template ):
             self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
             k += 1
         l = 3 + 5 * self.nQM + self.nMM
-        for i in self.nbn:
-            tmp = mol.coor[i].copy()
-            if( self.img ):
-                tmp -= mol.boxl * numpy.round( tmp / mol.boxl, 0 )
+        for i, tmp in zip( self.nbn, self.mm_coor( mol, numpy.zeros( 3 ) ) ):
             for j in [0, 1, 2]:
                 self.vec[l] = tmp[j]
                 l += 1
@@ -97,12 +94,10 @@ class run( qm3.engines.template ):
             l += 1
         l = 3 + self.nQM
         g = [ self.vec[l+j] for j in range( 3 * self.nQM ) ]
-        qm3.engines.Link_grad( self.vla, g )
-        l = 0
-        for i in self.sel:
-            for j in [0, 1, 2]:
-                mol.grad[i,j] += g[l]
-                l += 1
+        g = numpy.array( g ).reshape( ( -1, 3 ) )
+        mol.grad[self.sel,:] += g[:len( self.sel )]
+        # link atoms: exact chain rule onto both the QM and the MM atom of each link
+        qm3.engines.Link_chain( mol, self.lnk, g[len( self.sel ):] )
         l = 3 + 5 * self.nQM + self.nMM
         for i in self.nbn:
             for j in [0, 1, 2]:

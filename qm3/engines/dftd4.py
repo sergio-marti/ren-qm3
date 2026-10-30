@@ -78,12 +78,10 @@ class run( object ):
         self.lib.qm3_dftd4_calc_( ctypes.c_int( self.all ), ctypes.c_int( self.siz ), self.vec )
         mol.func += self.vec[0]
         g = [ j for j in self.vec[1:] ]
-        qm3.engines.Link_grad( self.vla, g )
-        l = 0
-        for i in self.sel:
-            for j in [0, 1, 2]:
-                mol.grad[i,j] += g[l]
-                l += 1
+        g = numpy.array( g ).reshape( ( -1, 3 ) )
+        mol.grad[self.sel,:] += g[:len( self.sel )]
+        # link atoms: exact chain rule onto both the QM and the MM atom of each link
+        qm3.engines.Link_chain( mol, self.lnk, g[len( self.sel ):] )
         return( self.vec[0] )
 
 
@@ -159,12 +157,10 @@ try:
             ene = float( out["energy"] ) * self.ce
             mol.func += ene
             g = out["gradient"].ravel() * self.cg
-            qm3.engines.Link_grad( self.vla, g )
-            l = 0
-            for i in self.sel:
-                for j in [0, 1, 2]:
-                    mol.grad[i,j] += g[l]
-                    l += 1
+            g = numpy.array( g ).reshape( ( -1, 3 ) )
+            mol.grad[self.sel,:] += g[:len( self.sel )]
+            # link atoms: exact chain rule onto both the QM and the MM atom of each link
+            qm3.engines.Link_chain( mol, self.lnk, g[len( self.sel ):] )
             return( ene )
 
 

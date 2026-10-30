@@ -27,8 +27,6 @@ class run( qm3.engines.template ):
 
 
     def mk_input( self, mol, run ):
-        if( self.img ):
-            cen = numpy.mean( mol.coor[self.sel], axis = 0 )
         s_qm = ""
         for i in self.sel:
             s_qm += "%2s%20.10lf%20.10lf%20.10lf\n"%( qm3.data.symbol[mol.anum[i]],
@@ -42,10 +40,7 @@ class run( qm3.engines.template ):
                 self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
                 k += 1
         s_mm = "$external_charges\n"
-        for i in self.nbn:
-            tmp = mol.coor[i].copy()
-            if( self.img ):
-                tmp -= mol.boxl * numpy.round( ( tmp - cen ) / mol.boxl, 0 )
+        for i, tmp in zip( self.nbn, self.mm_coor( mol ) ):
             s_mm += "%20.10lf%20.10lf%20.10lf%12.4lf\n"%( tmp[0], tmp[1], tmp[2], mol.chrg[i] + self.__dq[i] )
         s_mm += "$end"
         s_rn = "single_point"
@@ -80,12 +75,10 @@ class run( qm3.engines.template ):
             for i in range( len( self.sel ) + len( self.lnk ) ):
                 g += [ float( j ) * self.cg for j in f.readline().strip().split() ]
             f.close()
-            qm3.engines.Link_grad( self.vla, g )
-            k = 0
-            for i in self.sel:
-                for j in [0, 1, 2]:
-                    mol.grad[i,j] += g[k]
-                    k += 1
+            g = numpy.array( g ).reshape( ( -1, 3 ) )
+            mol.grad[self.sel,:] += g[:len( self.sel )]
+            # link atoms: exact chain rule onto both the QM and the MM atom of each link
+            qm3.engines.Link_chain( mol, self.lnk, g[len( self.sel ):] )
         return( out )
 
 

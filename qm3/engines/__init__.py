@@ -37,6 +37,24 @@ def Link_coor( qm_i, mm_j, mol, dst = 1.1 ):
     return( mol.coor[qm_i] + vv, - vv )
 
 
+def Link_chain( mol, lnk, grd, dst = 1.1 ):
+    """
+    exact chain rule for the link atoms of Link_coor: H = Q + dst * ( M - Q ) / | M - Q |
+
+    grd: gradients on the link atoms (same order as lnk, units of mol.grad); they are
+    distributed onto the QM (Q) and MM (M) atoms of each link
+    """
+    for ( qm_i, mm_j ), gh in zip( lnk, grd ):
+        vec = mol.coor[mm_j] - mol.coor[qm_i]
+        siz = numpy.linalg.norm( vec )
+        vec /= siz
+        jac = dst / siz * ( numpy.eye( 3 ) - numpy.outer( vec, vec ) )
+        mol.grad[qm_i] += gh - numpy.dot( jac, gh )
+        mol.grad[mm_j] += numpy.dot( jac, gh )
+
+
+# kept for compatibility: it is not the derivative of the energy (no force on the MM atom of the link);
+# the engines use Link_chain
 def Link_grad( lnk, grd ):
     for qm_i,mm_j,vec in lnk:
         m = numpy.linalg.norm( vec )
@@ -54,8 +72,9 @@ class template( object ):
         else:
             self.sel = numpy.arange( mol.natm )
 
-        # define whether using minimum image convention for the surrounding charges
+        # minimum image convention for the surrounding charges (see mm_coor)
         self.img = False
+        self.img_cell = None
 
         self.vla = []
         self.lnk = []
@@ -83,3 +102,32 @@ class template( object ):
         if( name == "img" ):
             print( "minimum image NBnd:", value )
         super( template, self ).__setattr__( name, value )
+
+
+    def mm_coor( self, mol, cen = None ):
+        """
+        coordinates of the surrounding charges (self.nbn) for a non-periodic embedding:
+
+        img = False     as they are
+        img = True      minimum image around cen (default: QM centroid), chosen again at every call: a charge
+                        crossing half a box jumps to the other side, so energy and QM forces are discontinuous
+                        along a trajectory (minimizations and single points are fine)
+        img = "fixed"   minimum image around the QM centroid chosen at the first call and kept (charges move
+                        continuously, the embedding is conservative along MD); reset_img() chooses it again,
+                        e.g. after wrapping the coordinates or when restarting from another structure
+        """
+        crd = mol.coor[self.nbn].copy()
+        if( self.img == "fixed" ):
+            if( self.img_cell is None ):
+                cen = numpy.mean( mol.coor[self.sel], axis = 0 )
+                self.img_cell = numpy.round( ( crd - cen ) / mol.boxl, 0 )
+            crd -= mol.boxl * self.img_cell
+        elif( self.img ):
+            if( cen is None ):
+                cen = numpy.mean( mol.coor[self.sel], axis = 0 )
+            crd -= mol.boxl * numpy.round( ( crd - cen ) / mol.boxl, 0 )
+        return( crd )
+
+
+    def reset_img( self ):
+        self.img_cell = None

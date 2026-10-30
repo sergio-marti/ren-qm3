@@ -53,8 +53,6 @@ class run( qm3.engines.template ):
 
 
     def update_coor( self, mol ):
-        if( self.img ):
-            cen = numpy.mean( mol.coor[self.sel], axis = 0 )
         crd = []
         for i in self.sel:
             crd.append( ( self.cx * mol.coor[i] ).tolist() )
@@ -72,10 +70,7 @@ class run( qm3.engines.template ):
         if( len( self.nbn ) > 0 ):
             self.aMM = []
             f = open( "grid.dat", "wt" )
-            for i in self.nbn:
-                tmp = mol.coor[i].copy()
-                if( self.img ):
-                    tmp -= mol.boxl * numpy.round( ( tmp - cen ) / mol.boxl, 0 )
+            for i, tmp in zip( self.nbn, self.mm_coor( mol ) ):
                 self.aMM.append( [ mol.chrg[i] + self.__dq[i], tmp[0] * self.cx, tmp[1] * self.cx, tmp[2] * self.cx ] )
                 f.write( "%20.10lf%20.10lf%20.10lf\n"%( tmp[0], tmp[1], tmp[2] ) )
             f.close()
@@ -92,12 +87,10 @@ class run( qm3.engines.template ):
         g, wfn = psi4.gradient( self.met, return_wfn = True, external_potentials = self.aMM )
         mol.func += psi4.variable( "CURRENT ENERGY" ) * self.ce
         g = ( self.cg * g.to_array() ).ravel()
-        qm3.engines.Link_grad( self.vla, g )
-        k = 0
-        for i in self.sel:
-            for j in [0, 1, 2]:
-                mol.grad[i,j] += g[k]
-                k += 1
+        g = numpy.array( g ).reshape( ( -1, 3 ) )
+        mol.grad[self.sel,:] += g[:len( self.sel )]
+        # link atoms: exact chain rule onto both the QM and the MM atom of each link
+        qm3.engines.Link_chain( mol, self.lnk, g[len( self.sel ):] )
         if( len( self.nbn ) > 0 ):
             ef = psi4.core.OEProp( wfn )
             ef.add( "GRID_FIELD" )
