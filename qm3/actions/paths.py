@@ -21,10 +21,11 @@ def initial_step( mol: object, get_hess: typing.Callable, step_size: float ) -> 
     size = 3 * actv
     sele = numpy.flatnonzero( mol.actv.ravel() )
     mass = 1.0 / numpy.sqrt( mol.mass[sele] )
+    mfla = mass.ravel()
     hess = get_hess( mol, 0 )
     for i in range( size ):
         for j in range( size ):
-            hess[i,j] *= mass[i//3] * mass[j//3]
+            hess[i,j] *= mfla[i//3] * mfla[j//3]
     val, vec = numpy.linalg.eigh( qm3.utils.hessian.project_RT( hess, qm3.utils.RT_modes( mol ) ) )
     idx = numpy.argsort( val )
     vec = vec[:,idx]
@@ -75,6 +76,7 @@ def page_mciver( mol: object,
     sele = numpy.flatnonzero( mol.actv.ravel() )
     grms = gradient_tolerance * 2.0
     mass = numpy.sqrt( mol.mass[sele] )
+    mfla = mass.ravel()
     if( from_saddle ):
         nskp, dsp = initial_step( mol, get_hess, step_size )
         log_file.write( "%10s%20.5lf%20.10lf%10ld\n"%( "", mol.func, numpy.linalg.norm( mol.grad ) / ndeg, nskp ) )
@@ -89,7 +91,7 @@ def page_mciver( mol: object,
         hes = get_hess( mol, it1 )
         for i in range( size ):
             for j in range( size ):
-                hes[i,j] /= mass[i//3] * mass[j//3]
+                hes[i,j] /= mfla[i//3] * mfla[j//3]
         mod = qm3.utils.RT_modes( mol )
         val, vec = numpy.linalg.eigh( qm3.utils.hessian.project_RT( hes, mod ) )
         idx = numpy.argsort( val )

@@ -37,10 +37,10 @@ class run:
 #        self.eng.cmd( "performCalc" )
         ene = numpy.zeros( ( 1, ) )
         self.eng.cmd( "getBias", ene )
-        mol.func += float( ene )
+        mol.func += ene[0]
         mol.grad -= frz
         self.step += 1
-        return( float( ene ) )
+        return( ene[0] )
 
 
     def stop( self ):

@@ -71,13 +71,10 @@ class run( qm3.engines.template ):
             for j in [0, 1, 2]:
                 self.vec[l] = c[j]
                 l += 1
-            self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
+            self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, self.lnk[i][1], v ) )
             k += 1
         l = 1 + 4 * self.nQM + self.nMM
-        for i in self.nbn:
-            tmp = mol.coor[i].copy()
-            if( self.img ):
-                tmp -= mol.boxl * numpy.round( ( tmp - cen ) / mol.boxl, 0 )
+        for tmp in self.img_coor( mol ):
             for j in [0, 1, 2]:
                 self.vec[l] = tmp[j]
                 l += 1
@@ -117,6 +114,10 @@ class run( qm3.engines.template ):
             for j in [0, 1, 2]:
                 mol.grad[i,j] += g[l]
                 l += 1
+        for qm_i, mm_j, mm_k, vec in self.vla:
+            j3 = mm_j * 3
+            for j in [0, 1, 2]:
+                mol.grad[mm_k,j] += g[j3+j]
         l = 1 + 4 * self.nQM + self.nMM
         for i in self.nbn:
             for j in [0, 1, 2]:

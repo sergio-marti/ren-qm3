@@ -44,10 +44,6 @@ ml_info:
 	$(PYX) setup/ml_info build_ext --build-lib qm3/engines
 
 
-dynamo:
-	$(PYX) setup/dynamo build_ext --build-lib qm3/engines
-
-
 _cgplus.so:
 	gfortran $(SHD) -o qm3/actions/_cgplus.so -O1 -fPIC qm3/actions/cgplus.f
 
@@ -81,8 +77,3 @@ _xtb.so:
 _dftd4.so:
 	$(CONDA_FC) $(SHD) -O2 -fPIC -o qm3/engines/_dftd4.so qm3/engines/dftd4.f90 -Jbuild -Ibuild \
 		`pkg-config --cflags --libs mctc-lib` `pkg-config --cflags --libs dftd4`
-
-
-#_sqm.so:
-#	$(CONDA_FC) $(SHD) -fPIC -o qm3/engines/_sqm.so qm3/engines/sqm.f90 -Jbuild -Ibuild \
-#		$(CONDA_ENV)/lib/libsqm.a

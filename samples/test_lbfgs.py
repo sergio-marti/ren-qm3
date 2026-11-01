@@ -37,5 +37,5 @@ qm3.actions.minimize.lbfgs( mol )
 qm3.actions.minimize.l_bfgs( mol, use_maxgrad = True )
 
 mol.get_grad()
-print( round( mol.func, 1 ), " / -34453.8" )
-print( round( numpy.linalg.norm( mol.grad ), 1 ), " / 28.3" )
+print( round( mol.func, 1 ), " / -34395.7" )
+print( round( numpy.linalg.norm( mol.grad ), 1 ), " / 26.0" )

@@ -2,6 +2,7 @@ import  math
 import  numpy
 import  typing
 import  qm3.data
+import  qm3.utils
 import  qm3.utils.interpolation
 #import  collections
 
@@ -416,7 +417,7 @@ class colvar_s( object ):
         for i in range( 1, self.nwin ):
             vec = self.rcrd[i] - self.rcrd[i-1]
             vec.shape = ( self.ncrd, 1 )
-            self.arcl[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( self._met[i], vec ) )[0,0] )
+            self.arcl[i] = math.sqrt( qm3.utils.to_float( numpy.dot( vec.T, numpy.dot( self._met[i], vec ) ) ) )
         self.delz = self.arcl.sum() / float( self.nwin - 1.0 )
         try:
             import  matplotlib.pyplot as plt
@@ -451,7 +452,7 @@ class colvar_s( object ):
                 for i in range( 1, self.nwin ):
                     vec = self.rcrd[i] - self.rcrd[i-1]
                     vec.shape = ( self.ncrd, 1 )
-                    self.arcl[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( self._met[i], vec ) ) )
+                    self.arcl[i] = math.sqrt( qm3.utils.to_float( numpy.dot( vec.T, numpy.dot( self._met[i], vec ) ) ) )
                 self.delz = self.arcl.sum() / float( self.nwin - 1.0 )
                 if( pyplot_flg ):
                     plt.clf()
@@ -478,7 +479,7 @@ class colvar_s( object ):
         cdst = numpy.zeros( self.nwin, dtype=numpy.float64 )
         for i in range( self.nwin ):
             vec = ( self.rcrd[-1] - self.rcrd[i] ).reshape( ( self.ncrd, 1 ) )
-            cdst[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( self._met[-1], vec ) ) )
+            cdst[i] = math.sqrt( qm3.utils.to_float( numpy.dot( vec.T, numpy.dot( self._met[-1], vec ) ) ) )
         cexp = numpy.exp( - cdst / self.delz )
         cval = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp ) / cexp.sum()
         dels = cval / self.nwin
@@ -513,7 +514,7 @@ class colvar_s( object ):
         cdst = numpy.zeros( self.nwin, dtype=numpy.float64 )
         for i in range( self.nwin ):
             vec = ( ccrd - self.rcrd[i] ).reshape( ( self.ncrd, 1 ) )
-            cdst[i] = math.sqrt( numpy.dot( vec.T, numpy.dot( imet, vec ) ) )
+            cdst[i] = math.sqrt( qm3.utils.to_float( numpy.dot( vec.T, numpy.dot( imet, vec ) ) ) )
         cexp = numpy.exp( - cdst / self.delz )
         cval = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp ) / cexp.sum()
         out  = 0.5 * self.kumb * math.pow( cval - self.xref, 2.0 )
@@ -528,7 +529,7 @@ class colvar_s( object ):
         for i in range( self.nwin ):
             vec = ( ccrd - self.rcrd[i] ).reshape( ( self.ncrd, 1 ) )
             mat = numpy.dot( imet, vec )
-            cdst[i] = math.sqrt( numpy.dot( vec.T, mat ) )
+            cdst[i] = math.sqrt( qm3.utils.to_float( numpy.dot( vec.T, mat ) ) )
             #jder[i] = 0.5 * ( numpy.dot( mat.T, jaco ) + numpy.dot( vec.T, numpy.dot( imet, jaco ) ) ).ravel() / cdst[i]
             jder[i] = numpy.dot( vec.T, numpy.dot( imet, jaco ) ).ravel() / cdst[i]
         cexp = numpy.exp( - cdst / self.delz )

@@ -21,8 +21,10 @@ for a in [ "C6", "C9", "H11", "H12", "H13", "H14", "H15" ]:
     sqm[mol.indx["A"][1][a]] = True
 sqm = numpy.logical_not( sqm )
 smm = mol.sph_sel( sqm, 12 )
-#sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"] ) ]
-sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"], [ mol.indx["A"][1]["H11"], mol.indx["A"][1]["H12"] ] ) ]
+if( len( sys.argv ) > 1 and sys.argv[1] == "single" ):
+    sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"] ) ]
+else:
+    sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"], [ mol.indx["A"][1]["H11"], mol.indx["A"][1]["H12"] ] ) ]
 print( sqm.sum(), smm.sum() )
 
 opt = { "basis": "def2-svp",
@@ -33,15 +35,23 @@ opt = { "basis": "def2-svp",
     "memory": 4096, # MB
     "grid": 3,
     "max_cyc": 50,
-    "nproc": 2 }
+    "nproc": 2,
+    "df": True, 
+    "chk": True }
 mol.engines["qm"] = qm3.engines.pyscf.run( mol, opt, sqm, smm, sla )
 
 mol.get_grad()
 if( len( sla[0] ) == 2 ):
     print( round( mol.func, 1 ), "/ -697633.9" )
-    print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 574.8" )
-    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 64.6" )
+    print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 577.5" )
+    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 82.1" )
+    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C6"]] ), 1 ), "/ 0.0" )
+    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["H11"]] ), 1 ), "/ 7.7" )
+    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["H12"]] ), 1 ), "/ 7.3" )
 else:
     print( round( mol.func, 1 ), "/ -697665.0" )
-    print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 568.2" )
-    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 65.7" )
+    print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 572.5" )
+    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 77.0" )
+    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C6"]] ), 1 ), "/ 0.0" )
+    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["H11"]] ), 1 ), "/ 2.0" )
+    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["H12"]] ), 1 ), "/ 1.9" )

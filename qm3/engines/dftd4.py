@@ -62,7 +62,7 @@ class run( object ):
             for j in [0, 1, 2]:
                 self.vec[l] = c[j]
                 l += 1
-            self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
+            self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, self.lnk[i][1], v ) )
             k += 1
 
 
@@ -84,6 +84,10 @@ class run( object ):
             for j in [0, 1, 2]:
                 mol.grad[i,j] += g[l]
                 l += 1
+        for qm_i, mm_j, mm_k, vec in self.vla:
+            j3 = mm_j * 3
+            for j in [0, 1, 2]:
+                mol.grad[mm_k,j] += g[j3+j]
         return( self.vec[0] )
 
 
@@ -120,7 +124,7 @@ try:
                 c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
                 crd.append( c * self.cx )
                 anu.append( 1 )
-                self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
+                self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, self.lnk[i][1], v ) )
                 k += 1
             self.mdl = dftd4.interface.DispersionModel( numbers = numpy.array( anu ), positions = numpy.array( crd ), charge = chrg )
             atexit.register( self.clean )
@@ -140,7 +144,7 @@ try:
             for i in range( len( self.lnk ) ):
                 c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
                 crd.append( c * self.cx )
-                self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
+                self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, self.lnk[i][1], v ) )
                 k += 1
             self.mdl.update( positions = numpy.array( crd ) )
 
@@ -165,6 +169,10 @@ try:
                 for j in [0, 1, 2]:
                     mol.grad[i,j] += g[l]
                     l += 1
+            for qm_i, mm_j, mm_k, vec in self.vla:
+                j3 = mm_j * 3
+                for j in [0, 1, 2]:
+                    mol.grad[mm_k,j] += g[j3+j]
             return( ene )
 
 

@@ -348,7 +348,8 @@ static PyObject* __write( PyObject *self, PyObject *args ) {
 
 
 static PyObject* __append( PyObject *self, PyObject *args ) {
-    PyObject        *o_mol, *o_crd;
+//    PyObject        *o_mol, *o_crd;
+    PyObject        *o_crd;
     PyArrayObject   *n_crd;
     double          *ptr;
     char            buf[4];
@@ -358,12 +359,13 @@ static PyObject* __append( PyObject *self, PyObject *args ) {
     oDCD            *obj = NULL;
 
     obj = (oDCD*) self;
-    if( PyArg_ParseTuple( args, "O", &o_mol ) ) {
+//    if( PyArg_ParseTuple( args, "O", &o_mol ) ) {
+    if( PyArg_ParseTuple( args, "O", &o_crd ) ) {
         if( obj->fdes == NULL ) {
             printf( "* No DCD open...\n" );
             Py_INCREF( Py_False ); return( Py_False );
         }
-        o_crd = PyObject_GetAttrString( o_mol, "coor" );
+//        o_crd = PyObject_GetAttrString( o_mol, "coor" );
         n_crd = (PyArrayObject*) PyArray_FROM_OT( o_crd, NPY_DOUBLE );
         if( obj->natm != obj->free && obj->curr > 0 ) {
             cnt = (int)( 4 * obj->free );
@@ -415,7 +417,7 @@ static PyObject* __append( PyObject *self, PyObject *args ) {
             fwrite( buf, 1, 4, obj->fdes );
         }
         Py_DECREF( n_crd );
-        Py_DECREF( o_crd );
+//        Py_DECREF( o_crd );
         obj->curr++;
         fflush( obj->fdes );
     }

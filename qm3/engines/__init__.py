@@ -31,17 +31,20 @@ def exclusions( natm, bond, sele ):
 
 
 def Link_coor( qm_i, mm_j, mol, dst = 1.1 ):
-    vv = mol.coor[mm_j] - mol.coor[qm_i]
-    vv /= numpy.linalg.norm( vv )
-    vv *= dst
-    return( mol.coor[qm_i] + vv, - vv )
+    r = mol.coor[mm_j] - mol.coor[qm_i]
+    return( mol.coor[qm_i] + r / numpy.linalg.norm( r ) * dst, r )
 
 
-def Link_grad( lnk, grd ):
-    for qm_i,mm_j,vec in lnk:
-        m = numpy.linalg.norm( vec )
-        t = sum( [ vec[k] * ( grd[3*qm_i+k] - grd[3*mm_j+k] ) for k in [0, 1, 2] ] ) * 0.5 / m
-        grd[3*qm_i:3*qm_i+3] = [ grd[3*qm_i+k] - t * vec[k] / m for k in [0, 1, 2] ]
+def Link_grad( lnk, grd, dst = 1.1 ):
+    for qm_i, mm_j, mm_k, vec in lnk:
+        r = numpy.linalg.norm( vec )
+        u = vec / r
+        J = ( dst / r ) * ( numpy.eye( 3 ) - numpy.outer( u, u ) )
+        g_la = numpy.array( grd[3*mm_j:3*mm_j+3].copy() )
+        g_M  = J.dot( g_la )
+        g_Q  = g_la - g_M
+        grd[3*qm_i:3*qm_i+3] = [ grd[3*qm_i+k] + g_Q[k] for k in [0, 1, 2] ]
+        grd[3*mm_j:3*mm_j+3] = g_M.tolist()
 
 
 class template( object ):
@@ -56,6 +59,7 @@ class template( object ):
 
         # define whether using minimum image convention for the surrounding charges
         self.img = False
+        self.img_cell = None
 
         self.vla = []
         self.lnk = []
@@ -83,3 +87,31 @@ class template( object ):
         if( name == "img" ):
             print( "minimum image NBnd:", value )
         super( template, self ).__setattr__( name, value )
+
+
+    def img_init( self, mol: object,
+            cen: typing.Optional[numpy.array] = numpy.array( [] ),
+            img_file: typing.Optional[str] = "img_cell.npy" ):
+        self.img = True
+        try:
+            self.img_cell = numpy.load( img_file )
+            print( "minumum image info loaded from:", img_file )
+        except:
+            crd = mol.coor[self.nbn].copy()
+            if( cen.shape[0] != 3 ):
+                cen = numpy.mean( mol.coor[self.sel], axis = 0 )
+            self.img_cell = numpy.round( ( crd - cen ) / mol.boxl, 0 )
+            numpy.save( img_file, self.img_cell )
+            print( "minumum image info saved to:", img_file )
+
+
+    def img_coor( self, mol: object ):
+        crd = mol.coor[self.nbn].copy()
+        if( self.img ):
+            crd -= mol.boxl * self.img_cell
+        return( crd )
+
+
+    def img_clean( self ):
+        self.img = False
+        self.img_cell = None

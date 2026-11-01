@@ -56,7 +56,7 @@ class run( qm3.engines.template ):
             for i in range( len( self.lnk ) ):
                 c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
                 s_qm += "  %4d%4d%20.10lf%20.10lf%20.10lf\n"%( k + 1, w, c[0], c[1], c[2] )
-                self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
+                self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, self.lnk[i][1], v ) )
                 k += 1
         s_wf = ""
         if( os.access( "charges.bin", os.R_OK ) ):
@@ -70,10 +70,7 @@ class run( qm3.engines.template ):
         if( len( self.nbn ) > 0 ):
             s_nq = str( len( self.nbn ) )
             g = open( "charges.dat", "wt" )
-            for i in self.nbn:
-                tmp = mol.coor[i].copy()
-                if( self.img ):
-                    tmp -= mol.boxl * numpy.round( tmp / mol.boxl, 0 )
+            for i, tmp in zip( self.nbn, self.img_coor( mol ) ):
                 g.write( "%20.10lf%20.10lf%20.10lf%12.6lf\n"%( tmp[0], tmp[1], tmp[2], mol.chrg[i] ) )
             g.close()
         f = open( "dftb_in.hsd", "wt" )
@@ -100,13 +97,10 @@ class run( qm3.engines.template ):
             for j in [0, 1, 2]:
                 self.vec[l] = c[j]
                 l += 1
-            self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
+            self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, self.lnk[i][1], v ) )
             k += 1
         k = 3 * ( self.nQM + self.nMM )
-        for i in self.nbn:
-            tmp = mol.coor[i].copy()
-            if( self.img ):
-                tmp -= mol.boxl * numpy.round( ( tmp - cen ) / mol.boxl, 0 )
+        for i, tmp in zip( self.nbn, self.img_coor( mol ) ):
             for j in [0, 1, 2]:
                 self.vec[l] = tmp[j]
                 l += 1
@@ -141,6 +135,10 @@ class run( qm3.engines.template ):
             for j in [0, 1, 2]:
                 mol.grad[i,j] += g[l]
                 l += 1
+        for qm_i, mm_j, mm_k, vec in self.vla:
+            j3 = mm_j * 3
+            for j in [0, 1, 2]:
+                mol.grad[mm_k,j] += g[j3+j]
         l = 1 + 4 * self.nQM
         for i in self.nbn:
             for j in [0, 1, 2]:

@@ -39,17 +39,14 @@ class run( qm3.engines.template ):
             for i in range( len( self.lnk ) ):
                 c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
                 f.write( "%20.10lf%20.10lf%20.10lf   H\n"%( c[0] * self.cx, c[1] * self.cx, c[2] * self.cx ) )
-                self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
+                self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, self.lnk[i][1], v ) )
                 k += 1
         f.write( "$user-defined bonds\n$end" )
         f.close()
         if( len( self.nbn ) > 0 ):
             f = open( "charges", "wt" )
             f.write( "$point_charges nocheck\n" )
-            for i in self.nbn:
-                tmp = mol.coor[i].copy()
-                if( self.img ):
-                    tmp -= mol.boxl * numpy.round( tmp / mol.boxl, 0 )
+            for i, tmp in zip( self.nbn, self.img_coor( mol ) ):
                 tmp *= self.cx
                 f.write( "%20.10lf%20.10lf%20.10lf%12.4lf\n"%( tmp[0], tmp[1], tmp[2], mol.chrg[i] + self.__dq[i] ) )
             f.write( "$end" )
@@ -79,6 +76,10 @@ class run( qm3.engines.template ):
                 for j in [0, 1, 2]:
                     mol.grad[i,j] += g[k]
                     k += 1
+            for qm_i, mm_j, mm_k, vec in self.vla:
+                j3 = mm_j * 3
+                for j in [0, 1, 2]:
+                    mol.grad[mm_k,j] += g[j3+j]
             f.close()
             os.unlink( "gradient" )
             if( len( self.nbn ) > 0 ):

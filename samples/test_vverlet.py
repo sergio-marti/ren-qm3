@@ -127,13 +127,16 @@ print( mol.func )
 
 mol.dcd = qm3.utils._dcd.dcd()
 mol.dcd.open_write( "borra.dcd", mol.natm )
+#tmp = mol.copy()
+#tmp.set_active( sqm )
 
 def cstep( self, step ):
-    self.set_active( sqm )
-    self.wrap()
-    self.set_active()
+#    global tmp
+#    tmp.coor = self.coor.copy()
+#    tmp.wrap()
     if( step % 10 == 0 ):
-        self.dcd.append( self )
+        self.dcd.append( self.coor )
+#        self.dcd.append( tmp.coor )
 
 velocity_verlet( mol, step_number = 10_000, scale_frequency = 100, print_frequency = 50 , current_step = cstep )
 

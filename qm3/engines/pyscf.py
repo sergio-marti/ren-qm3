@@ -14,7 +14,7 @@ import  pyscf.lib
 class run( qm3.engines.template ):
     def __init__( self, mol: object, 
             opts: typing.Optional[dict] = { "basis": "def2-svp", "conv_tol": 1.e-9, "charge": 0, "spin": 0,
-                "method": "b3lypg", "memory": 4096, "grid": 3, "max_cyc": 50, "nproc": 2 },
+                "method": "b3lypg", "memory": 4096, "grid": 3, "max_cyc": 50, "nproc": 2, "df": True, "chk": False },
             sel_QM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
             sel_MM: typing.Optional[numpy.array] = numpy.array( [], dtype=numpy.bool_ ),
             link: typing.Optional[list] = [] ):
@@ -23,6 +23,10 @@ class run( qm3.engines.template ):
         self.ce  = qm3.data.H2J
         self.cg  = self.ce * self.cx
         self.opt = opts
+        self.chk = None
+        if( self.opt.get( "chk", False ) ):
+            self.chk = self.opt["chk"] if isinstance( self.opt["chk"], str ) else "pyscf_dm.npz"
+        self.__dm = None
         # redistribute MM-charge on the remaining atoms of the group
         self.__dq = numpy.zeros( mol.natm )
         for i,j in self.lnk:
@@ -31,10 +35,37 @@ class run( qm3.engines.template ):
         # ----------------------------------------------------------
 
 
+    def __chk_save( self ):
+        if( not self.chk or self.__dm is None ):
+            return
+        try:
+            tmp = "%s.%d.tmp"%( self.chk, os.getpid() )
+            with open( tmp, "wb" ) as f:
+                numpy.savez( f, dm = self.__dm )
+            os.replace( tmp, self.chk )
+        except Exception:
+            try:
+                os.remove( tmp )
+            except Exception:
+                pass
+
+
+    def __chk_load( self, aqm ):
+        if( not self.chk or not os.path.isfile( self.chk ) ):
+            return None
+        try:
+            with numpy.load( self.chk, allow_pickle = False ) as dat:
+                if( "dm" not in dat ):
+                    return None
+                dm = dat["dm"]
+                if( dm.shape[-1] != aqm.nao ):
+                    return None
+                return dm
+        except Exception:
+            return None
+
+
     def update_coor( self, mol ):
-        if( self.img ):
-            cen = numpy.mean( mol.coor[self.sel], axis = 0 )
-        # just updating coordinates seems not to work properly...
         aQM = pyscf.gto.Mole()
         aQM.unit = "Angstrom"
         aQM.symmetry = False
@@ -52,7 +83,7 @@ class run( qm3.engines.template ):
             for i in range( len( self.lnk ) ):
                 c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
                 aQM.atom += "%-2s%20.10lf%20.10lf%20.10lf\n"%( "H", c[0], c[1], c[2] )
-                self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
+                self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, self.lnk[i][1], v ) )
                 k += 1
         aQM.build()
         if( aQM.spin == 0 ):
@@ -60,32 +91,42 @@ class run( qm3.engines.template ):
         else:
             dft = pyscf.dft.UKS( aQM )
         dft.verbose = 0
-        dft.direct_scf = True
         dft.conv_tol = self.opt["conv_tol"]
         dft.max_cycle = self.opt["max_cyc"]
         dft.grids.level = self.opt["grid"]
         dft.xc = self.opt["method"]
         dft.max_memory = self.opt["memory"]
-        dft.chkfile = "pyscf.chk"
-        if( os.path.isfile( "pyscf.chk" ) ):
-            dft.init_guess = "chkfile"
+        if( self.opt.get( "df", True ) ):
+            dft = dft.density_fit()
+        if( self.__dm is None and self.chk ):
+            self.__dm = self.__chk_load( aQM )
+        if( not bool( self.opt.get( "df", True ) ) ):
+            dft.direct_scf = True
         if( len( self.nbn ) > 0 ):
-            crd = mol.coor[self.nbn].copy()
-            if( self.img ):
-                for i in range( crd.shape[0] ):
-                    crd[i] -= mol.boxl * numpy.round( ( crd[i] - cen ) / mol.boxl, 0 )
-            crd *= self.cx
+            crd = self.img_coor( mol ) * self.cx
             chg = mol.chrg[self.nbn] + self.__dq[self.nbn]
             scf = pyscf.qmmm.mm_charge( dft, crd, chg, unit = "Bohr" )
         else:
             scf = dft
         pyscf.lib.num_threads( self.opt["nproc"] )
-        return( scf.density_fit() )
+        return( scf )
+
+
+    def do_kernel( self, scf ):
+        out = scf.kernel( dm0 = self.__dm ) * self.ce
+        if( scf.converged ):
+            self.__dm = scf.make_rdm1()
+            self.__chk_save()
+        else:
+            self.__dm = None
+            print( ">> pyscf SCF did not converge (%d cycles, conv_tol %g)"%(
+                    scf.max_cycle, scf.conv_tol ) )
+        return( out )
 
 
     def get_func( self, mol ):
         scf = self.update_coor( mol )
-        out = scf.kernel() * self.ce
+        out = self.do_kernel( scf )
         mol.func += out
         chg = scf.mulliken_pop( verbose = 0 )[1].tolist()
         k = 0
@@ -97,7 +138,7 @@ class run( qm3.engines.template ):
 
     def get_grad( self, mol ):
         scf = self.update_coor( mol )
-        out = scf.kernel() * self.ce
+        out = self.do_kernel( scf )
         mol.func += out
         chg = scf.mulliken_pop( verbose = 0 )[1].tolist()
         k = 0
@@ -111,6 +152,10 @@ class run( qm3.engines.template ):
             for j in [0, 1, 2]:
                 mol.grad[i,j] += g[k] * self.cg
                 k += 1
+        for qm_i, mm_j, mm_k, vec in self.vla:
+            j3 = mm_j * 3
+            for j in [0, 1, 2]:
+                mol.grad[mm_k,j] += g[j3+j]
         if( len( self.nbn ) > 0 ):
             den = scf.make_rdm1()
             dr  = scf.mol.atom_coords()[:,None,:] - scf.mm_mol.atom_coords()
@@ -178,7 +223,7 @@ try:
                 for i in range( len( self.lnk ) ):
                     c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
                     aQM.atom += "%-2s%20.10lf%20.10lf%20.10lf\n"%( "H", c[0], c[1], c[2] )
-                    self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
+                    self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, self.lnk[i][1], v ) )
                     k += 1
             aQM.build()
             if( aQM.spin == 0 ):
@@ -192,7 +237,6 @@ try:
             dft.grids.level = self.opt["grid"]
             dft.xc = self.opt["method"]
             dft.max_memory = self.opt["memory"]
-            dft.chkfile = "pyscf.chk"
             # -------------------------------------------------------------------------------
             # >> gpu4pyscf/scf/hf.py (line 497):
             #    def dump_chk(self, envs):
@@ -240,6 +284,10 @@ try:
                 for j in [0, 1, 2]:
                     mol.grad[i,j] += g[k] * self.cg
                     k += 1
+            for qm_i, mm_j, mm_k, vec in self.vla:
+                j3 = mm_j * 3
+                for j in [0, 1, 2]:
+                    mol.grad[mm_k,j] += g[j3+j]
             if( len( self.nbn ) > 0 ):
                 # ---------------------------------------------------------------------------
                 # CPU

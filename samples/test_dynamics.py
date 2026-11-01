@@ -48,7 +48,7 @@ mol.dcd.open_write( "borra.dcd", mol.natm )
 
 def cstep( self, step ):
     if( step % 10 == 0 ):
-        self.dcd.append( self )
+        self.dcd.append( self.coor )
 
 qm3.actions.dynamics.langevin_verlet( mol, print_frequency = 1, current_step = cstep )
 #qm3.actions.dynamics.csvr_verlet( mol, print_frequency = 1, current_step = cstep )

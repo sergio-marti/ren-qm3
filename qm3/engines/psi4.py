@@ -33,7 +33,7 @@ class run( qm3.engines.template ):
             for i in range( len( self.lnk ) ):
                 c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
                 buf += "%-2s%20.10lf%20.10lf%20.10lf\n"%( "H", c[0], c[1], c[2] )
-                self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
+                self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, self.lnk[i][1], v ) )
                 k += 1
             # redistribute MM-charge on the remaining atoms of the group
             for i,j in self.lnk:
@@ -64,7 +64,7 @@ class run( qm3.engines.template ):
             for i in range( len( self.lnk ) ):
                 c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
                 crd.append( ( self.cx * c ).tolist() )
-                self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
+                self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, self.lnk[i][1], v ) )
                 k += 1
         self.aQM.set_geometry( psi4.core.Matrix.from_list( crd ) )
         self.aQM.update_geometry()
@@ -72,10 +72,7 @@ class run( qm3.engines.template ):
         if( len( self.nbn ) > 0 ):
             self.aMM = []
             f = open( "grid.dat", "wt" )
-            for i in self.nbn:
-                tmp = mol.coor[i].copy()
-                if( self.img ):
-                    tmp -= mol.boxl * numpy.round( ( tmp - cen ) / mol.boxl, 0 )
+            for i, tmp in zip( self.nbn, self.img_coor( mol ) ):
                 self.aMM.append( [ mol.chrg[i] + self.__dq[i], tmp[0] * self.cx, tmp[1] * self.cx, tmp[2] * self.cx ] )
                 f.write( "%20.10lf%20.10lf%20.10lf\n"%( tmp[0], tmp[1], tmp[2] ) )
             f.close()
@@ -98,6 +95,10 @@ class run( qm3.engines.template ):
             for j in [0, 1, 2]:
                 mol.grad[i,j] += g[k]
                 k += 1
+        for qm_i, mm_j, mm_k, vec in self.vla:
+            j3 = mm_j * 3
+            for j in [0, 1, 2]:
+                mol.grad[mm_k,j] += g[j3+j]
         if( len( self.nbn ) > 0 ):
             ef = psi4.core.OEProp( wfn )
             ef.add( "GRID_FIELD" )

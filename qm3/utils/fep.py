@@ -24,6 +24,8 @@ def bennett_acceptance_ratio( forward: numpy.array,
         return( math.log( f_f ) - math.log( f_r ) )
 
     rt = 1.0e-3 * qm3.data.R * temperature
+    forward = numpy.ravel( forward )
+    reverse = numpy.ravel( reverse )
     size  = min( forward.shape[0], reverse.shape[0] )
     exp_f = numpy.exp( - forward[0:size] / rt )
     exp_r = numpy.exp( - reverse[0:size] / rt )
@@ -91,6 +93,7 @@ def bennett_acceptance_ratio( forward: numpy.array,
 # ----------------------------------------------------------------------------------------------
 #
 def fep_integrate( dene: numpy.array, temperature: typing.Optional[float] = 300.0 ) -> dict:
+    dene = numpy.ravel( dene )
     rt  = temperature * 1.0e-3 * qm3.data.R
     exp = numpy.exp( - dene / rt )
     mm  = numpy.mean( exp )

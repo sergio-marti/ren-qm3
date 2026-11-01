@@ -39,14 +39,11 @@ class run( qm3.engines.template ):
             for i in range( len( self.lnk ) ):
                 c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
                 s_qm += "%-2s%20.10lf%20.10lf%20.10lf\n"%( "H", c[0], c[1], c[2] )
-                self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
+                self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, self.lnk[i][1], v ) )
                 k += 1
         s_mm = ""
         s_nq = ""
-        for i in self.nbn:
-            tmp = mol.coor[i].copy()
-            if( self.img ):
-                tmp -= mol.boxl * numpy.round( ( tmp - cen ) / mol.boxl, 0 )
+        for i, tmp in zip( self.nbn, self.img_coor( mol ) ):
             s_mm += "%20.10lf%20.10lf%20.10lf%12.4lf\n"%( tmp[0], tmp[1], tmp[2], mol.chrg[i] + self.__dq[i] )
             s_nq += "%20.10lf%20.10lf%20.10lf\n"%( tmp[0], tmp[1], tmp[2] )
         s_rn = ""
@@ -92,6 +89,10 @@ class run( qm3.engines.template ):
                     for j in [0, 1, 2]:
                         mol.grad[i,j] += g[k]
                         k += 1
+                for qm_i, mm_j, mm_k, vec in self.vla:
+                    j3 = mm_j * 3
+                    for j in [0, 1, 2]:
+                        mol.grad[mm_k,j] += g[j3+j]
                 # read hessian (columns)
                 if( run == "hess" ):
                     l = fd.readline()
@@ -142,7 +143,7 @@ class run( qm3.engines.template ):
                         for i in self.nbn:
                             t = fd.readline().strip().split()[2:]
                             for j in [0, 1, 2]:
-                                mol.grad[i,j] += - self.cg * mol.chrg[i] * float( t[j] )
+                                mol.grad[i,j] += - self.cg * ( mol.chrg[i] + self.__dq[i] ) * float( t[j] )
                     l = fd.readline()
             if( fl ):
                 print( ">> gaussian: electric field on the MM charges not found!" )

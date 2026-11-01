@@ -12,11 +12,11 @@ cwd = os.path.abspath( os.path.dirname( sys.argv[0] ) ) + os.sep
 mol = qm3.molecule()
 box = numpy.array( [ 25.965, 29.928, 28.080 ] )
 
-mol.pdb_read( open( "charmm.pdb" ) )
+mol.pdb_read( open( cwd + "charmm.pdb" ) )
 mol.boxl = box
 
 with open( "lammps.inp", "wt" ) as f:
-    f.write( """
+    f.write( f"""
 units           real
 neigh_modify    delay 2 every 1
 
@@ -30,7 +30,7 @@ pair_style      lj/charmm/coul/long 8 12
 pair_modify     mix arithmetic
 kspace_style    pppm 1e-6
 
-read_data       lammps.data
+read_data       {cwd}/lammps.data
 
 special_bonds   charmm
 

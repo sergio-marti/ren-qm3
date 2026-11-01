@@ -19,7 +19,7 @@ sqm = mol.resn == "WAT"
 for a in [ "C6", "C9", "H11", "H12", "H13", "H14", "H15" ]:
     sqm[mol.indx["A"][1][a]] = True
 sqm = numpy.logical_not( sqm )
-sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"] ) ]
+sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"], [ mol.indx["A"][1]["H11"], mol.indx["A"][1]["H12"] ] ) ]
 
 # p_b3lyp/get_d4eeq_bjatm_parameter [dftd4/src/dftd4/param.f90]
 prm = { "chrg": 1.0, "s6": 1.00, "s8": 2.02929367, "a1": 0.40868035, "a2": 4.53807137  }
@@ -27,13 +27,19 @@ mol.engines["qm"] = qm3.engines.dftd4.run( mol, prm, sqm, sla )
 
 mol.get_grad()
 print( round( mol.func, 1 ), "/ -37.5" )
-print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 4.5" )
-print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 2.7" )
+print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 4.8" )
+print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 3.2" )
+print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C6"]] ), 1 ), "/ 0.4" )
+print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["H11"]] ), 1 ), "/ 0.0" )
+print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["H12"]] ), 1 ), "/ 0.0" )
 
 if( hasattr( qm3.engines.dftd4, "native" ) ):
     print( "[==== native ====]" )
     mol.engines["qm"] = qm3.engines.dftd4.native( mol, "b3lyp", 1, sqm, sla )
     mol.get_grad()
     print( round( mol.func, 1 ), "/ -37.5" )
-    print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 4.5" )
-    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 2.7" )
+    print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 4.8" )
+    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C10"]] ), 1 ), "/ 3.2" )
+    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C6"]] ), 1 ), "/ 0.4" )
+    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["H11"]] ), 1 ), "/ 0.0" )
+    print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["H12"]] ), 1 ), "/ 0.0" )

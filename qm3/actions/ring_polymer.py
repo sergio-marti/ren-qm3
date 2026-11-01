@@ -231,12 +231,12 @@ size 10 { B= sum from{ i=1 } to { P }{ sum from{j=1} to{3N} { m_{j/3} left( x_{i
             else:
                 scal = 2.0
             for j in range( self.dime ):
-                xx += scal * self.mass[j] * ( self.coor[i_cc+j,0] - cen[0] ) * ( self.coor[i_cc+j,0] - cen[0] )
-                xy += scal * self.mass[j] * ( self.coor[i_cc+j,0] - cen[0] ) * ( self.coor[i_cc+j,1] - cen[1] )
-                xz += scal * self.mass[j] * ( self.coor[i_cc+j,0] - cen[0] ) * ( self.coor[i_cc+j,2] - cen[2] )
-                yy += scal * self.mass[j] * ( self.coor[i_cc+j,1] - cen[1] ) * ( self.coor[i_cc+j,1] - cen[1] )
-                yz += scal * self.mass[j] * ( self.coor[i_cc+j,1] - cen[1] ) * ( self.coor[i_cc+j,2] - cen[2] )
-                zz += scal * self.mass[j] * ( self.coor[i_cc+j,2] - cen[2] ) * ( self.coor[i_cc+j,2] - cen[2] )
+                xx += scal * self.mass[j,0] * ( self.coor[i_cc+j,0] - cen[0] ) * ( self.coor[i_cc+j,0] - cen[0] )
+                xy += scal * self.mass[j,0] * ( self.coor[i_cc+j,0] - cen[0] ) * ( self.coor[i_cc+j,1] - cen[1] )
+                xz += scal * self.mass[j,0] * ( self.coor[i_cc+j,0] - cen[0] ) * ( self.coor[i_cc+j,2] - cen[2] )
+                yy += scal * self.mass[j,0] * ( self.coor[i_cc+j,1] - cen[1] ) * ( self.coor[i_cc+j,1] - cen[1] )
+                yz += scal * self.mass[j,0] * ( self.coor[i_cc+j,1] - cen[1] ) * ( self.coor[i_cc+j,2] - cen[2] )
+                zz += scal * self.mass[j,0] * ( self.coor[i_cc+j,2] - cen[2] ) * ( self.coor[i_cc+j,2] - cen[2] )
         val, vec = numpy.linalg.eigh( numpy.array( [ yy+zz, -xy, -xz, -xy, xx+zz, -yz, -xz, -yz, xx+yy ] ).reshape( ( 3, 3 ) ) )
         cte = ( 8.0 * math.pi * math.pi * qm3.data.KB * self.temp * self.bead ) / ( qm3.data.H * qm3.data.H * qm3.data.NA ) * 1.0e-23
         tQR = math.log( math.sqrt( math.pi * cte * cte * cte * val[0] * val[1] * val[2] ) )
@@ -330,7 +330,7 @@ size 10 { B= sum from{ i=1 } to { P }{ sum from{j=1} to{3N} { m_{j/3} left( x_{i
                 scal = 2.0
                 i_mm = ( i - 1 ) * self.dime
             for j in range( self.dime ):
-                tQP += scal * self.mass[j] * numpy.sum( numpy.square( self.coor[i_cc+j] - self.coor[i_mm+j] ) )
+                tQP += scal * self.mass[j,0] * numpy.sum( numpy.square( self.coor[i_cc+j] - self.coor[i_mm+j] ) )
         cte = 2.0 * math.pi * self.bead * self.temp * qm3.data.KB * 1.0e-23 / ( qm3.data.NA * qm3.data.H * qm3.data.H )
         tQP = 0.5 * math.log( cte * tQP )
         print( "[RPI] l_tQP: %20.10le"%( tQP ) )

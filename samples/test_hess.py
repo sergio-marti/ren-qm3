@@ -79,7 +79,7 @@ qm3.utils.hessian.IR_spectrum( val, iri )
 
 rms, frc = qm3.utils.hessian.force_constants( mol, val, vec )
 tmp = numpy.linalg.norm( rms[6:] )
-print( round( tmp, 1 ), "/ 39.5" )
+print( round( tmp, 1 ), "/ 39.6" )
 
 qm3.utils.hessian.normal_mode( mol, val, vec, 0, afac = 8.0 )
 

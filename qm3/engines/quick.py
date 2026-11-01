@@ -91,15 +91,12 @@ class run( qm3.engines.template ):
         self.vla = []
         for i in range( len( self.lnk ) ):
             c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
-            self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, v ) )
+            self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, self.lnk[i][1], v ) )
             qcrd[l,:] = c[:]
             l += 1
             k += 1
         l = 0
-        for i in self.nbn:
-            tmp = mol.coor[i].copy()
-            if( self.img ):
-                tmp -= mol.boxl * numpy.round( ( tmp - cen ) / mol.boxl, 0 )
+        for i, tmp in zip( self.nbn, self.img_coor( mol ) ):
             mcrd[l,0:3] = tmp
             mcrd[l,3] = mol.chrg[i] + self.__dq[i]
             l += 1
@@ -117,6 +114,10 @@ class run( qm3.engines.template ):
             for j in [0, 1, 2]:
                 mol.grad[i,j] += qgrd[l]
                 l += 1
+        for qm_i, mm_j, mm_k, vec in self.vla:
+            j3 = mm_j * 3
+            for j in [0, 1, 2]:
+                mol.grad[mm_k,j] += qgrd[j3+j]
         mgrd = numpy.ctypeslib.as_array( mgrd, ( 3, self.nMM ) ).ravel() * self.cg
         l = 0
         for i in self.nbn:

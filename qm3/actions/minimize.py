@@ -525,7 +525,7 @@ def baker( mol: object,
             elif( math.fabs( val[i] ) > emax ):
                 val[i] = numpy.sign( val[i] ) * emax
         grd = mol.grad[sele].ravel().reshape( ( size, 1 ) )
-        grd = numpy.dot( vec.T, grd )
+        grd = numpy.dot( vec.T, grd ).ravel()
 
         if( follow_mode > -1 ):
             who = val[follow_mode]
@@ -579,7 +579,6 @@ def baker( mol: object,
             val[follow_mode] = lmbd - 1.0
             vec[:,follow_mode] = 0.0
 
-        val.shape = ( size, 1 )
         tmp = numpy.dot( vec, grd / ( lmbd - val ) )
         tmp.shape = ( actv, 3 )
         crd += tmp

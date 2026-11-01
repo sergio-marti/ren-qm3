@@ -5,6 +5,15 @@ import  collections
 import  qm3.data
 
 
+
+def to_float( val: typing.Union[ numpy.ndarray, float ] ) -> float:
+    if( isinstance( val, numpy.ndarray ) ):
+        val = numpy.ravel( val )
+        if( val.size != 1 ):
+            raise ValueError( "utils.to_float: cannot convert an array of size %d to scalar"%( val.size ) )
+        return( float( val[ 0 ] ) )
+    return( float( val ) )
+
 # =================================================================================================
 
 def from_upper_diagonal( vec: list, by_rows: typing.Optional[bool] = True ) -> numpy.array:
@@ -29,7 +38,7 @@ def distanceSQ( ci: numpy.array, cj: numpy.array,
             [ qm3.data.MXLAT, qm3.data.MXLAT, qm3.data.MXLAT ] ) ) -> float:
     vv = ci - cj
     vv -= box * numpy.round( vv / box, 0 )
-    return( float( numpy.inner( vv, vv ) ) )
+    return( to_float( numpy.dot( vv, vv ) ) )
 
 
 def distance( ci: numpy.array, cj: numpy.array,
@@ -46,7 +55,7 @@ def angleRAD( ci: numpy.array, cj: numpy.array, ck: numpy.array ) -> float:
     vij = ci - cj
     vkj = ck - cj
     try:
-        return( math.acos( numpy.dot( vij, vkj ) / ( numpy.linalg.norm( vij ) * numpy.linalg.norm( vkj ) ) ) )
+        return( math.acos( to_float( numpy.dot( vij, vkj ) / ( numpy.linalg.norm( vij ) * numpy.linalg.norm( vkj ) ) ) ) )
     except:
         raise Exception( "utils.angleRAD: invalid angle" )
 
@@ -66,7 +75,7 @@ def dihedralRAD( ci: numpy.array, cj: numpy.array, ck: numpy.array, cl: numpy.ar
     vlj = cl - cj
     pik = numpy.cross( vij, vkj )
     plk = numpy.cross( vlj, vkj )
-    m1  = numpy.dot( pik, plk )
+    m1  = to_float( numpy.dot( pik, plk ) )
     m2  = numpy.linalg.norm( pik )
     m3  = numpy.linalg.norm( plk )
     o   = 0.0
@@ -75,7 +84,7 @@ def dihedralRAD( ci: numpy.array, cj: numpy.array, ck: numpy.array, cl: numpy.ar
         if( math.fabs( o ) > 1.0 ):
             o = math.fabs( o ) / o
         o = math.acos( o ) 
-        if( numpy.dot( vij, plk ) < 0.0 ):
+        if( to_float( numpy.dot( vij, plk ) ) < 0.0 ):
             o = -o
     return( float( o ) )
 
@@ -122,7 +131,7 @@ def RT_modes( mol: object ) -> numpy.array:
     cent = numpy.sum( mol.mass * mol.coor * mol.actv, axis = 0 ) / numpy.sum( mol.mass * mol.actv )
     k = 0
     for i in sele:
-        sqrm = math.sqrt( mol.mass[i] )
+        sqrm = math.sqrt( to_float( mol.mass[i] ) )
         mode[0,k:k+3] = [ sqrm, 0.0, 0.0 ]
         mode[1,k:k+3] = [ 0.0, sqrm, 0.0 ]
         mode[2,k:k+3] = [ 0.0, 0.0, sqrm ]
