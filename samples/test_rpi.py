@@ -69,7 +69,7 @@ if( not os.path.isfile( "rpi_R.pk" ) ):
         pickle.dump( mol.hess, f )
 
 
-obj = qm3.actions.ring_polymer.instanton( mol, calc_hess, nbeads = 32 )
+obj = qm3.actions.ring_polymer.instanton( mol, calc_hess, nbeads = 64 )
 
 with open( "rpi_R.pk", "rb" ) as f:
     r_coor = pickle.load( f )
@@ -90,7 +90,7 @@ if( not os.path.isfile( "rpi.pk" ) ):
     qm3.actions.minimize.baker( obj,
             lambda obj,stp: obj.get_hess( obj, 0 ),
             step_size = 0.1, step_number = 100, print_frequency = 1,
-            follow_mode = 0, gradient_tolerance = 1.0,
+            follow_mode = 0, gradient_tolerance = 0.01,
             current_step = qm3.actions.ring_polymer.current_step )
     with open( "rpi.pk", "wb" ) as f:
         pickle.dump( obj.func, f )

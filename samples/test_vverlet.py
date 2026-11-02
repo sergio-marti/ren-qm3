@@ -64,16 +64,12 @@ def velocity_verlet( mol: object,
     for istp in range( 1, step_number + 1 ):
         time += step_size
         mol.coor += fc * mol.velo + fa * cacc
-        #oacc = mol.velo + fv * cacc
         mol.velo += fv * cacc
         mol.get_grad()
         cacc = - mol.grad / mol.mass * 100.0
         if( rcom ):
             cacc -= numpy.sum( cacc * proj, axis = 0 ) * proj
-        #mol.velo = oacc + fv * cacc
         mol.velo +=  fv * cacc
-        if( rcom ):
-            mol.velo -= numpy.sum( mol.velo * proj, axis = 0 ) * proj
         temp, kine = qm3.actions.dynamics.current_temperature( mol, ndeg )
         if( scale_frequency > 0 and istp % scale_frequency == 0 ):
             mol.velo *= math.sqrt( temperature / temp )
@@ -120,7 +116,15 @@ sqm = mol.resn == "SUS"
 smm = mol.sph_sel( sqm, 10 )
 mol.engines["mm"] = qm3.engines.openmm.run( _sys, _top, sel_QM = sqm )
 mol.engines["qm"] = qm3.engines.xtb.run( mol, 1, 0, sel_QM = sqm, sel_MM = smm )
-mol.engines["qm"].img = True
+mol.engines["qm"].img_init( mol )
+
+
+import qm3.data
+with open( "img_cell.xyz", "wt" ) as f:
+    f.write( "%d\n\n"%( mol.engines["qm"].nbn.shape[0] ) )
+    for i, tmp in zip( mol.engines["qm"].nbn, mol.engines["qm"].img_coor( mol ) ):
+        f.write( "%-2s%20.6lf%20.6lf%20.6lf\n"%( qm3.data.symbol[mol.anum[i]], tmp[0], tmp[1], tmp[2] ) )
+
 
 mol.get_grad()
 print( mol.func )

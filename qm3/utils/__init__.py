@@ -54,10 +54,7 @@ def distance( ci: numpy.array, cj: numpy.array,
 def angleRAD( ci: numpy.array, cj: numpy.array, ck: numpy.array ) -> float:
     vij = ci - cj
     vkj = ck - cj
-    try:
-        return( math.acos( to_float( numpy.dot( vij, vkj ) / ( numpy.linalg.norm( vij ) * numpy.linalg.norm( vkj ) ) ) ) )
-    except:
-        raise Exception( "utils.angleRAD: invalid angle" )
+    return( math.acos( to_float( numpy.dot( vij, vkj ) / ( numpy.linalg.norm( vij ) * numpy.linalg.norm( vkj ) ) ) ) )
 
 
 def angle( ci: numpy.array, cj: numpy.array, ck: numpy.array ) -> float:
@@ -70,23 +67,18 @@ def angle( ci: numpy.array, cj: numpy.array, ck: numpy.array ) -> float:
 
 
 def dihedralRAD( ci: numpy.array, cj: numpy.array, ck: numpy.array, cl: numpy.array ) -> float:
-    vij = ci - cj
-    vkj = ck - cj
-    vlj = cl - cj
-    pik = numpy.cross( vij, vkj )
-    plk = numpy.cross( vlj, vkj )
-    m1  = to_float( numpy.dot( pik, plk ) )
-    m2  = numpy.linalg.norm( pik )
-    m3  = numpy.linalg.norm( plk )
-    o   = 0.0
-    if( m2 != 0.0 and m3 != 0.0 ):
-        o = m1 / ( m2 * m3 )
-        if( math.fabs( o ) > 1.0 ):
-            o = math.fabs( o ) / o
-        o = math.acos( o ) 
-        if( to_float( numpy.dot( vij, plk ) ) < 0.0 ):
-            o = -o
-    return( float( o ) )
+    b0 = ci - cj
+    b1 = ck - cj
+    b2 = cl - ck
+    nb = to_float( numpy.linalg.norm( b1 ) )
+    if( nb == 0.0 ):
+        return( 0.0 )
+    b1 = b1 / nb
+    v  = b0 - numpy.dot( to_float( numpy.dot( b0, b1 ) ), b1 )
+    w  = b2 - numpy.dot( to_float( numpy.dot( b2, b1 ) ), b1 )
+    if( to_float( numpy.linalg.norm( v ) ) == 0.0 or to_float( numpy.linalg.norm( w ) ) == 0.0 ):
+        return( 0.0 )
+    return( math.atan2( to_float( numpy.dot( numpy.cross( b1, v ), w ) ), to_float( numpy.dot( v, w ) ) ) )
 
 
 def dihedral( ci: numpy.array, cj: numpy.array, ck: numpy.array, cl: numpy.array ) -> float:
@@ -236,7 +228,7 @@ def integ_Simpson( x, y ):
         d3 = d1 + d2
         o += ( ( d1 + d1 - d2 ) * y[i] + ( d3 * d3 * y[j] + d1 * ( d2 + d2 - d1 ) * y[k] ) / d2 ) * d3 / 6.0 / d1
     # fix odd intervals with a trapeizodal rule
-    if( n%2 != 0 ):
+    if( n%2 == 0 ):
         o += ( y[-1] + y[-2] ) * ( x[-1] - x[-2] ) * 0.5
     return( o )
 

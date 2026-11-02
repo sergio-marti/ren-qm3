@@ -21,14 +21,10 @@ def initial_step( mol: object, get_hess: typing.Callable, step_size: float ) -> 
     size = 3 * actv
     sele = numpy.flatnonzero( mol.actv.ravel() )
     mass = 1.0 / numpy.sqrt( mol.mass[sele] )
-    mfla = mass.ravel()
+    mfla = mass.ravel().repeat( 3 )
     hess = get_hess( mol, 0 )
-    for i in range( size ):
-        for j in range( size ):
-            hess[i,j] *= mfla[i//3] * mfla[j//3]
+    hess *= mfla[:,None] * mfla[None,:]
     val, vec = numpy.linalg.eigh( qm3.utils.hessian.project_RT( hess, qm3.utils.RT_modes( mol ) ) )
-    idx = numpy.argsort( val )
-    vec = vec[:,idx]
     return( numpy.sum( val < __vcut ), step_size * vec[:,0].reshape( ( actv, 3 ) ) / numpy.linalg.norm( vec[:,0] ) * mass )
 
 
@@ -76,7 +72,7 @@ def page_mciver( mol: object,
     sele = numpy.flatnonzero( mol.actv.ravel() )
     grms = gradient_tolerance * 2.0
     mass = numpy.sqrt( mol.mass[sele] )
-    mfla = mass.ravel()
+    mfla = mass.ravel().repeat( 3 )
     if( from_saddle ):
         nskp, dsp = initial_step( mol, get_hess, step_size )
         log_file.write( "%10s%20.5lf%20.10lf%10ld\n"%( "", mol.func, numpy.linalg.norm( mol.grad ) / ndeg, nskp ) )
@@ -89,20 +85,19 @@ def page_mciver( mol: object,
     while( it1 < step_number and ( grms > gradient_tolerance or nskp > 6 ) and flg ):
         mol.coor[sele] += dsp
         hes = get_hess( mol, it1 )
-        for i in range( size ):
-            for j in range( size ):
-                hes[i,j] /= mfla[i//3] * mfla[j//3]
+        hes /= mfla[:,None] * mfla[None,:]
         mod = qm3.utils.RT_modes( mol )
         val, vec = numpy.linalg.eigh( qm3.utils.hessian.project_RT( hes, mod ) )
-        idx = numpy.argsort( val )
-        val = val[idx]
-        vec = vec[:,idx]
         nskp = numpy.sum( val < __vcut )
         grd = mol.grad[sele] / mass
         grd.shape = ( size, )
         for i in range( 6 ):
             grd -= numpy.sum( grd * mod[i,:] ) * mod[i,:]
         tmp = numpy.linalg.norm( grd )
+        if( tmp <= 0.0 ):
+            log_file.write( "\n -- The gradient norm vanished...\n" )
+            flg = False
+            break
         grd /= tmp
         val /= tmp
         grd = numpy.dot( vec.T, grd ) 

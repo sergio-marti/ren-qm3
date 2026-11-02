@@ -58,7 +58,7 @@ plt.xlabel( "w [kJ/mol]" )
 plt.plot( w, G, '-' )
 plt.show()
 G *= numpy.exp( - cte * w / tem )
-kapp = math.exp( cte * act / tem ) * cte / tem * numpy.trapz( G, dx = dw )
+kapp = math.exp( cte * act / tem ) * cte / tem * numpy.trapezoid( G, dx = dw )
 print( "\nkappa %20.10le"%( kapp ) )
 print( "dEtun ", round( - 8.314 * tem * math.log( kapp ) / 1000., 2 ), "_kJ/mol" )
 

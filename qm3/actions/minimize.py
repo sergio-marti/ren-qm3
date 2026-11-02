@@ -209,40 +209,43 @@ def cgplus( mol: object,
         ctypes.POINTER( ctypes.c_int ) ]
     dlib.cgp_cgfam_.restype = None
     sele = numpy.flatnonzero( mol.actv.ravel() )
-    mol.get_grad()
-    grms = numpy.linalg.norm( mol.grad ) / ndeg
-    coor = mol.coor[sele].ravel().ctypes.data_as( ctypes.POINTER( ctypes.c_double ) )
-    grad = mol.grad[sele].ravel().ctypes.data_as( ctypes.POINTER( ctypes.c_double ) )
+    nat  = len( sele )
+    coor = ( ctypes.c_double * size )()
+    grad = ( ctypes.c_double * size )()
     dire = ( ctypes.c_double * size )()
     gold = ( ctypes.c_double * size )()
     work = ( ctypes.c_double * size )()
     iflg = ( ctypes.c_int )()
+    vcoo = numpy.frombuffer( coor, dtype = numpy.float64 ).reshape( ( nat, 3 ) )
+    vgrd = numpy.frombuffer( grad, dtype = numpy.float64 ).reshape( ( nat, 3 ) )
+    vcoo[:,:] = mol.coor[sele]
+    def fetch():
+        mol.coor[sele] = vcoo
+        mol.get_grad()
+        vgrd[:,:] = mol.grad[sele]
+    fetch()
+    grms = numpy.linalg.norm( mol.grad ) / ndeg
     log_file.write( "%30.5lf%20.10lf\n"%( mol.func, grms ) )
     itr  = 0
     while( itr < step_number and grms > gradient_tolerance ):
         dlib.cgp_cgfam_( ctypes.c_int( size ), coor, ctypes.c_double( mol.func ), grad, dire, gold,
                 ctypes.c_double( gradient_tolerance ), work, iflg, ctypes.c_int( rest ), ctypes.c_int( meth ) )
-        if( iflg == -3 ):
+        while( iflg.value == 1 ):
+            fetch()
+            dlib.cgp_cgfam_( ctypes.c_int( size ), coor, ctypes.c_double( mol.func ), grad, dire, gold,
+                    ctypes.c_double( gradient_tolerance ), work, iflg, ctypes.c_int( rest ), ctypes.c_int( meth ) )
+        if( iflg.value == -3 ):
             log_file.write( "\n -- Improper input parameters...\n" )
             itr = step_number + 1
-        elif( iflg == -2 ):
+        elif( iflg.value == -2 ):
             log_file.write( "\n -- Descent was not obtained...\n" )
             itr = step_number + 1
-        elif( iflg == -1 ):
+        elif( iflg.value == -1 ):
             log_file.write( "\n -- Line Search failure...\n" )
             itr = step_number + 1
         else:
-            while( iflg == 2 ):
-                dlib.cgp_cgfam_( ctypes.c_int( size ), coor, ctypes.c_double( mol.func ), grad, dire, gold,
-                        ctypes.c_double( gradient_tolerance ), work, iflg, ctypes.c_int( rest ), ctypes.c_int( meth ) )
-            l = 0
-            for i in sele:
-                for j in [0, 1, 2]:
-                    mol.coor[i,j] = coor[l]
-                    l += 1
-            mol.get_grad()
+            fetch()
             grms = numpy.linalg.norm( mol.grad ) / ndeg
-            grad = mol.grad[sele].ravel().ctypes.data_as( ctypes.POINTER( ctypes.c_double ) )
         itr += 1
         if( itr % print_frequency == 0 ):
             log_file.write( "%10d%20.5lf%20.10lf\n"%( itr, mol.func, grms ) )
@@ -306,18 +309,14 @@ def lbfgs( mol: object,
     dsv = ( ctypes.c_double * 29 )()
     ndeg = math.sqrt( size )
     sele = numpy.flatnonzero( mol.actv.ravel() )
+    nat  = len( sele )
+    vcrd = numpy.frombuffer( crd, dtype = numpy.float64 ).reshape( ( nat, 3 ) )
+    vgrd = numpy.frombuffer( grd, dtype = numpy.float64 ).reshape( ( nat, 3 ) )
     mol.get_grad()
     grms = numpy.linalg.norm( mol.grad ) / ndeg
     # NO BOUNDARIES -----------------------------------
-    k = 0
-    for i in sele:
-        for j in [0, 1, 2]:
-            low[k] = 0.0
-            upp[k] = 0.0
-            nbd[k] = 0
-            crd[k] = mol.coor[i,j]
-            grd[k] = mol.grad[i,j]
-            k += 1
+    vcrd[:,:] = mol.coor[sele]
+    vgrd[:,:] = mol.grad[sele]
     # -------------------------------------------------
     log_file.write( "%30.5lf%20.10lf\n"%( mol.func, grms ) )
     itr = 0
@@ -327,19 +326,11 @@ def lbfgs( mol: object,
             ctypes.c_double( 1.e3 ), ctypes.c_double( gradient_tolerance ),
             wrk, iwa, tsk, ctypes.c_int( -1 ), csv, lsv, isv, dsv )
         if( tsk.raw[0:4] in [ b"CONV", b"STOP", b"ERRO", b"ABNO" ] ):
-            it = step_number + 1
+            itr = step_number + 1
         elif( tsk.raw[0:2] == b"FG" ):
-            k = 0
-            for i in sele:
-                for j in [0, 1, 2]:
-                    mol.coor[i,j] = crd[k]
-                    k += 1
+            mol.coor[sele] = vcrd
             mol.get_grad()
-            k = 0
-            for i in sele:
-                for j in [0, 1, 2]:
-                    grd[k] = mol.grad[i,j]
-                    k += 1
+            vgrd[:,:] = mol.grad[sele]
             grms = numpy.linalg.norm( mol.grad ) / ndeg
             itr += 1
             if( itr % print_frequency == 0 ):
@@ -508,24 +499,22 @@ def baker( mol: object,
     crd  = numpy.zeros( ( actv, 3 ), dtype=numpy.float64 )
     flg  = True
     itr  = 0
+    nneg = 0
+    tmp  = 0.0
+    who  = 0.0
     while( itr < step_number and grms > gradient_tolerance and flg ):
         mol.coor[sele] += crd
 
         crd = numpy.zeros( ( actv, 3 ), dtype=numpy.float64 )
         hes = get_hess( mol, itr )
-        val, vec = numpy.linalg.eigh( hes )
-        idx = numpy.argsort( val )
-        val = val[idx]
-        vec = vec[:,idx]
-        nneg = 0
-        for i in range( size ):
-            nneg += val[i] < 0.0
-            if( math.fabs( val[i] ) < emin ):
-                val[i] = numpy.sign( val[i] ) * emin
-            elif( math.fabs( val[i] ) > emax ):
-                val[i] = numpy.sign( val[i] ) * emax
-        grd = mol.grad[sele].ravel().reshape( ( size, 1 ) )
-        grd = numpy.dot( vec.T, grd ).ravel()
+        val, vec = numpy.linalg.eigh( hes )  # eigh: eigenvalues already sorted
+        nneg = int( numpy.count_nonzero( val < 0.0 ) )
+        sgn  = numpy.sign( val )
+        val  = numpy.where( numpy.fabs( val ) < emin, sgn * emin, val )
+        val  = numpy.where( numpy.fabs( val ) > emax, numpy.sign( val ) * emax, val )
+        grd  = mol.grad[sele].ravel().reshape( ( size, 1 ) )
+        grd  = numpy.dot( vec.T, grd ).ravel()
+        rest = numpy.ones( size, dtype=bool )
 
         if( follow_mode > -1 ):
             who = val[follow_mode]
@@ -544,15 +533,14 @@ def baker( mol: object,
             lowr = 1
         else:
             lowr = 0 
+        if( follow_mode > -1 ):
+            rest[follow_mode] = False
         lmbd = 0.0
         if( val[lowr] < 0.0 ):
             lmbd = val[lowr] - step
             l1   = val[lowr]
             l2   = - lrge
-        tmp  = 0.0;
-        for j in range( size ):
-            if( j != follow_mode ):
-                tmp += ( grd[j] * grd[j] ) / ( lmbd - val[j] )
+        tmp  = numpy.sum( numpy.square( grd[rest] ) / ( lmbd - val[rest] ) )
         i = 0
         while( i < mxit and math.fabs( lmbd - tmp ) >= tol2 ):
             if( val[lowr] > 0.0 ):
@@ -566,12 +554,9 @@ def baker( mol: object,
                     lmbd = 0.5 * ( l1 + l2 )
                 elif( l2 == - lrge ):
                     lmbd -= step;
-            tmp  = 0.0;
-            for j in range( size ):
-                if( j != follow_mode ):
-                    tmp += ( grd[j] * grd[j] ) / ( lmbd - val[j] )
+            tmp  = numpy.sum( numpy.square( grd[rest] ) / ( lmbd - val[rest] ) )
             i += 1
-        if( i > mxit ):
+        if( i >= mxit and math.fabs( lmbd - tmp ) >= tol2 ):
             log_file.write( "\n -- Too much lambda iterations...\n" )
             flg = False
 
@@ -591,7 +576,7 @@ def baker( mol: object,
 
         itr += 1
         if( use_maxgrad ):
-            grms = numpy.max( numpy.linalg.norm( mol.grad, axis = 1 ) )
+            grms = numpy.max( numpy.linalg.norm( mol.grad, axis = 1 ) ) / ndeg
         else:
             grms = numpy.linalg.norm( mol.grad ) / ndeg
         if( itr % print_frequency == 0 or itr == 1 ):

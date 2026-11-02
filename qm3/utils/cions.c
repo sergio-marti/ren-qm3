@@ -79,7 +79,7 @@ static PyObject* cions( PyObject *self, PyObject *args ) {
     pthread_t       *pid;
     p_range         *rng;
 
-
+                                                              //  1.0     5.0     12.0   Angs
     if( PyArg_ParseTuple( args, "Olddddl", &o_mole, &num, &chrg, &d_grd, &d_ion, &d_prt, &cpu ) ) {
         t0 = time( NULL );
         // define current grid size

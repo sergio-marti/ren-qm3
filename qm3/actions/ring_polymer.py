@@ -3,7 +3,6 @@ import  numpy
 import  typing
 import  qm3.data
 import  qm3.utils.hessian
-import  os
 
 
 def current_step( self: object, step: int ):
@@ -103,7 +102,7 @@ class instanton( object ):
         print( "[TST] l_tQR: %20.10le"%( tQR ) )
         # vibrational partition function
         cte = 100.0 * qm3.data.C * qm3.data.H / ( qm3.data.KB * self.temp )
-        self.mole.coor = r_coor
+        self.mole.coor = r_coor.copy()
         frq = qm3.utils.hessian.frequencies( self.mole, r_hess )[0]
         #rQV = 0.0
         #for f in frq[6:]:
@@ -111,7 +110,7 @@ class instanton( object ):
         rQV = - numpy.sum( numpy.log( 2.0 * numpy.sinh( frq[6:] * cte * 0.5 ) ) )
         print( "[TST] rfreq: " + ", ".join( [ "%.1lf"%( math.fabs( i ) ) for i in frq[0:7] ] ) + " _cm^-1" )
         print( "[TST] l_rQV: %20.10le"%( rQV ) )
-        self.mole.coor = t_coor
+        self.mole.coor = t_coor.copy()
         frq, vec = qm3.utils.hessian.frequencies( self.mole, t_hess )
         self.tst_mode = vec[:,0]
         self.tst_mode /= numpy.linalg.norm( self.tst_mode )
@@ -158,8 +157,11 @@ class instanton( object ):
             for j in range( self.dime ):
                 self.grad[i_cc+j] = self.mole.grad[self.sele[j]] / self.bead
                 kmb = self.mass[j][0] * self.kumb
-                self.func += scal * kmb * numpy.sum( numpy.square( self.coor[i_cc+j] - self.coor[i_mm+j] ) )
+                self.func += scal * kmb * 0.5 * ( numpy.sum( numpy.square( self.coor[i_cc+j] - self.coor[i_mm+j] ) ) +
+                    numpy.sum( numpy.square( self.coor[i_cc+j] - self.coor[i_pp+j] ) ) )
                 self.grad[i_cc+j] += 2.0 * kmb * ( 2.0 * self.coor[i_cc+j] - self.coor[i_mm+j] - self.coor[i_pp+j] )
+                # gradiente exacto de la energia de la cadena media (beads interiores duplicados)
+                self.grad[i_cc+j] *= scal
 
 
     @staticmethod
@@ -172,21 +174,22 @@ class instanton( object ):
                 i_cc = i * self.dime
                 self.mole.coor[self.sele] = self.coor[i_cc:i_cc+self.dime]
                 j_cc = i * dime
-                self.hess[j_cc:j_cc+dime,j_cc:j_cc+dime] = self.CHes( self.mole, step ) / self.bead
+                scal = 1.0 if( i == 0 or i == self.half ) else 2.0
+                self.hess[j_cc:j_cc+dime,j_cc:j_cc+dime] = scal * self.CHes( self.mole, step ) / self.bead
                 if( i == 0 ):
-                    j_mm = size - dime
+                    j_mm = dime
                     j_pp = dime
                 elif( i == self.half ):
                     j_mm = j_cc - dime
-                    j_pp = 0
+                    j_pp = j_cc - dime
                 else:
                     j_mm = j_cc - dime
                     j_pp = j_cc + dime
                 for j in range( dime ):
                     kmb = self.mass[j//3][0] * self.kumb
-                    self.hess[j_cc+j,j_cc+j] += 4.0 * kmb
-                    self.hess[j_cc+j,j_mm+j] -= 2.0 * kmb
-                    self.hess[j_cc+j,j_pp+j] -= 2.0 * kmb
+                    self.hess[j_cc+j,j_cc+j] += 4.0 * kmb * scal
+                    self.hess[j_cc+j,j_mm+j] -= 2.0 * kmb * scal
+                    self.hess[j_cc+j,j_pp+j] -= 2.0 * kmb * scal
             # split get_grad thus being called also from get_hess (on the already calculated self.mole.grad/func)
             self.get_grad()
             qm3.utils.hessian.manage( self, self.hess, dump_name = "rpi.dump" )
@@ -196,7 +199,8 @@ class instanton( object ):
         return( qm3.utils.hessian.raise_RT( self.hess, qm3.utils.RT_modes( self ) ) )
 
 
-    def calc_RPI( self, r_coor: numpy.array, r_func: float, r_hess: numpy.array ):
+    def calc_RPI( self, r_coor: numpy.array, r_func: float, r_hess: numpy.array,
+            r_symm: typing.Optional[float] = 1.0 ):
         """
 Q_rot = left[ 1 over %sigma right]_R left( %pi left( {8 %pi^2 P k_B T 10^-23} over{h^2 N_A} right)^3 det I right)^{ 1 over 2 }
 ~~~~~
@@ -218,9 +222,11 @@ size 10 { B= sum from{ i=1 } to { P }{ sum from{j=1} to{3N} { m_{j/3} left( x_{i
         efunc = - ( self.func - r_func ) * 1000.0 / ( self.temp * qm3.data.KB * qm3.data.NA )
         print( "[RPI] dfunc: %20.10le (%.2lf _kJ/mol)"%( efunc, self.func - r_func ) )
         # rotational partition function
-        rQR = self.__rotations( self.sele, self.mole.mass, r_coor, 1.0, self.temp ) + 3.0 * math.log( self.bead )
+        rQR = self.__rotations( self.sele, self.mole.mass, r_coor, r_symm, self.temp ) + 3.0 * math.log( self.bead )
         print( "[RPI] l_rQR: %20.10le"%( rQR ) )
-        cen = numpy.sum( self.mass * self.coor, axis = 0 ) / numpy.sum( self.mass )
+        wgt = numpy.ones( ( self.size, 1 ), dtype=numpy.float64 )
+        wgt[self.dime:self.size-self.dime] = 2.0
+        cen = numpy.sum( wgt * self.mass * self.coor, axis = 0 ) / numpy.sum( wgt * self.mass )
         xx = 0.0; xy = 0.0; xz = 0.0; yy = 0.0; yz = 0.0; zz = 0.0
         for i in range( self.half + 1 ):
             i_cc = i * self.dime
@@ -255,7 +261,7 @@ size 10 { B= sum from{ i=1 } to { P }{ sum from{j=1} to{3N} { m_{j/3} left( x_{i
             i_cc = i * self.dime
             j_cc = i * dime
             hess[j_cc:j_cc+dime,j_cc:j_cc+dime] = r_hess / self.bead
-            self.coor[i_cc:i_cc+self.dime] = r_coor
+            self.coor[i_cc:i_cc+self.dime] = r_coor[self.sele]
             self.mass[i_cc:i_cc+self.dime] = self.mole.mass[self.sele]
             if( i == 0 ):
                 j_mm = size - dime
@@ -278,17 +284,18 @@ size 10 { B= sum from{ i=1 } to { P }{ sum from{j=1} to{3N} { m_{j/3} left( x_{i
         print( "[RPI] l_rQV: %20.10le"%( rQV ) )
         # vibrational partition function: instanton (recycling self.hess)
         hess = numpy.zeros( ( size, size ), dtype=numpy.float64 )
-        rdim = self.dime * 3
+        rdim = dime
         self.coor[0:self.size] = o_coor
         j_cc = 0
         for i in range( self.half + 1 ):
             i_cc = i * rdim
-            hess[j_cc:j_cc+dime,j_cc:j_cc+dime] = self.hess[i_cc:i_cc+rdim,i_cc:i_cc+rdim]
+            scal = 1.0 if( i == 0 or i == self.half ) else 2.0
+            hess[j_cc:j_cc+dime,j_cc:j_cc+dime] = self.hess[i_cc:i_cc+rdim,i_cc:i_cc+rdim] / scal
             j_cc += dime
         x_cc = self.size
         for i in range( self.half - 1, 0, -1 ):
             i_cc = i * rdim
-            hess[j_cc:j_cc+dime,j_cc:j_cc+dime] = self.hess[i_cc:i_cc+rdim,i_cc:i_cc+rdim]
+            hess[j_cc:j_cc+dime,j_cc:j_cc+dime] = self.hess[i_cc:i_cc+rdim,i_cc:i_cc+rdim] / 2.0
             j_cc += dime
             i_cc = i * self.dime
             self.coor[x_cc:x_cc+self.dime] = o_coor[i_cc:i_cc+self.dime]
@@ -309,7 +316,8 @@ size 10 { B= sum from{ i=1 } to { P }{ sum from{j=1} to{3N} { m_{j/3} left( x_{i
                 hess[j_cc+j,j_mm+j] -= 2.0 * kmb
                 hess[j_cc+j,j_pp+j] -= 2.0 * kmb
         frq = qm3.utils.hessian.frequencies( self, hess )[0]
-        tQV = - numpy.sum( numpy.log( 2.0 * numpy.sinh( frq[7:] * cte * 0.5 ) ) )
+        # 1 modo negativo + 7 nulos (6 TR + desplazamiento a lo largo del camino)
+        tQV = - numpy.sum( numpy.log( 2.0 * numpy.sinh( frq[8:] * cte * 0.5 ) ) )
         tQV -= math.log( 2.0 * math.sinh( math.fabs( frq[0] ) * cte * 0.5 ) )
         print( "[RPI] tfreq: " + ", ".join( [ "%.1lf"%( math.fabs( i ) ) for i in frq[0:9] ] ) + " _cm^-1" )
         print( "[RPI] l_tQV: %20.10le"%( tQV ) )
@@ -323,14 +331,18 @@ size 10 { B= sum from{ i=1 } to { P }{ sum from{j=1} to{3N} { m_{j/3} left( x_{i
             if( i == 0 ):
                 scal = 1.0
                 i_mm = ( i + 1 ) * self.dime
+                i_pp = ( i + 1 ) * self.dime
             elif( i == self.half ):
                 scal = 1.0
                 i_mm = ( i - 1 ) * self.dime
+                i_pp = ( i - 1 ) * self.dime
             else:
                 scal = 2.0
                 i_mm = ( i - 1 ) * self.dime
+                i_pp = ( i + 1 ) * self.dime
             for j in range( self.dime ):
-                tQP += scal * self.mass[j,0] * numpy.sum( numpy.square( self.coor[i_cc+j] - self.coor[i_mm+j] ) )
+                tQP += scal * 0.5 * self.mass[j,0] * ( numpy.sum( numpy.square( self.coor[i_cc+j] - self.coor[i_mm+j] ) ) +
+                    numpy.sum( numpy.square( self.coor[i_cc+j] - self.coor[i_pp+j] ) ) )
         cte = 2.0 * math.pi * self.bead * self.temp * qm3.data.KB * 1.0e-23 / ( qm3.data.NA * qm3.data.H * qm3.data.H )
         tQP = 0.5 * math.log( cte * tQP )
         print( "[RPI] l_tQP: %20.10le"%( tQP ) )
@@ -339,7 +351,7 @@ size 10 { B= sum from{ i=1 } to { P }{ sum from{j=1} to{3N} { m_{j/3} left( x_{i
         print( "[RPI] k_cin: %20.10le _1/s"%( self.k_RPI  ) )
         self.kappa = self.k_RPI / self.k_TST
         print( "      kappa: %20.10le"%( self.kappa ) )
-        print( "  dE_tunnel: %.2lf _kJ/mol"%( round( - 8.314 * math.log( self.kappa ) * self.temp / 1000., 2 ) ) )
+        print( "  dE_tunnel: %.2lf _kJ/mol"%( round( - qm3.data.KB * qm3.data.NA * math.log( self.kappa ) * self.temp / 1000., 2 ) ) )
 
 
     def plot( self, r_func: float, t_func: float ):
@@ -352,7 +364,7 @@ size 10 { B= sum from{ i=1 } to { P }{ sum from{j=1} to{3N} { m_{j/3} left( x_{i
             matplotlib.pyplot.plot( self.ener, '-o' )
             matplotlib.pyplot.tight_layout()
             matplotlib.pyplot.show()
-        except:
+        except Exception:
             pass
         arc = numpy.zeros( self.dime, dtype=numpy.float64 )
         for i in range( 1, self.half + 1 ):

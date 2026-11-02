@@ -13,6 +13,11 @@ class client_fsi( object ):
 
     def __recv( self, sckt ):
         msg = sckt.recv( self.slen )
+        while( len( msg ) < 4 ):
+            nxt = sckt.recv( self.slen )
+            if( not nxt ):
+                break
+            msg += nxt
         siz = struct.unpack( "i", msg[0:4] )[0]
         msg = msg[4:]
         cur = len( msg )

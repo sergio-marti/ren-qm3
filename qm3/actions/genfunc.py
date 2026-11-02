@@ -196,9 +196,9 @@ def rfo( function: typing.Callable,
         itr += 1
         grms = numpy.linalg.norm( grad )
         if( itr % print_frequency == 0 or itr == 1 ):
-                log_file.write( "%10ld%20.5lf%20.10lf%10.2le\n"%( itr, fun, grms, tmp ) )
+            log_file.write( "%10ld%20.5lf%20.10lf%10.2le\n"%( itr, func, grms, tmp ) )
     if( itr % print_frequency != 0 ):
-        log_file.write( "%10ld%20.5lf%20.10lf%10.2le\n"%( itr, fun, grms, tmp ) )
+        log_file.write( "%10ld%20.5lf%20.10lf%10.2le\n"%( itr, func, grms, tmp ) )
     log_file.write( "-" * 50 + "\n" )
     return( func, coor )
 

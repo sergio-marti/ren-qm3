@@ -54,7 +54,7 @@ static PyObject* __new( PyTypeObject *type, PyObject *args, PyObject *kwds ) {
 static void __dealloc( oDCD *self ) {
     free( self->sele );
     free( self->buff );
-    self->fdes = NULL;
+    if( self->fdes != NULL ) { fclose( self->fdes ); self->fdes = NULL; }
     self->natm = 0;
     self->free = 0;
     self->curr = 0;

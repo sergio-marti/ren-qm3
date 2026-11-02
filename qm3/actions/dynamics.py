@@ -114,8 +114,8 @@ def langevin_verlet( mol: object,
         if( rcom ):
             cacc -= numpy.sum( cacc * proj, axis = 0 ) * proj
         mol.velo = oacc + fv2 * cacc
-#        if( rcom ):
-#            mol.velo -= numpy.sum( mol.velo * proj, axis = 0 ) * proj
+        if( rcom ):
+            mol.velo -= numpy.sum( mol.velo * proj, axis = 0 ) * proj
         temp, kine = current_temperature( mol, ndeg )
         xtmp = numpy.array( [ mol.func, kine, mol.func + kine, temp ], dtype=numpy.float64 )
         xavr += xtmp
@@ -196,8 +196,8 @@ def csvr_verlet( mol: object,
         # Berendsen thermostat
         #scv = math.sqrt( 1.0 + step_size / temperature_coupling * ( temperature / temp - 1.0 ) )
         mol.velo *= scv
-#        if( rcom ):
-#            mol.velo -= numpy.sum( mol.velo * proj, axis = 0 ) * proj
+        if( rcom ):
+            mol.velo -= numpy.sum( mol.velo * proj, axis = 0 ) * proj
         temp, kine = current_temperature( mol, ndeg )
         xtmp = numpy.array( [ mol.func, kine, mol.func + kine, temp ], dtype=numpy.float64 )
         xavr += xtmp
@@ -486,8 +486,8 @@ class stepper__langevin_verlet( object ):
         if( self.rcom ):
             self.cacc -= numpy.sum( self.cacc * self.proj, axis = 0 ) * self.proj
         mol.velo = oacc + self.fv2 * self.cacc
-#        if( self.rcom ):
-#            mol.velo -= numpy.sum( mol.velo * self.proj, axis = 0 ) * self.proj
+        if( self.rcom ):
+            mol.velo -= numpy.sum( mol.velo * self.proj, axis = 0 ) * self.proj
         temp, kine = current_temperature( mol, self.ndeg )
         if( self.istp % self.print_frequency == 0 ):
             self.log_file.write( "%20.5lf%20.5lf%20.5lf%20.5lf%20.5lf\n"%( self.time, mol.func, kine, mol.func + kine, temp ) )

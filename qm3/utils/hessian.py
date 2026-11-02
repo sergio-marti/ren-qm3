@@ -134,10 +134,11 @@ def project_RT( hess: numpy.array, rtmd: numpy.array ) -> numpy.array:
 #        grad -= numpy.sum( grad * rt[i] ) * rt[i]
 # -----------------------------------------------------
     # P = I - Tx * Tx - ... - Rx * Rx - ... 
-    proj = numpy.identity( size )
-    for i in range( 6 ):
-        tmp = rtmd[i].reshape( ( size, 1 ) )
-        proj -= numpy.dot( tmp, tmp.T )
+    #proj = numpy.identity( size )
+    #for i in range( 6 ):
+    #    tmp = rtmd[i].reshape( ( size, 1 ) )
+    #    proj -= numpy.dot( tmp, tmp.T )
+    proj = numpy.identity( size ) - numpy.dot( rtmd.T, rtmd )
     # H' = P * H * P
     return( numpy.dot( proj, numpy.dot( hess, proj ) ) )
 
@@ -145,13 +146,14 @@ def project_RT( hess: numpy.array, rtmd: numpy.array ) -> numpy.array:
 
 def raise_RT( hess: numpy.array, rtmd: numpy.array,
         large: typing.Optional[float] = 5.0e4 ) -> numpy.array:
-    size = hess.shape[0]
     # H' = H + large * ( Tx * Tx + ... + Rx * Rx + ... )
-    proj = numpy.zeros( ( size, size ), dtype=numpy.float64 )
-    for i in range( 6 ):
-        tmp = rtmd[i].reshape( ( size, 1 ) )
-        proj += numpy.dot( tmp, tmp.T )
-    return( hess + large * proj )
+    #size = hess.shape[0]
+    #proj = numpy.zeros( ( size, size ), dtype=numpy.float64 )
+    #for i in range( 6 ):
+    #    tmp = rtmd[i].reshape( ( size, 1 ) )
+    #    proj += numpy.dot( tmp, tmp.T )
+    #return( hess + large * proj )
+    return( hess + large * numpy.dot( rtmd.T, rtmd ) )
 
 
 
@@ -228,7 +230,7 @@ def IR_spectrum( freq: numpy.array, inte: numpy.array,
         matplotlib.pyplot.tight_layout()
         matplotlib.pyplot.savefig( "spectrum.pdf" )
     except:
-        error
+        pass
     return( sx, sy )
 
 
@@ -325,62 +327,79 @@ def rrho( mol: object, freq: numpy.array,
 
 
 def update_bfgs( dx: numpy.array, dg: numpy.array, hess: numpy.array ):
-    size = hess.shape[0]
-    vec  = []
-    tys  = 0.0
-    tshs = 0.0
-    for i in range( size ):
-        t0 = 0.0
-        for j in range( size ):
-            t0 += dx[j] * hess[i,j]
-        vec.append( t0 )
-        tshs += dx[i] * t0
-        tys += dg[i] * dx[i]
-    for i in range( size ):
-        for j in range( size ):
-            hess[i,j] += dg[i] * dg[j] / tys - vec[i] * vec[j] / tshs
+    #size = hess.shape[0]
+    #vec  = []
+    #tys  = 0.0
+    #tshs = 0.0
+    #for i in range( size ):
+    #    t0 = 0.0
+    #    for j in range( size ):
+    #        t0 += dx[j] * hess[i,j]
+    #    vec.append( t0 )
+    #    tshs += dx[i] * t0
+    #    tys += dg[i] * dx[i]
+    #for i in range( size ):
+    #    for j in range( size ):
+    #        hess[i,j] += dg[i] * dg[j] / tys - vec[i] * vec[j] / tshs
+    vec  = numpy.dot( hess, dx )
+    tys  = numpy.dot( dg, dx )
+    tshs = numpy.dot( dx, vec )
+    hess += numpy.outer( dg, dg ) / tys - numpy.outer( vec, vec ) / tshs
 
 
 
 def update_psb( dx: numpy.array, dg: numpy.array, hess: numpy.array ):
-    size = hess.shape[0]
-    vec  = []
-    tss  = 0.0
-    ths  = 0.0
-    for i in range( size ):
-        t0 = 0.0
-        for j in range( size ):
-            t0 += dx[j] * hess[i,j]
-        vec.append( t0 - dg[i] )
-        tss += dx[i] * dx[i]
-        ths += vec[i] * dx[i]
-    t0 = tss * tss
-    for i in range( size ):
-        for j in range( size ):
-            hess[i,j] += dx[i] * dx[j] * ths / t0 - ( vec[i] * dx[j] + vec[j] * dx[i] ) / tss
+    #size = hess.shape[0]
+    #vec  = []
+    #tss  = 0.0
+    #ths  = 0.0
+    #for i in range( size ):
+    #    t0 = 0.0
+    #    for j in range( size ):
+    #        t0 += dx[j] * hess[i,j]
+    #    vec.append( t0 - dg[i] )
+    #    tss += dx[i] * dx[i]
+    #    ths += vec[i] * dx[i]
+    #t0 = tss * tss
+    #for i in range( size ):
+    #    for j in range( size ):
+    #        hess[i,j] += dx[i] * dx[j] * ths / t0 - ( vec[i] * dx[j] + vec[j] * dx[i] ) / tss
+    vec  = numpy.dot( hess, dx ) - dg
+    tss  = numpy.dot( dx, dx )
+    ths  = numpy.dot( vec, dx )
+    t0   = tss * tss
+    hess += numpy.outer( dx, dx ) * ( ths / t0 ) - ( numpy.outer( vec, dx ) + numpy.outer( dx, vec ) ) / tss
 
 
 
 def update_bofill( dx: numpy.array, dg: numpy.array, hess: numpy.array ):
-    size = hess.shape[0]
-    vec  = []
-    tvv  = 0.0
-    tss  = 0.0
-    tvs  = 0.0
-    for i in range( size ):
-        t0 = 0.0
-        for j in range( size ):
-            t0 += dx[j] * hess[i,j]
-        vec.append( t0 - dg[i] )
-        tvv += vec[i] * vec[i]
-        tss += dx[i] * dx[i]
-        tvs += vec[i] * dx[i]
-    ph = tvs * tvs / ( tvv * tss )
-    t0 = tss * tss
-    for i in range( size ):
-        for j in range( size ):
-            hess[i,j] += - ph * ( vec[i] * vec[j] / tvs ) + \
-                    ( 1.0 - ph ) * ( dx[i] * dx[j] * tvs / t0 - ( vec[i] * dx[j] + vec[j] * dx[i] ) / tss )
+    #size = hess.shape[0]
+    #vec  = []
+    #tvv  = 0.0
+    #tss  = 0.0
+    #tvs  = 0.0
+    #for i in range( size ):
+    #    t0 = 0.0
+    #    for j in range( size ):
+    #        t0 += dx[j] * hess[i,j]
+    #    vec.append( t0 - dg[i] )
+    #    tvv += vec[i] * vec[i]
+    #    tss += dx[i] * dx[i]
+    #    tvs += vec[i] * dx[i]
+    #ph = tvs * tvs / ( tvv * tss )
+    #t0 = tss * tss
+    #for i in range( size ):
+    #    for j in range( size ):
+    #        hess[i,j] += - ph * ( vec[i] * vec[j] / tvs ) + \
+    #                ( 1.0 - ph ) * ( dx[i] * dx[j] * tvs / t0 - ( vec[i] * dx[j] + vec[j] * dx[i] ) / tss )
+    vec  = numpy.dot( hess, dx ) - dg
+    tvv  = numpy.dot( vec, vec )
+    tss  = numpy.dot( dx, dx )
+    tvs  = numpy.dot( vec, dx )
+    ph   = tvs * tvs / ( tvv * tss )
+    t0   = tss * tss
+    hess += - ph * numpy.outer( vec, vec ) / tvs + \
+            ( 1.0 - ph ) * ( numpy.outer( dx, dx ) * ( tvs / t0 ) - ( numpy.outer( vec, dx ) + numpy.outer( dx, vec ) ) / tss )
 
 
 

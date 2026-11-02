@@ -36,5 +36,5 @@ mol.engines["mm"] = qm3.engines.openmm.run( _sys, _top )
 qm3.actions.minimize.cgplus( mol )
 
 mol.get_grad()
-print( round( mol.func, 1 ), " / -33802.5" )
-print( round( numpy.linalg.norm( mol.grad ), 1 ), " / 104.4" )
+print( round( mol.func, 1 ), " / -34039.0" )
+print( round( numpy.linalg.norm( mol.grad ), 1 ), " / 113.6" )
