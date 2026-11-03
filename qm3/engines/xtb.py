@@ -56,7 +56,7 @@ class run( qm3.engines.template ):
         self.vla = []
         k = len( self.sel )
         for i in range( len( self.lnk ) ):
-            c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
+            c, v = qm3.engines.link_coor( self.lnk[i][0], self.lnk[i][1], mol )
             for j in [0, 1, 2]:
                 self.vec[l] = c[j]
                 l += 1
@@ -98,7 +98,7 @@ class run( qm3.engines.template ):
             l += 1
         l = 3 + self.nQM
         g = [ self.vec[l+j] for j in range( 3 * self.nQM ) ]
-        qm3.engines.Link_grad( self.vla, g )
+        qm3.engines.link_grad( self.vla, g )
         l = 0
         for i in self.sel:
             for j in [0, 1, 2]:

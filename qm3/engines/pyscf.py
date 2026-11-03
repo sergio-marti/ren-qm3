@@ -81,7 +81,7 @@ class run( qm3.engines.template ):
         if( len( self.lnk ) > 0 ):
             k = len( self.sel )
             for i in range( len( self.lnk ) ):
-                c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
+                c, v = qm3.engines.link_coor( self.lnk[i][0], self.lnk[i][1], mol )
                 aQM.atom += "%-2s%20.10lf%20.10lf%20.10lf\n"%( "H", c[0], c[1], c[2] )
                 self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, self.lnk[i][1], v ) )
                 k += 1
@@ -146,7 +146,7 @@ class run( qm3.engines.template ):
             mol.chrg[i] = chg[k]
             k += 1
         g = scf.Gradients().run( grid_response = True ).de.ravel().tolist()
-        qm3.engines.Link_grad( self.vla, g )
+        qm3.engines.link_grad( self.vla, g )
         k = 0
         for i in self.sel:
             for j in [0, 1, 2]:
@@ -221,7 +221,7 @@ try:
             if( len( self.lnk ) > 0 ):
                 k = len( self.sel )
                 for i in range( len( self.lnk ) ):
-                    c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
+                    c, v = qm3.engines.link_coor( self.lnk[i][0], self.lnk[i][1], mol )
                     aQM.atom += "%-2s%20.10lf%20.10lf%20.10lf\n"%( "H", c[0], c[1], c[2] )
                     self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, self.lnk[i][1], v ) )
                     k += 1
@@ -278,7 +278,7 @@ try:
             mol.func += out
             g = scf.nuc_grad_method().kernel().ravel().tolist()
             #g = scf.Gradients().run( grid_response = True ).de.ravel().tolist()
-            qm3.engines.Link_grad( self.vla, g )
+            qm3.engines.link_grad( self.vla, g )
             k = 0
             for i in self.sel:
                 for j in [0, 1, 2]:

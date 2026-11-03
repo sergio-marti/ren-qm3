@@ -37,7 +37,7 @@ class run( qm3.engines.template ):
             self.vla = []
             k = len( self.sel )
             for i in range( len( self.lnk ) ):
-                c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
+                c, v = qm3.engines.link_coor( self.lnk[i][0], self.lnk[i][1], mol )
                 s_qm += "%-2s%20.10lf%20.10lf%20.10lf\n"%( "H", c[0], c[1], c[2] )
                 self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, self.lnk[i][1], v ) )
                 k += 1
@@ -72,7 +72,7 @@ class run( qm3.engines.template ):
             out = float( t[1] ) * self.ce
             mol.func += out
             g = [ float( t[i] ) * self.cg for i in range( 2, 2 + n * 3 ) ]
-            qm3.engines.Link_grad( self.vla, g )
+            qm3.engines.link_grad( self.vla, g )
             k = 0
             for i in self.sel:
                 for j in [0, 1, 2]:

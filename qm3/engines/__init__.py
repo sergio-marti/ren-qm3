@@ -34,12 +34,12 @@ def exclusions( natm, bond, sele ):
     return( excl )
 
 
-def Link_coor( qm_i, mm_j, mol, dst = 1.1 ):
+def link_coor( qm_i, mm_j, mol, dst = 1.1 ):
     r = mol.coor[mm_j] - mol.coor[qm_i]
     return( mol.coor[qm_i] + r / numpy.linalg.norm( r ) * dst, r )
 
 
-def Link_grad( lnk, grd, dst = 1.1 ):
+def link_grad( lnk, grd, dst = 1.1 ):
     for qm_i, mm_j, mm_k, vec in lnk:
         r = numpy.linalg.norm( vec )
         u = vec / r

@@ -31,7 +31,7 @@ class run( qm3.engines.template ):
         if( len( self.lnk ) > 0 ):
             k = len( self.sel )
             for i in range( len( self.lnk ) ):
-                c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
+                c, v = qm3.engines.link_coor( self.lnk[i][0], self.lnk[i][1], mol )
                 buf += "%-2s%20.10lf%20.10lf%20.10lf\n"%( "H", c[0], c[1], c[2] )
                 self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, self.lnk[i][1], v ) )
                 k += 1
@@ -62,7 +62,7 @@ class run( qm3.engines.template ):
         if( len( self.lnk ) > 0 ):
             k = len( self.sel )
             for i in range( len( self.lnk ) ):
-                c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
+                c, v = qm3.engines.link_coor( self.lnk[i][0], self.lnk[i][1], mol )
                 crd.append( ( self.cx * c ).tolist() )
                 self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, self.lnk[i][1], v ) )
                 k += 1
@@ -89,7 +89,7 @@ class run( qm3.engines.template ):
         g, wfn = psi4.gradient( self.met, return_wfn = True, external_potentials = self.aMM )
         mol.func += psi4.variable( "CURRENT ENERGY" ) * self.ce
         g = ( self.cg * g.to_array() ).ravel()
-        qm3.engines.Link_grad( self.vla, g )
+        qm3.engines.link_grad( self.vla, g )
         k = 0
         for i in self.sel:
             for j in [0, 1, 2]:

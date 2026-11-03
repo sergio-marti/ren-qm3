@@ -90,7 +90,7 @@ class run( qm3.engines.template ):
         k = len( self.sel )
         self.vla = []
         for i in range( len( self.lnk ) ):
-            c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
+            c, v = qm3.engines.link_coor( self.lnk[i][0], self.lnk[i][1], mol )
             self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, self.lnk[i][1], v ) )
             qcrd[l,:] = c[:]
             l += 1
@@ -108,7 +108,7 @@ class run( qm3.engines.template ):
         out = func.value * self.ce
         mol.func += out
         qgrd = numpy.ctypeslib.as_array( qgrd, ( 3, self.nQM ) ).ravel() * self.cg
-        qm3.engines.Link_grad( self.vla, qgrd )
+        qm3.engines.link_grad( self.vla, qgrd )
         l = 0
         for i in self.sel:
             for j in [0, 1, 2]:

@@ -58,7 +58,7 @@ class run( object ):
         self.vla = []
         k = len( self.sel )
         for i in range( len( self.lnk ) ):
-            c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
+            c, v = qm3.engines.link_coor( self.lnk[i][0], self.lnk[i][1], mol )
             for j in [0, 1, 2]:
                 self.vec[l] = c[j]
                 l += 1
@@ -78,7 +78,7 @@ class run( object ):
         self.lib.qm3_dftd4_calc_( ctypes.c_int( self.all ), ctypes.c_int( self.siz ), self.vec )
         mol.func += self.vec[0]
         g = [ j for j in self.vec[1:] ]
-        qm3.engines.Link_grad( self.vla, g )
+        qm3.engines.link_grad( self.vla, g )
         l = 0
         for i in self.sel:
             for j in [0, 1, 2]:
@@ -121,7 +121,7 @@ try:
             self.vla = []
             k = len( self.sel )
             for i in range( len( self.lnk ) ):
-                c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
+                c, v = qm3.engines.link_coor( self.lnk[i][0], self.lnk[i][1], mol )
                 crd.append( c * self.cx )
                 anu.append( 1 )
                 self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, self.lnk[i][1], v ) )
@@ -142,7 +142,7 @@ try:
             self.vla = []
             k = len( self.sel )
             for i in range( len( self.lnk ) ):
-                c, v = qm3.engines.Link_coor( self.lnk[i][0], self.lnk[i][1], mol )
+                c, v = qm3.engines.link_coor( self.lnk[i][0], self.lnk[i][1], mol )
                 crd.append( c * self.cx )
                 self.vla.append( ( self.sel.searchsorted( self.lnk[i][0] ), k, self.lnk[i][1], v ) )
                 k += 1
@@ -163,7 +163,7 @@ try:
             ene = float( out["energy"] ) * self.ce
             mol.func += ene
             g = out["gradient"].ravel() * self.cg
-            qm3.engines.Link_grad( self.vla, g )
+            qm3.engines.link_grad( self.vla, g )
             l = 0
             for i in self.sel:
                 for j in [0, 1, 2]:
