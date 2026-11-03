@@ -24,8 +24,6 @@ class run( qm3.engines.template ):
 
 
     def mk_input( self, mol, run ):
-        if( self.img ):
-            cen = numpy.mean( mol.coor[self.sel], axis = 0 )
         s_qm = ""
         for i in self.sel:
             s_qm += "%2s%20.10lf%20.10lf%20.10lf\n"%( qm3.data.symbol[mol.anum[i]],

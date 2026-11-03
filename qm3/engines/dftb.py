@@ -69,22 +69,18 @@ class run( qm3.engines.template ):
         s_nq = ""
         if( len( self.nbn ) > 0 ):
             s_nq = str( len( self.nbn ) )
-            g = open( "charges.dat", "wt" )
-            for i, tmp in zip( self.nbn, self.img_coor( mol ) ):
-                g.write( "%20.10lf%20.10lf%20.10lf%12.6lf\n"%( tmp[0], tmp[1], tmp[2], mol.chrg[i] ) )
-            g.close()
-        f = open( "dftb_in.hsd", "wt" )
-        buf = self.inp.replace( "qm3_atoms", s_qm[:-1] )
-        buf = buf.replace( "qm3_guess", s_wf )
-        buf = buf.replace( "qm3_job", s_rn )
-        buf = buf.replace( "qm3_nchg", s_nq )
-        f.write( buf )
-        f.close()
+            with open( "charges.dat", "wt" ) as f:
+                for i, tmp in zip( self.nbn, self.img_coor( mol ) ):
+                    f.write( "%20.10lf%20.10lf%20.10lf%12.6lf\n"%( tmp[0], tmp[1], tmp[2], mol.chrg[i] ) )
+        with open( "dftb_in.hsd", "wt" ) as f:
+            buf = self.inp.replace( "qm3_atoms", s_qm[:-1] )
+            buf = buf.replace( "qm3_guess", s_wf )
+            buf = buf.replace( "qm3_job", s_rn )
+            buf = buf.replace( "qm3_nchg", s_nq )
+            f.write( buf )
 
 
     def update_coor( self, mol ):
-        if( self.img ):
-            cen = numpy.mean( mol.coor[self.sel], axis = 0 )
         l = 0
         for i in self.sel:
             for j in [0, 1, 2]:
@@ -112,10 +108,7 @@ class run( qm3.engines.template ):
         self.update_coor( mol )
         self.lib.qm3_dftb_calc_( ctypes.c_int( self.nQM ), ctypes.c_int( self.nMM ), ctypes.c_int( self.siz ), self.vec )
         mol.func += self.vec[0]
-        l = 1
-        for i in self.sel:
-            mol.chrg[i] = self.vec[l]
-            l += 1
+        mol.chrg[self.sel] = self.vec[1 : 1 + len( self.sel )]
         return( self.vec[0] )
 
 
@@ -136,9 +129,7 @@ class run( qm3.engines.template ):
                 mol.grad[i,j] += g[l]
                 l += 1
         for qm_i, mm_j, mm_k, vec in self.vla:
-            j3 = mm_j * 3
-            for j in [0, 1, 2]:
-                mol.grad[mm_k,j] += g[j3+j]
+            mol.grad[mm_k] += g[3*mm_j : 3*mm_j+3]
         l = 1 + 4 * self.nQM
         for i in self.nbn:
             for j in [0, 1, 2]:

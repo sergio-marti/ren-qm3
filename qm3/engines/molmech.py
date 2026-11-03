@@ -451,12 +451,12 @@ class run( object ):
     def get_func( self, mol: object,
             epsilon: typing.Optional[float] = 1.0,
             qprint: typing.Optional[bool] = False ):
-        self.__calculate( mol, epsilon, False, qprint )
+        return( sum( self.__calculate( mol, epsilon, False, qprint ) ) )
 
     def get_grad( self, mol: object,
             epsilon: typing.Optional[float] = 1.0,
             qprint: typing.Optional[bool] = False ):
-        self.__calculate( mol, epsilon, True, qprint )
+        return( sum( self.__calculate( mol, epsilon, True, qprint ) ) )
 
 
     def system_write( self, mol:object, fdsc: typing.IO ):

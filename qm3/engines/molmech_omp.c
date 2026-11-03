@@ -149,6 +149,7 @@ static PyObject* w_update_non_bonded( PyObject *self, PyObject *args ) {
         Py_DECREF( otmp );
 
         otmp = PyObject_GetAttrString( molecule, "coor" );
+        //mtmp = (PyArrayObject*) PyArray_FROM_OTF( otmp, NPY_DOUBLE, NPY_ARRAY_C_CONTIGUOUS );
         mtmp = (PyArrayObject*) PyArray_FROM_OT( otmp, NPY_DOUBLE );
         siz  = PyArray_SHAPE( mtmp );
         xyz  = (double*) malloc( siz[0] * siz[1] * sizeof( double ) );
@@ -158,6 +159,7 @@ static PyObject* w_update_non_bonded( PyObject *self, PyObject *args ) {
                 xyz[k++] = *itm;
             }
         }
+        //memcpy( xyz, PyArray_DATA( mtmp ), 3 * nat * sizeof( double ) );
         Py_DECREF( mtmp );
         Py_DECREF( otmp );
 
@@ -882,14 +884,16 @@ static PyObject* w_energy_non_bonded( PyObject *self, PyObject *args ) {
                     qij = dat[3*ii+2] * dat[3*jj+2] * epsf * qms[ii] * qms[jj];
                     r   = sqrt( r2 );
                     s   = 1.0 / r;
-                    s3  = pow( sij * s, 3.0 );
+                    //s3  = pow( sij * s, 3.0 );
+                    s3  = sij * s; s3 = s3 * s3 * s3;
                     s6  = s3 * s3;
                     
                     if( r2 <= c2on ) {
                         tmp = qij * s;
                         oel += scl[_i] * ( tmp + qij * _el1 );
                         s12  = s6 * s6;
-                        _lj1 = pow( sij / cof * sij / con, 3.0 );
+                        //_lj1 = pow( sij / cof * sij / con, 3.0 );
+                        _lj1 = sij * sij / ( con * cof ); _lj1 = _lj1 * _lj1 * _lj1;
                         _lj2 = _lj1 * _lj1;
                         olj += scl[_i] * eij * ( ( s12 - _lj2 ) - 2.0 * ( s6 - _lj1 ) );
                         df   = ( 12.0 * eij * ( s6 - s12 ) - tmp ) / r2;
@@ -897,9 +901,12 @@ static PyObject* w_energy_non_bonded( PyObject *self, PyObject *args ) {
                         r3   = r * r2;
                         r5   = r3 * r2;
                         oel += scl[_i] * qij * ( _a * s - _b * r - _c * r3 - _d * r5 + _el2 );
-                        _lj1 = pow( sij / cof, 3.0 );
+                        //_lj1 = pow( sij / cof, 3.0 );
+                        _lj1 = sij / cof; _lj1 = _lj1 * _lj1 * _lj1;
                         _lj2 = _lj1 * _lj1;
-                        olj += scl[_i] * eij * ( k12 * pow( s6 - _lj2, 2.0 ) - 2.0 * k6 * pow( s3 - _lj1, 2.0 ) );
+                        //olj += scl[_i] * eij * ( k12 * pow( s6 - _lj2, 2.0 ) - 2.0 * k6 * pow( s3 - _lj1, 2.0 ) );
+                        tmp  = s6 - _lj2;
+                        olj += scl[_i] * eij * ( k12 * tmp * tmp - 2.0 * k6 * ( s3 - _lj1 ) * ( s3 - _lj1 ) );
                         df   = - qij * ( _a / r3 + _b * s + 3.0 * _c * r + 5.0 * _d * r3 ) ;
                         df  -= 12.0 * eij * ( k12 * s6 * ( s6 - _lj2 ) - k6 * s3 * ( s3 - _lj1 ) ) / r2;
                     }
@@ -933,7 +940,8 @@ static PyObject* w_energy_non_bonded( PyObject *self, PyObject *args ) {
                     sij = dat[3*ii+1] + dat[3*jj+1];
                     qij = dat[3*ii+2] * dat[3*jj+2] * epsf * qms[ii] * qms[jj];
                     s   = 1.0 / sqrt( r2 );
-                    s6  = pow( sij * s, 6.0 );
+                    //s6  = pow( sij * s, 6.0 );
+                    s6  = sij * s; s6 = s6 * s6; s6 = s6 * s6 * s6;
                     tmp = qij * s;
                     oel += scl[_i] * tmp;
                     olj += scl[_i] * eij * s6 * ( s6 - 2.0 );

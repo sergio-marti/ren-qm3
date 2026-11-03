@@ -3,9 +3,7 @@ import  typing
 
 
 def exclusions( natm, bond, sele ):
-    conn = []
-    for i in range( natm ):
-        conn.append( [] )
+    conn = [ [] for i in range( natm ) ]
     for i,j in bond:
         conn[i].append( j )
         conn[j].append( i )
@@ -14,17 +12,23 @@ def exclusions( natm, bond, sele ):
     nx13 = 0
     nx14 = 0
     for i in numpy.flatnonzero( sele.ravel() ):
+        seen12 = set()
+        seen13 = set()
+        seen14 = set()
         for j in conn[i]:
-            if( j != i and not sele[j] ):
-                excl.append( [ i, j, 0.0 ] )
+            if( j != i and j not in seen12 and not sele[j] ):
+                seen12.add( j )
+                excl.append( [ int( i ), j, 0.0 ] )
                 nx12 += 1
             for k in conn[j]:
-                if( k != i and not sele[k] ):
-                    excl.append( [ i, k, 0.0 ] )
+                if( k != i and k not in seen12 and k not in seen13 and not sele[k] ):
+                    seen13.add( k )
+                    excl.append( [ int( i ), k, 0.0 ] )
                     nx13 += 1
                 for l in conn[k]:
-                    if( k != i and l != j and l != i and not sele[l] ):
-                        excl.append( [ i, l, 0.5 ] )
+                    if( k != i and l != j and l != i and l not in seen12 and l not in seen13 and l not in seen14 and not sele[l] ):
+                        seen14.add( l )
+                        excl.append( [ int( i ), l, 0.5 ] )
                         nx14 += 1
     print( ">> %d exclusions generated (1-2:%d, 1-3:%d, 1-4:%d)"%( nx12 + nx13 + nx14, nx12, nx13, nx14 ) )
     return( excl )
@@ -90,7 +94,7 @@ class template( object ):
 
 
     def img_init( self, mol: object,
-            cen: typing.Optional[numpy.array] = numpy.array( [] ),
+            cen: typing.Optional[numpy.array] = None,
             img_file: typing.Optional[str] = "img_cell.npy" ):
         self.img = True
         try:
@@ -98,7 +102,7 @@ class template( object ):
             print( "minumum image info loaded from:", img_file )
         except:
             crd = mol.coor[self.nbn].copy()
-            if( cen.shape[0] != 3 ):
+            if( cen is None or cen.shape[0] != 3 ):
                 cen = numpy.mean( mol.coor[self.sel], axis = 0 )
             self.img_cell = numpy.round( ( crd - cen ) / mol.boxl, 0 )
             numpy.save( img_file, self.img_cell )

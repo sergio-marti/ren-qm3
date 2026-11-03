@@ -294,7 +294,7 @@ __global__ void k_enonbonded_cut(
     double qij = dat[3*ii+2] * dat[3*jj+2] * epsf * qms[ii] * qms[jj];
 
     double r  = sqrt(r2), s = 1.0/r;
-    double s3 = (sij*s)*(sij*s)*(sij*s);
+    double ss = sij*s, s3 = ss*ss*ss, s6 = s3*s3, s12 = s6*s6;
     double s6 = s3*s3, s12 = s6*s6;
 
     double _oel = 0.0, _olj = 0.0, df = 0.0, tmp = 0.0;
@@ -302,14 +302,14 @@ __global__ void k_enonbonded_cut(
     if (r2 <= c2on) {
         tmp  = qij * s;
         _oel = scl[i] * (tmp + qij * _el1);
-        double _lj1 = (sij/cof)*(sij/con)*(sij/cof)*(sij/con)*(sij/cof)*(sij/con);
+        double _lj1 = (sij*sij) / (con*cof); _lj1 = _lj1 * _lj1 * _lj1;
         double _lj2 = _lj1 * _lj1;
         _olj = scl[i] * eij * ((s12 - _lj2) - 2.0 * (s6 - _lj1));
         df   = (12.0 * eij * (s6 - s12) - tmp) / r2;
     } else {
         double r3 = r*r2, r5 = r3*r2;
         _oel = scl[i] * qij * (_a*s - _b*r - _c*r3 - _d*r5 + _el2);
-        double _lj1 = (sij/cof)*(sij/cof)*(sij/cof);
+        double _lj1 = sij/cof; _lj1 = _lj1 * _lj1 * _lj1;
         double _lj2 = _lj1 * _lj1;
         _olj = scl[i] * eij * (k12*(s6-_lj2)*(s6-_lj2) - 2.0*k6*(s3-_lj1)*(s3-_lj1));
         df   = -qij * (_a/r3 + _b*s + 3.0*_c*r + 5.0*_d*r3);
@@ -362,7 +362,7 @@ __global__ void k_enonbonded_nocut(
     double qij = dat[3*ii+2] * dat[3*jj+2] * epsf * qms[ii] * qms[jj];
 
     double s  = 1.0 / sqrt(r2);
-    double s6 = (sij*s)*(sij*s)*(sij*s)*(sij*s)*(sij*s)*(sij*s);
+    double ss = sij * s, s3 = ss*ss*ss, s6 = s3*s3;
     double tmp = qij * s;
 
     out_oel[i] = scl[i] * tmp;
@@ -605,10 +605,12 @@ static PyObject* w_update_non_bonded(PyObject *self, PyObject *args) {
 
         otmp = PyObject_GetAttrString(molecule, "coor");
         mtmp = (PyArrayObject*) PyArray_FROM_OT(otmp, NPY_DOUBLE);
+        //mtmp = (PyArrayObject*) PyArray_FROM_OTF(otmp, NPY_DOUBLE, NPY_ARRAY_C_CONTIGUOUS);
         siz  = PyArray_SHAPE(mtmp);
         xyz  = (double*) malloc(siz[0] * siz[1] * sizeof(double));
         for (k = 0, i = 0; i < siz[0]; i++)
             for (j = 0; j < siz[1]; j++) { itm = (double*) PyArray_GETPTR2(mtmp, i, j); xyz[k++] = *itm; }
+        //memcpy(xyz, PyArray_DATA(mtmp), siz[0] * siz[1] * sizeof(double));
         Py_DECREF(mtmp); Py_DECREF(otmp);
 
         otmp = PyObject_GetAttrString(object, "qmat");

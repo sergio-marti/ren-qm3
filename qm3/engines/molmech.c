@@ -239,6 +239,7 @@ static PyObject* w_update_non_bonded( PyObject *self, PyObject *args ) {
 
         otmp = PyObject_GetAttrString( molecule, "coor" );
         mtmp = (PyArrayObject*) PyArray_FROM_OT( otmp, NPY_DOUBLE );
+        //mtmp = (PyArrayObject*) PyArray_FROM_OTF( otmp, NPY_DOUBLE, NPY_ARRAY_C_CONTIGUOUS );
         siz  = PyArray_SHAPE( mtmp );
         xyz  = (double*) malloc( siz[0] * siz[1] * sizeof( double ) );
         for( k = 0, i = 0; i < siz[0]; i++ ) {
@@ -247,6 +248,7 @@ static PyObject* w_update_non_bonded( PyObject *self, PyObject *args ) {
                 xyz[k++] = *itm;
             }
         }
+        //memcpy( xyz, PyArray_DATA( mtmp ), 3 * nat * sizeof( double ) );
         Py_DECREF( mtmp );
         Py_DECREF( otmp );
 
@@ -924,7 +926,7 @@ void* __energy_non_bonded( void *args ) {
     double      epsf = 1389.35484620709144110151 / arg->eps;
     long        i, j, ii, jj, ai, aj;
     double      dr[3], r2, eij, sij, qij, r, s6, tmp, df;
-    double      c2on, c2of, _g, _a, _b, _c, _d, _el1, _el2, k6, k12, _lj1, _lj2, r3, r5, s, s3, s12;
+    double      c2on, c2of, _g, _a, _b, _c, _d, _el1, _el2, k6, k12, _lj1, _lj2, r3, r5, s, s3, s12, s3t;
 
     if( arg->con > 0.0 && arg->cof > arg->con ) {
         // atom-based force-switched
@@ -953,13 +955,15 @@ void* __energy_non_bonded( void *args ) {
             qij = arg->dat[3*ii+2] * arg->dat[3*jj+2] * epsf * arg->qms[ii] * arg->qms[jj];
             r   = sqrt( r2 );
             s   = 1.0 / r;
-            s3  = pow( sij * s, 3.0 );
+            //s3  = pow( sij * s, 3.0 );
+            s3  = sij * s; s3 = s3 * s3 * s3;
             s6  = s3 * s3;
             if( r2 <= c2on ) {
                 tmp = qij * s;
                 arg->ele += arg->scl[i] * ( tmp + qij * _el1 );
                 s12  = s6 * s6;
-                _lj1 = pow( sij / arg->cof * sij / arg->con, 3.0 );
+                //_lj1 = pow( sij / arg->cof * sij / arg->con, 3.0 );
+                _lj1 = sij * sij / ( arg->con * arg->cof ); _lj1 = _lj1 * _lj1 * _lj1;
                 _lj2 = _lj1 * _lj1;
                 arg->vdw += arg->scl[i] * eij * ( ( s12 - _lj2 ) - 2.0 * ( s6 - _lj1 ) );
                 df   = ( 12.0 * eij * ( s6 - s12 ) - tmp ) / r2;
@@ -967,9 +971,12 @@ void* __energy_non_bonded( void *args ) {
                 r3   =  r * r2;
                 r5   = r3 * r2;
                 arg->ele += arg->scl[i] * qij * ( _a * s - _b * r - _c * r3 - _d * r5 + _el2 );
-                _lj1 = pow( sij / arg->cof, 3.0 );
+                //_lj1 = pow( sij / arg->cof, 3.0 );
+                _lj1 = sij / arg->cof; _lj1 = _lj1 * _lj1 * _lj1;
                 _lj2 = _lj1 * _lj1;
-                arg->vdw += arg->scl[i] * eij * ( k12 * pow( s6 - _lj2, 2.0 ) - 2.0 * k6 * pow( s3 - _lj1, 2.0 ) );
+                //arg->vdw += arg->scl[i] * eij * ( k12 * pow( s6 - _lj2, 2.0 ) - 2.0 * k6 * pow( s3 - _lj1, 2.0 ) );
+                tmp  = s6 - _lj2;
+                arg->vdw += arg->scl[i] * eij * ( k12 * tmp * tmp - 2.0 * k6 * ( s3 - _lj1 ) * ( s3 - _lj1 ) );
                 df   = - qij * ( _a / r3 + _b * s + 3.0 * _c * r + 5.0 * _d * r3 ) ;
                 df  -= 12.0 * eij * ( k12 * s6 * ( s6 - _lj2 ) - k6 * s3 * ( s3 - _lj1 ) ) / r2;
             }
@@ -995,7 +1002,10 @@ void* __energy_non_bonded( void *args ) {
             sij = arg->dat[3*ii+1] + arg->dat[3*jj+1];
             qij = arg->dat[3*ii+2] * arg->dat[3*jj+2] * epsf * arg->qms[ii] * arg->qms[jj];
             s   = 1.0 / sqrt( r2 );
-            s6  = pow( sij * s, 6.0 );
+            //s6  = pow( sij * s, 6.0 );
+            s3t = sij * s;
+            s3t = s3t * s3t * s3t;
+            s6  = s3t * s3t;
             tmp = qij * s;
             arg->ele += arg->scl[i] * tmp;
             arg->vdw += arg->scl[i] * eij * s6 * ( s6 - 2.0 );

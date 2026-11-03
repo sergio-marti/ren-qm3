@@ -173,19 +173,19 @@ const char* ocl_source =
 "    double sij = dat[3*ii+1] + dat[3*jj+1];\n"
 "    double qij = dat[3*ii+2] * dat[3*jj+2] * epsf * qms[ii] * qms[jj];\n"
 "    double r = sqrt(r2), s = 1.0/r;\n"
-"    double s3 = (sij*s)*(sij*s)*(sij*s), s6 = s3*s3, s12 = s6*s6;\n"
+"    double ss = sij*s, s3 = ss*ss*ss, s6 = s3*s3, s12 = s6*s6;\n"
 "    double _oel=0.0, _olj=0.0, df=0.0, tmp=0.0;\n"
 "    if (r2 <= c2on) {\n"
 "        tmp = qij * s;\n"
 "        _oel = scl[i] * (tmp + qij * _el1);\n"
-"        double _lj1 = (sij/cof)*(sij/con)*(sij/cof)*(sij/con)*(sij/cof)*(sij/con);\n"
+"        double _lj1 = (sij*sij) / (con*cof); _lj1 = _lj1*_lj1*_lj1;\n"
 "        double _lj2 = _lj1 * _lj1;\n"
 "        _olj = scl[i] * eij * ((s12 - _lj2) - 2.0 * (s6 - _lj1));\n"
 "        df = (12.0 * eij * (s6 - s12) - tmp) / r2;\n"
 "    } else {\n"
 "        double r3 = r*r2, r5 = r3*r2;\n"
 "        _oel = scl[i] * qij * (_a*s - _b*r - _c*r3 - _d*r5 + _el2);\n"
-"        double _lj1 = (sij/cof)*(sij/cof)*(sij/cof);\n"
+"        double _lj1 = sij/cof; _lj1 = _lj1*_lj1*_lj1;\n"
 "        double _lj2 = _lj1 * _lj1;\n"
 "        _olj = scl[i] * eij * (k12 * (s6-_lj2)*(s6-_lj2) - 2.0 * k6 * (s3-_lj1)*(s3-_lj1));\n"
 "        df = -qij * (_a/r3 + _b*s + 3.0*_c*r + 5.0*_d*r3);\n"
@@ -217,7 +217,7 @@ const char* ocl_source =
 "    double sij = dat[3*ii+1] + dat[3*jj+1];\n"
 "    double qij = dat[3*ii+2] * dat[3*jj+2] * epsf * qms[ii] * qms[jj];\n"
 "    double s = 1.0 / sqrt(r2);\n"
-"    double s6 = (sij*s)*(sij*s)*(sij*s)*(sij*s)*(sij*s)*(sij*s);\n"
+"    double ss = sij * s, s3 = ss*ss*ss, s6 = s3*s3;\n"
 "    double tmp = qij * s;\n"
 "    out_oel[i] = scl[i] * tmp;\n"
 "    out_olj[i] = scl[i] * eij * s6 * (s6 - 2.0);\n"
@@ -408,11 +408,13 @@ static PyObject* w_update_non_bonded( PyObject *self, PyObject *args ) {
 
         otmp = PyObject_GetAttrString( molecule, "coor" );
         mtmp = (PyArrayObject*) PyArray_FROM_OT( otmp, NPY_DOUBLE );
+        //mtmp = (PyArrayObject*) PyArray_FROM_OTF( otmp, NPY_DOUBLE, NPY_ARRAY_C_CONTIGUOUS );
         siz  = PyArray_SHAPE( mtmp );
         xyz  = (double*) malloc( siz[0] * siz[1] * sizeof( double ) );
         for( k = 0, i = 0; i < siz[0]; i++ ) {
             for( j = 0; j < siz[1]; j++ ) { itm = (double*) PyArray_GETPTR2( mtmp, i, j ); xyz[k++] = *itm; }
         }
+        //memcpy( xyz, PyArray_DATA( mtmp ), siz[0] * siz[1] * sizeof( double ) );
         Py_DECREF( mtmp ); Py_DECREF( otmp );
 
         otmp = PyObject_GetAttrString( object, "qmat" );

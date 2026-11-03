@@ -51,7 +51,7 @@ static int MMINT__init( oMMINT *self, PyObject *args, PyObject *kwds ) {
             if( n_ex > 0 ) {
                 e_qm = (long*) malloc( n_ex * sizeof( long ) );
                 e_mm = (long*) malloc( n_ex * sizeof( long ) );
-                e_sc = (double*) malloc( n_ex * sizeof( long ) );
+                e_sc = (double*) malloc( n_ex * sizeof( double ) );
                 for( i = 0; i < n_ex; i++ ) {
                     tmp = PyList_GetItem( o_ex, i );
                     e_qm[i] = PyLong_AsLong( PyList_GetItem( tmp, 0 ) );

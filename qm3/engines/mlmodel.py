@@ -105,10 +105,11 @@ class run( torch.nn.Module ):
         return( out )
 
     def get_func( self, mol ) -> float:
-        crd = torch.tensor( mol.coor[self.sel], dtype=torch.float32, device=self.dev ).unsqueeze( 0 )
-        inp = xcoul_info( crd, self.env )
-        tmp = ( self.dsp[1] - self.dsp[0] ) / 2.0
-        out = ( float( self( inp ).detach().numpy().ravel()[0] ) + 1.0 ) * tmp + self.dsp[0]
+        with torch.no_grad():
+            crd = torch.tensor( mol.coor[self.sel], dtype=torch.float32, device=self.dev ).unsqueeze( 0 )
+            inp = xcoul_info( crd, self.env )
+            tmp = ( self.dsp[1] - self.dsp[0] ) / 2.0
+            out = ( float( self( inp ).detach().numpy().ravel()[0] ) + 1.0 ) * tmp + self.dsp[0]
         mol.func += out
         return( out )
 
@@ -265,17 +266,18 @@ class run_egnn(torch.nn.Module):
         return self.net(atom_types, coordinates)
 
     def get_func(self, mol) -> float:
-        crd = torch.tensor(mol.coor[self.sel], dtype=torch.float32, device=self.dev).unsqueeze(0)
-        atom_types = self.anu.unsqueeze(0)
-        out = self.net(atom_types, crd)
-        # --------------------------------------------------------------------------------------
-        # -- ( ene - min[0] ) / ( max[1] - min[0] ) * 2.0 - 1.0
-        #tmp = (self.dsp[1] - self.dsp[0]) / 2.0
-        #energy_val = (float(out.detach().cpu().numpy().ravel()[0]) + 1.0) * tmp + self.dsp[0]
-        # --------------------------------------------------------------------------------------
-        # -- ( ene - mean[0] ) / std[1]
-        energy_val = float(out.detach().cpu().numpy().ravel()[0]) * self.dsp[1] + self.dsp[0]
-        # --------------------------------------------------------------------------------------
+        with torch.no_grad():
+            crd = torch.tensor(mol.coor[self.sel], dtype=torch.float32, device=self.dev).unsqueeze(0)
+            atom_types = self.anu.unsqueeze(0)
+            out = self.net(atom_types, crd)
+            # --------------------------------------------------------------------------------------
+            # -- ( ene - min[0] ) / ( max[1] - min[0] ) * 2.0 - 1.0
+            #tmp = (self.dsp[1] - self.dsp[0]) / 2.0
+            #energy_val = (float(out.detach().cpu().numpy().ravel()[0]) + 1.0) * tmp + self.dsp[0]
+            # --------------------------------------------------------------------------------------
+            # -- ( ene - mean[0] ) / std[1]
+            energy_val = float(out.detach().cpu().numpy().ravel()[0]) * self.dsp[1] + self.dsp[0]
+            # --------------------------------------------------------------------------------------
         mol.func += energy_val
         return energy_val
 

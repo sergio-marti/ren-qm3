@@ -54,15 +54,14 @@ class run( qm3.engines.template ):
         s_wf = ""
         if( os.access( "gauss.chk", os.R_OK ) ):
             s_wf = "guess=(read)"
-        f = open( "gauss.com", "wt" )
-        buf = self.inp.replace( "qm3_atoms", s_qm[:-1] )
-        buf = buf.replace( "qm3_job", s_rn )
-        buf = buf.replace( "qm3_guess", s_wf )
-        buf = buf.replace( "qm3_charges", s_mm[:-1] )
-        buf = buf.replace( "qm3_field", s_nq[:-1] )
-        f.write( buf )
-        f.write( "\n\n\n\n\n" )
-        f.close()
+        with open( "gauss.com", "wt" ) as f:
+            buf = self.inp.replace( "qm3_atoms", s_qm[:-1] )
+            buf = buf.replace( "qm3_job", s_rn )
+            buf = buf.replace( "qm3_guess", s_wf )
+            buf = buf.replace( "qm3_charges", s_mm[:-1] )
+            buf = buf.replace( "qm3_field", s_nq[:-1] )
+            f.write( buf )
+            f.write( "\n\n\n\n\n" )
 
 
     def parse_log( self, mol, run ):
@@ -90,9 +89,7 @@ class run( qm3.engines.template ):
                         mol.grad[i,j] += g[k]
                         k += 1
                 for qm_i, mm_j, mm_k, vec in self.vla:
-                    j3 = mm_j * 3
-                    for j in [0, 1, 2]:
-                        mol.grad[mm_k,j] += g[j3+j]
+                    mol.grad[mm_k] += g[3*mm_j : 3*mm_j+3]
                 # read hessian (columns)
                 if( run == "hess" ):
                     l = fd.readline()

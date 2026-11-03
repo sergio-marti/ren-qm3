@@ -51,7 +51,7 @@ static int QMLJ__init( oQMLJ *self, PyObject *args, PyObject *kwds ) {
             if( n_ex > 0 ) {
                 e_qm = (long*) malloc( n_ex * sizeof( long ) );
                 e_mm = (long*) malloc( n_ex * sizeof( long ) );
-                e_sc = (double*) malloc( n_ex * sizeof( long ) );
+                e_sc = (double*) malloc( n_ex * sizeof( double ) );
                 for( i = 0; i < n_ex; i++ ) {
                     tmp = PyList_GetItem( o_ex, i );
                     e_qm[i] = PyLong_AsLong( PyList_GetItem( tmp, 0 ) );
@@ -135,6 +135,7 @@ static PyObject* QMLJ__get_func( PyObject *self, PyObject *args ) {
 
         o_coor = PyObject_GetAttrString( o_mol, "coor" );
         m_coor = (PyArrayObject*) PyArray_FROM_OT( o_coor, NPY_DOUBLE );
+        //m_coor = (PyArrayObject*) PyArray_FROM_OTF( o_coor, NPY_DOUBLE, NPY_ARRAY_C_CONTIGUOUS );
         coor = (double*) malloc( 3 * obj->natm * sizeof( double ) );
         for( k = 0, i = 0; i < obj->natm; i++ ) {
             for( j = 0; j < 3; j++ ) {
@@ -142,6 +143,7 @@ static PyObject* QMLJ__get_func( PyObject *self, PyObject *args ) {
                 coor[k++] = *itm;
             }
         }
+        //memcpy( coor, PyArray_DATA( m_coor ), 3 * obj->natm * sizeof( double ) );
         Py_DECREF( m_coor );
         Py_DECREF( o_coor );
 
