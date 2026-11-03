@@ -103,9 +103,9 @@ class run( qm3.engines.template ):
         if( not bool( self.opt.get( "df", True ) ) ):
             dft.direct_scf = True
         if( len( self.nbn ) > 0 ):
-            crd = self.img_coor( mol ) * self.cx
+            crd = self.img_coor( mol )
             chg = mol.chrg[self.nbn] + self.__dq[self.nbn]
-            scf = pyscf.qmmm.mm_charge( dft, crd, chg, unit = "Bohr" )
+            scf = pyscf.qmmm.mm_charge( dft, crd, chg, unit = "Angstrom" )
         else:
             scf = dft
         pyscf.lib.num_threads( self.opt["nproc"] )
@@ -119,8 +119,7 @@ class run( qm3.engines.template ):
             self.__chk_save()
         else:
             self.__dm = None
-            print( ">> pyscf SCF did not converge (%d cycles, conv_tol %g)"%(
-                    scf.max_cycle, scf.conv_tol ) )
+            print( ">> pyscf SCF did not converge (%d cycles, conv_tol %g)"%( scf.max_cycle, scf.conv_tol ) )
         return( out )
 
 
@@ -146,6 +145,7 @@ class run( qm3.engines.template ):
             mol.chrg[i] = chg[k]
             k += 1
         g = scf.Gradients().run( grid_response = True ).de.ravel().tolist()
+        #g = scf.nuc_grad_method().run( grid_response = True ).de.ravel().tolist()
         qm3.engines.link_grad( self.vla, g )
         k = 0
         for i in self.sel:
