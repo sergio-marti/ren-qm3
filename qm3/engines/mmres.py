@@ -485,7 +485,7 @@ class colvar_s( object ):
         dels = cval / self.nwin
         print( "Colective variable s range: [%.3lf - %.3lf: %.6lf]"%( 0.0, cval, dels ) )
         # ----------------------------------------------------
-        numpy.savetxt( str_crd, self.rcrd, fmt = "%12.4lf" )
+        numpy.savetxt( str_crd, self.rcrd, fmt = "%16.8lf" )
         return( self.delz, dels, self.arcl )
 
 
@@ -515,7 +515,8 @@ class colvar_s( object ):
         for i in range( self.nwin ):
             vec = ( ccrd - self.rcrd[i] ).reshape( ( self.ncrd, 1 ) )
             cdst[i] = math.sqrt( qm3.utils.to_float( numpy.dot( vec.T, numpy.dot( imet, vec ) ) ) )
-        cexp = numpy.exp( - cdst / self.delz )
+        #cexp = numpy.exp( - cdst / self.delz )
+        cexp = numpy.exp( - ( cdst - numpy.min( cdst ) ) / self.delz )
         cval = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp ) / cexp.sum()
         out  = 0.5 * self.kumb * math.pow( cval - self.xref, 2.0 )
         mol.func += out
@@ -529,10 +530,12 @@ class colvar_s( object ):
         for i in range( self.nwin ):
             vec = ( ccrd - self.rcrd[i] ).reshape( ( self.ncrd, 1 ) )
             mat = numpy.dot( imet, vec )
-            cdst[i] = math.sqrt( qm3.utils.to_float( numpy.dot( vec.T, mat ) ) )
+            #cdst[i] = math.sqrt( qm3.utils.to_float( numpy.dot( vec.T, mat ) ) )
+            cdst[i] = math.sqrt( max( qm3.utils.to_float( numpy.dot( vec.T, mat ) ), 1.e-12 ) )
             #jder[i] = 0.5 * ( numpy.dot( mat.T, jaco ) + numpy.dot( vec.T, numpy.dot( imet, jaco ) ) ).ravel() / cdst[i]
             jder[i] = numpy.dot( vec.T, numpy.dot( imet, jaco ) ).ravel() / cdst[i]
-        cexp = numpy.exp( - cdst / self.delz )
+        #cexp = numpy.exp( - cdst / self.delz )
+        cexp = numpy.exp( - ( cdst - numpy.min( cdst ) ) / self.delz )
         sumd = cexp.sum()
         cval = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp ) / sumd
         diff = self.kumb * ( cval - self.xref )

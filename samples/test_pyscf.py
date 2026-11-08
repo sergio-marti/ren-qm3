@@ -1,11 +1,12 @@
 import  os
 os.environ["OMP_NUM_THREADS"] = "1"
-import	numpy
-import	qm3
+import  numpy
+import  qm3
 import  qm3.engines.pyscf
 import  sys
+import  time
 
- 
+
 cwd = os.path.abspath( os.path.dirname( sys.argv[0] ) ) + os.sep
 
 
@@ -21,7 +22,7 @@ for a in [ "C6", "C9", "H11", "H12", "H13", "H14", "H15" ]:
     sqm[mol.indx["A"][1][a]] = True
 sqm = numpy.logical_not( sqm )
 smm = mol.sph_sel( sqm, 12 )
-if( len( sys.argv ) > 1 and sys.argv[1] == "single" ):
+if( "single" in sys.argv ):
     sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"] ) ]
 else:
     sla = [ ( mol.indx["A"][1]["C10"], mol.indx["A"][1]["C6"], [ mol.indx["A"][1]["H11"], mol.indx["A"][1]["H12"] ] ) ]
@@ -37,10 +38,15 @@ opt = { "basis": "def2-svp",
     "max_cyc": 50,
     "nproc": 2,
     "df": True, 
-    "chk": True }
+    "df": True,
+    "chk": True,
+    "gpu": "gpu" in sys.argv }
+
 mol.engines["qm"] = qm3.engines.pyscf.run( mol, opt, sqm, smm, sla )
 
+t0 = time.time()
 mol.get_grad()
+print( time.time() - t0 )
 if( len( sla[0] ) == 2 ):
     print( round( mol.func, 1 ), "/ -697633.9" )
     print( round( numpy.linalg.norm( mol.grad ), 1 ), "/ 577.5" )
@@ -55,3 +61,7 @@ else:
     print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["C6"]] ), 1 ), "/ 0.0" )
     print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["H11"]] ), 1 ), "/ 2.0" )
     print( round( numpy.linalg.norm( mol.grad[mol.indx["A"][1]["H12"]] ), 1 ), "/ 1.9" )
+t0 = time.time()
+mol.get_grad()
+print( time.time() - t0 )
+print( round( mol.func, 1 ) )

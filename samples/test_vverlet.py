@@ -120,7 +120,7 @@ mol.engines["qm"].img_init( mol )
 
 
 import qm3.data
-with open( "img_cell.xyz", "wt" ) as f:
+with open( "img_nbnd.xyz", "wt" ) as f:
     f.write( "%d\n\n"%( mol.engines["qm"].nbn.shape[0] ) )
     for i, tmp in zip( mol.engines["qm"].nbn, mol.engines["qm"].img_coor( mol ) ):
         f.write( "%-2s%20.6lf%20.6lf%20.6lf\n"%( qm3.data.symbol[mol.anum[i]], tmp[0], tmp[1], tmp[2] ) )

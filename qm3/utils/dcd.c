@@ -143,7 +143,8 @@ static PyObject* __read( PyObject *self, PyObject *args ) {
 
 
 static PyObject* __next( PyObject *self, PyObject *args ) {
-    PyObject        *o_mol, *o_crd;
+//    PyObject        *o_mol, *o_crd;
+    PyObject        *o_crd;
     PyArrayObject   *n_crd;
     double          *ptr; //, box[6];
     float           blk;
@@ -151,7 +152,8 @@ static PyObject* __next( PyObject *self, PyObject *args ) {
     oDCD            *obj = NULL;
 
     obj = (oDCD*) self;
-    if( PyArg_ParseTuple( args, "O", &o_mol ) ) {
+//    if( PyArg_ParseTuple( args, "O", &o_mol ) ) {
+    if( PyArg_ParseTuple( args, "O", &o_crd ) ) {
         if( obj->fdes == NULL ) {
             printf( "* No DCD open...\n" );
             Py_INCREF( Py_False ); return( Py_False );
@@ -169,7 +171,7 @@ static PyObject* __next( PyObject *self, PyObject *args ) {
 //for( k = 4, i = 0; i < 6; i++ ) { memcpy( &(box[i]), &(obj->buff[k]), 8 ); k += 8; }
 //fprintf(stderr,"[box] %10.3lf%10.3lf%10.3lf%10.3lf%10.3lf%10.3lf\n", box[0], box[1], box[2], box[3], box[4], box[5] );
         }
-        o_crd = PyObject_GetAttrString( o_mol, "coor" );
+//        o_crd = PyObject_GetAttrString( o_mol, "coor" );
         n_crd = (PyArrayObject*) PyArray_FROM_OT( o_crd, NPY_DOUBLE );
         if( obj->natm != obj->free && obj->curr > 0 ) {
             k = 4 * obj->free;
@@ -227,7 +229,7 @@ static PyObject* __next( PyObject *self, PyObject *args ) {
             fread( obj->buff, 1, 4, obj->fdes );
         }
         Py_DECREF( n_crd );
-        Py_DECREF( o_crd );
+//        Py_DECREF( o_crd );
         obj->curr += 1;
     }
 

@@ -93,26 +93,22 @@ class template( object ):
         super( template, self ).__setattr__( name, value )
 
 
-    def img_init( self, mol: object,
-            cen: typing.Optional[numpy.array] = None,
-            img_file: typing.Optional[str] = "img_cell.npy" ):
+    def img_init( self, mol: object ):
         self.img = True
-        try:
-            self.img_cell = numpy.load( img_file )
-            print( "minumum image info loaded from:", img_file )
-        except:
-            crd = mol.coor[self.nbn].copy()
-            if( cen is None or cen.shape[0] != 3 ):
-                cen = numpy.mean( mol.coor[self.sel], axis = 0 )
-            self.img_cell = numpy.round( ( crd - cen ) / mol.boxl, 0 )
-            numpy.save( img_file, self.img_cell )
-            print( "minumum image info saved to:", img_file )
+        crd = mol.coor[self.nbn].copy()
+        cen = numpy.mean( mol.coor[self.sel], axis = 0 )
+        self.img_cell = mol.boxl * numpy.round( ( crd - cen ) / mol.boxl, 0 )
 
 
     def img_coor( self, mol: object ):
         crd = mol.coor[self.nbn].copy()
         if( self.img ):
-            crd -= mol.boxl * self.img_cell
+# ------------------------------------------------------------------------
+            crd -= self.img_cell
+# ------------------------------------------------------------------------
+#            cen = numpy.mean( mol.coor[self.sel], axis = 0 )
+#            crd -= mol.boxl * numpy.round( ( crd - cen ) / mol.boxl, 0 )
+# ------------------------------------------------------------------------
         return( crd )
 
 
