@@ -16,7 +16,7 @@ import  sys
 import  os
 
 mol = qm3.molecule()
-mol.pdb_read( open( "node.25" ) )
+mol.xyz_read( open( "node.19" ) )
 mol.boxl = numpy.array( [ 40.0, 40.0, 40.0 ] )
 mol.psf_read( open( "oxy-cope.psf" ) )
 mol.guess_atomic_numbers()
@@ -77,8 +77,8 @@ qm3.actions.minimize.baker( mol,
         print_frequency = 1,
         follow_mode = 0 )
 
-with open( "saddle.pdb", "wt" ) as f:
-    mol.pdb_write( f )
+with open( "saddle.xyz", "wt" ) as f:
+    mol.xyz_write( f )
 
 val, vec = qm3.utils.hessian.frequencies( mol, mol.hess )
 print( val[0:10] )

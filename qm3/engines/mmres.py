@@ -341,8 +341,6 @@ class tether( object ):
 
 class colvar_s( object ):
     """
-    kumb: kJ / ( mol Ang^2 )    kJ / ( mol Ang^2 amu )
-    xref: Ang                   Ang amu^0.5
     -------------------------------------
     atm_1,i     atm_1,j
     ...         ...
@@ -365,15 +363,17 @@ class colvar_s( object ):
     J. Comput. Chem. v35, p1672 (2014) [doi:10.1002/jcc.23673]
     J. Phys. Chem. A v121, p9764 (2017) [doi:10.1021/acs.jpca.7b10842]
     WIREs Comput. Mol. Sci. v8 (2018) [doi:10.1002/wcms.1329]
+
+    Unidades de s: Ang (Ang amu^0.5 si mass = True)
+
+        indx: lista (ordenada) de los indices de los atomos que intervienen;
+              las filas de la derivada devuelta por gradient() siguen este orden.
     """
-    def __init__( self, mol: object, str_cnf: str,
+    def __init__( self, mol: object,
+            str_cnf: str,
             str_crd: typing.Optional[str] = "",
-            kumb: typing.Optional[float] = 0.0,
-            xref: typing.Optional[float] = 0.0,
             delz: typing.Optional[float] = 0.0,
-            mass: typing.Optional[bool] = False ):
-        self.xref = xref
-        self.kumb = kumb
+            mass: typing.Optional[bool] = True ):
         self.delz = delz
         # parse config
         self.atom = numpy.loadtxt( str_cnf, dtype=numpy.int32 )
@@ -386,9 +386,10 @@ class colvar_s( object ):
             self.jidx[self.atom[i,0]] = True
             self.jidx[self.atom[i,1]] = True
         self.jidx = { jj: ii for ii,jj in enumerate( sorted( self.jidx ) ) }
+        self.indx = list( self.jidx.keys() )
         self.jcol = 3 * len( self.jidx )
         if( mass ):
-            self.mass = mol.mass[list( self.jidx.keys() )]
+            self.mass = mol.mass[self.indx]
         else:
             self.mass = numpy.ones( len( self.jidx ), dtype=numpy.float64 )
         self.mass = 1.0 / numpy.repeat( self.mass, 3 )
@@ -503,50 +504,80 @@ class colvar_s( object ):
         cmet = numpy.zeros( ( self.ncrd, self.ncrd ), dtype=numpy.float64 )
         for i in range( self.ncrd ):
             for j in range( i, self.ncrd ):
-                #cmet[i,j] = numpy.sum( jaco[i,:] * jaco[j,:] )
                 cmet[i,j] = numpy.sum( jaco[i,:] * jaco[j,:] * self.mass )
                 cmet[j,i] = cmet[i,j]
         return( ( ccrd, jaco, numpy.linalg.inv( cmet ) ) )
 
 
-    def get_func( self, mol: object ) -> tuple:
+    def value( self, mol: object ) -> tuple:
+        """
+        Devuelve ( s, ccrd ). No toca mol.func ni mol.grad.
+        """
         ccrd, jaco, imet = self.get_info( mol )
         cdst = numpy.zeros( self.nwin, dtype=numpy.float64 )
         for i in range( self.nwin ):
             vec = ( ccrd - self.rcrd[i] ).reshape( ( self.ncrd, 1 ) )
             cdst[i] = math.sqrt( qm3.utils.to_float( numpy.dot( vec.T, numpy.dot( imet, vec ) ) ) )
-        #cexp = numpy.exp( - cdst / self.delz )
         cexp = numpy.exp( - ( cdst - numpy.min( cdst ) ) / self.delz )
         cval = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp ) / cexp.sum()
-        out  = 0.5 * self.kumb * math.pow( cval - self.xref, 2.0 )
-        mol.func += out
-        return( ( out, cval, ccrd ) )
+        return( ( cval, ccrd ) )
 
 
-    def get_grad( self, mol: object ) -> tuple:
+    def gradient( self, mol: object ) -> tuple:
+        """
+        Devuelve ( s, ds, ccrd ), donde ds es la derivada de s respecto a las
+        coordenadas cartesianas, con shape ( len( self.indx ), 3 ); la fila k
+        corresponde al atomo self.indx[k].
+
+        mol.grad[cv.indx] += factor * ds
+        """
         ccrd, jaco, imet = self.get_info( mol )
         cdst = numpy.zeros( self.nwin, dtype=numpy.float64 )
         jder = numpy.zeros( ( self.nwin, self.jcol ), dtype=numpy.float64 )
         for i in range( self.nwin ):
             vec = ( ccrd - self.rcrd[i] ).reshape( ( self.ncrd, 1 ) )
             mat = numpy.dot( imet, vec )
-            #cdst[i] = math.sqrt( qm3.utils.to_float( numpy.dot( vec.T, mat ) ) )
             cdst[i] = math.sqrt( max( qm3.utils.to_float( numpy.dot( vec.T, mat ) ), 1.e-12 ) )
-            #jder[i] = 0.5 * ( numpy.dot( mat.T, jaco ) + numpy.dot( vec.T, numpy.dot( imet, jaco ) ) ).ravel() / cdst[i]
             jder[i] = numpy.dot( vec.T, numpy.dot( imet, jaco ) ).ravel() / cdst[i]
-        #cexp = numpy.exp( - cdst / self.delz )
         cexp = numpy.exp( - ( cdst - numpy.min( cdst ) ) / self.delz )
         sumd = cexp.sum()
         cval = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp ) / sumd
+        # ds/dx = SUM_j ( cval / delz - j ) * ( cexp_j / sumd ) * d|z-z_j|/dx
+        wgt = ( cval / self.delz - numpy.arange( self.nwin, dtype=numpy.float64 ) ) * cexp / sumd
+        sder = numpy.dot( wgt, jder )
+        sder.shape = ( self.jcol // 3, 3 )
+        return( ( cval, sder, ccrd ) )
+
+
+class cvs_umb( object ):
+    """
+    Umbrella armonico sobre una colvar_s:
+
+    cvs_umb = force_constant / 2 * ( s - reference )^2
+
+    force_constant [kJ/mol.Ang^2]      [kJ/mol.Ang^2.amu] (si mass = True)
+    reference [Ang]                    [Ang.amu^0.5]
+
+    Una misma colvar_s puede compartirse entre varios cvs_umb (ventanas).
+    Interfaz igual que el resto de restraints: get_func / get_grad.
+    """
+    def __init__( self, colvar: colvar_s, kumb: float, xref: float ):
+        self.colvar = colvar
+        self.kumb = kumb
+        self.xref = xref
+
+    def get_func( self, mol: object ) -> tuple:
+        cval, ccrd = self.colvar.value( mol )
+        out = 0.5 * self.kumb * math.pow( cval - self.xref, 2.0 )
+        mol.func += out
+        return( ( out, cval, ccrd ) )
+
+    def get_grad( self, mol: object ) -> tuple:
+        cval, sder, ccrd = self.colvar.gradient( mol )
         diff = self.kumb * ( cval - self.xref )
         out  = 0.5 * diff * ( cval - self.xref )
         mol.func += out
-        sder = numpy.zeros( self.jcol, dtype=numpy.float64 )
-        for i in range( self.jcol ):
-            for j in range( self.nwin ):
-                sder[i] += diff * jder[j,i] * ( cval / self.delz - j ) * ( cexp[j] / sumd )
-        sder.shape = ( self.jcol // 3, 3 )
-        mol.grad[list( self.jidx.keys() ),:] += sder
+        mol.grad[self.colvar.indx,:] += diff * sder
         return( ( out, cval, ccrd ) )
 
 
@@ -558,6 +589,9 @@ class colvar_path( object ):
     %delta_z = langle lline x_{i+1} - x_{i} rline rangle = L over{N - 1}
     newline
     lline %zeta - z_i rline = sqrt{{1 over M}sum from{k=1} to{3M} {left( %zeta_k - z^i_k right)^2}}
+
+        sele: indices (ordenados) de los atomos que intervienen; las filas de la
+              derivada devuelta por gradient() siguen este orden.
     """
     @staticmethod
     def get_rmsd( ref: numpy.array, crd: numpy.array ) -> tuple:
@@ -572,9 +606,7 @@ class colvar_path( object ):
         return( ref - tmp, mat )
 
 
-    def __init__( self, kumb: float, xref: float, sele: numpy.array, path: str ):
-        self.xref = xref
-        self.kumb = kumb
+    def __init__( self, sele: numpy.array, path: str ):
         self.sele = numpy.flatnonzero( sele )
         self.refs = numpy.loadtxt( path, dtype=numpy.float64 )
         self.nwin = self.refs.shape[0]
@@ -588,18 +620,23 @@ class colvar_path( object ):
         print( "Colective variable path range: [%.3lf - %.3lf: %.6lf]"%( 0.0, self.arcl.sum(), self.delz ) )
 
 
-    def get_func( self, mol: object ) -> tuple:
+    def value( self, mol: object ) -> float:
         cdst = numpy.zeros( self.nwin, dtype=numpy.float64 )
         for i in range( self.nwin ):
             cdst[i] = numpy.sqrt( numpy.mean( numpy.sum( numpy.square( self.get_rmsd( self.refs[i], mol.coor[self.sele] )[0] ), axis = 1 ) ) )
         cexp = numpy.exp( - cdst / self.delz )
         cval = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp ) / cexp.sum()
-        umbr = 0.5 * self.kumb * math.pow( cval - self.xref, 2.0 )
-        mol.func += umbr
-        return( ( umbr, cval ) )
+        return( cval )
 
 
-    def get_grad( self, mol: object ) -> tuple:
+    def gradient( self, mol: object ) -> tuple:
+        """
+        Devuelve ( s, ds ), donde ds es la derivada de s respecto a las
+        coordenadas cartesianas, con shape ( len( self.sele ), 3 ); la fila k
+        corresponde al atomo self.sele[k]. No toca mol.func ni mol.grad.
+
+        mol.grad[cv.sele] += factor * ds
+        """
         cdst = numpy.zeros( self.nwin, dtype=numpy.float64 )
         dime = self.sele.shape[0]
         dist = numpy.zeros( ( self.nwin, dime, 3 ) )
@@ -610,13 +647,40 @@ class colvar_path( object ):
         cexp = numpy.exp( - cdst / self.delz )
         sumd = cexp.sum()
         cval = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp ) / sumd
-        diff = self.kumb * ( cval - self.xref )
-        umbr = 0.5 * diff * ( cval - self.xref )
-        mol.func += umbr
-        grad = numpy.zeros( ( dime, 3 ) )
+        sder = numpy.zeros( ( dime, 3 ) )
         for i in range( self.nwin ):
             rmat[i] = numpy.linalg.inv( rmat[i] )
             if( numpy.abs( cdst[i] ) > .0 ):
-                grad += numpy.dot( cexp[i] / ( sumd * dime * cdst[i] ) * ( cval / self.delz - i ) * dist[i], rmat[i] )
-        mol.grad[self.sele] -= diff * grad
+                sder -= numpy.dot( cexp[i] / ( sumd * dime * cdst[i] ) * ( cval / self.delz - i ) * dist[i], rmat[i] )
+        return( ( cval, sder ) )
+
+
+
+class cvp_umb( object ):
+    """
+    Umbrella armonico sobre una colvar_path:
+
+    cvp_umb = force_constant / 2 * ( s - reference )^2
+
+    force_constant [kJ/mol.Ang^2]
+    reference [Ang]
+
+    """
+    def __init__( self, colvar: colvar_path, kumb: float, xref: float ):
+        self.colvar = colvar
+        self.kumb = kumb
+        self.xref = xref
+
+    def get_func( self, mol: object ) -> tuple:
+        cval = self.colvar.value( mol )
+        umbr = 0.5 * self.kumb * math.pow( cval - self.xref, 2.0 )
+        mol.func += umbr
+        return( ( umbr, cval ) )
+
+    def get_grad( self, mol: object ) -> tuple:
+        cval, sder = self.colvar.gradient( mol )
+        diff = self.kumb * ( cval - self.xref )
+        umbr = 0.5 * diff * ( cval - self.xref )
+        mol.func += umbr
+        mol.grad[self.colvar.sele] += diff * sder
         return( ( umbr, cval ) )

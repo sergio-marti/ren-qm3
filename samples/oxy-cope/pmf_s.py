@@ -54,7 +54,7 @@ with open( "pmf_s.dels", "rt" ) as f:
     ds = float( f.read().strip() )
 kb = 5000
 rx = opar.node * ds
-mol.engines["umb"] = qm3.engines.mmres.colvar_s( mol, "pmf_s.cnf", "pmf_s.str", kb, rx, dz )
+mol.engines["umb"] = qm3.engines.mmres.cvs_umb( mol, "pmf_s.cnf", "pmf_s.str", kb, rx, dz, True )
 
 mol.fdat = open( "dat.%02d"%( opar.node ), "wt" )
 mol.fdat.write( "%12.6lf%12.6lf\n"%( kb, rx ) )

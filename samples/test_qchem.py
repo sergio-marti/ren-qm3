@@ -50,7 +50,7 @@ qm3_charges
 """ )
 mol.engines["qm"] = qm3.engines.qchem.run( mol, f, sqm, smm, sla )
 with open( "r.qchem", "wt" ) as f:
-    f.write( """source /usr/local/chem/qchem_6.2/rc
+    f.write( """source /usr/local/chem/qchem_7.0/rc
 export QCSCRATCH=`pwd`
 rm -rf qchem.tmp.0
 qchem -nt 10 qchem.inp qchem.log qchem.tmp > /dev/null

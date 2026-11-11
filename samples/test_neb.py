@@ -11,8 +11,8 @@ import  io
 import  sys
 
 
-#opar = qm3.utils.parallel.client_fsi( int( sys.argv[1] ) )
-opar = qm3.utils.parallel.client_mpi()
+opar = qm3.utils.parallel.client_fsi( int( sys.argv[1] ) )
+#opar = qm3.utils.parallel.client_mpi()
 
 
 mol = qm3.molecule()

@@ -34,7 +34,7 @@ with open( "pmf_s.cnf", "wt" ) as f_cnf:
     for i,j in bnd:
         f_cnf.write( "%8d%8d\n"%( i, j ) )
 
-obj = qm3.engines.mmres.colvar_s( mol, "pmf_s.cnf" )
+obj = qm3.engines.mmres.colvar_s( mol, "pmf_s.cnf", mass = True )
 obj.append( mol )
 for w in lst[1:]:
     mol.xyz_read( zzz.open( w, "r" ), replace = True )
