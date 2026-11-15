@@ -509,17 +509,61 @@ class colvar_s( object ):
         return( ( ccrd, jaco, numpy.linalg.inv( cmet ) ) )
 
 
+    def s_beta( self, d: numpy.array,
+            imet: typing.Optional[numpy.array] = None ) -> tuple:
+        """
+        Nucleo de la coordenada metrica: dados el vector de distancias ( d_c ) y su matriz
+        metrica inversa, devuelve ( s, ds/dd ), la coordenada y su gradiente respecto a las
+        distancias. La derivada cartesianas se obtiene encadenando la jacobiana de get_info():
+            ds/dx = ds/dd . jaco
+
+        imet:  metrica inversa comun a todos los nodos ( ncrd,ncrd ), o por-nodo
+               ( nwin,ncrd,ncrd ) = la metrica CONGELADA de la cadena ( la definicion de
+               Branduardi ). Con la metrica de los nodos s es FUNCION EXCLUSIVA de las
+               distancias d: ningun otro grado de libertad ( p.ej. el angulo entre terminos
+               que comparten un atomo, como d(X-H) y d(H-Y) en una transferencia de proton )
+               puede cambiar su valor. Si es None se usa self._met (si la cadena ya fue
+               construida con append()/define()).
+        """
+        if( imet is None ):
+            imet = self.met_of()
+        dif  = d[None,:] - self.rcrd                                  # ( nwin, ncrd )
+        if( imet.ndim == 2 ):
+            mat  = numpy.einsum( "wi,ij->wj", dif, imet )
+            cd2  = numpy.einsum( "wi,wi->w", dif, mat )
+        else:
+            mat  = numpy.einsum( "wij,wj->wi", imet, dif )
+            cd2  = numpy.einsum( "wi,wi->w", dif, mat )
+        cdst = numpy.sqrt( numpy.maximum( cd2, 1.e-12 ) )
+        cexp = numpy.exp( - ( cdst - numpy.min( cdst ) ) / self.delz )
+        sumd = cexp.sum()
+        cval = self.delz * numpy.dot( numpy.arange( self.nwin, dtype=numpy.float64 ), cexp ) / sumd
+        # ds/dd_c = SUM_j ( s / delz - j ) * ( cexp_j / sumd ) * d|d - d_j|/dd_c
+        wgt  = ( cval / self.delz - numpy.arange( self.nwin, dtype=numpy.float64 ) ) * cexp / sumd
+        return( ( float( cval ), numpy.einsum( "w,wi->i", wgt / cdst, mat ) ) )
+
+
+    def met_of( self, imet: typing.Optional[numpy.array] = None ) -> numpy.array:
+        """
+        metrica inversa por-nodo de la cadena ( nwin,ncrd,ncrd ), disponible tras append();
+        si la cadena se cargo desde archivo y no hay metricas por-nodo, devuelve imet ( la
+        metrica del frame comun a todos los nodos: comportamiento historico )
+        """
+        ret = getattr( self, "_met", None )
+        if( ret is not None and len( ret ) == self.nwin ):
+            return( numpy.ascontiguousarray( ret, dtype = numpy.float64 ) )
+        if( imet is None ):
+            raise Exception( "colvar_s.met_of: no string metrics available ( append() / define() )" )
+        return( numpy.ascontiguousarray( imet, dtype = numpy.float64 ) )
+
+
     def value( self, mol: object ) -> tuple:
         """
         Devuelve ( s, ccrd ). No toca mol.func ni mol.grad.
+        La distancia a cada nodo se mide con su metrica congelada: s depende solo de d(x).
         """
         ccrd, jaco, imet = self.get_info( mol )
-        cdst = numpy.zeros( self.nwin, dtype=numpy.float64 )
-        for i in range( self.nwin ):
-            vec = ( ccrd - self.rcrd[i] ).reshape( ( self.ncrd, 1 ) )
-            cdst[i] = math.sqrt( qm3.utils.to_float( numpy.dot( vec.T, numpy.dot( imet, vec ) ) ) )
-        cexp = numpy.exp( - ( cdst - numpy.min( cdst ) ) / self.delz )
-        cval = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp ) / cexp.sum()
+        cval, _ = self.s_beta( ccrd, self.met_of( imet ) )
         return( ( cval, ccrd ) )
 
 
@@ -530,21 +574,13 @@ class colvar_s( object ):
         corresponde al atomo self.indx[k].
 
         mol.grad[cv.indx] += factor * ds
+
+        s = f( d( x ) ) con la metrica congelada de los nodos ( ver s_beta ), y
+        ds/dx = ds/dd . jaco( x ) es la derivada EXACTA de esa composicion
         """
         ccrd, jaco, imet = self.get_info( mol )
-        cdst = numpy.zeros( self.nwin, dtype=numpy.float64 )
-        jder = numpy.zeros( ( self.nwin, self.jcol ), dtype=numpy.float64 )
-        for i in range( self.nwin ):
-            vec = ( ccrd - self.rcrd[i] ).reshape( ( self.ncrd, 1 ) )
-            mat = numpy.dot( imet, vec )
-            cdst[i] = math.sqrt( max( qm3.utils.to_float( numpy.dot( vec.T, mat ) ), 1.e-12 ) )
-            jder[i] = numpy.dot( vec.T, numpy.dot( imet, jaco ) ).ravel() / cdst[i]
-        cexp = numpy.exp( - ( cdst - numpy.min( cdst ) ) / self.delz )
-        sumd = cexp.sum()
-        cval = self.delz * numpy.sum( numpy.arange( self.nwin, dtype=numpy.float64 ) * cexp ) / sumd
-        # ds/dx = SUM_j ( cval / delz - j ) * ( cexp_j / sumd ) * d|z-z_j|/dx
-        wgt = ( cval / self.delz - numpy.arange( self.nwin, dtype=numpy.float64 ) ) * cexp / sumd
-        sder = numpy.dot( wgt, jder )
+        cval, dsd = self.s_beta( ccrd, self.met_of( imet ) )
+        sder = numpy.dot( dsd, jaco )
         sder.shape = ( self.jcol // 3, 3 )
         return( ( cval, sder, ccrd ) )
 

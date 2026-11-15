@@ -142,6 +142,7 @@ def cstep( self, step ):
         self.dcd.append( self.coor )
 #        self.dcd.append( tmp.coor )
 
+qm3.actions.dynamics.seed()
 velocity_verlet( mol, step_number = 10_000, scale_frequency = 100, print_frequency = 50 , current_step = cstep )
 
 mol.dcd.close()

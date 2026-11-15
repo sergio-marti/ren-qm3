@@ -5,7 +5,15 @@ import  typing
 import  qm3.data
 
 
-numpy.random.seed()
+def seed():
+    import  struct
+    try:
+        with open( "/dev/urandom", "rb" ) as f:
+            numpy.random.seed( struct.unpack( "I", f.read( 4 ) )[0] )
+        print( "[qm3.actions.dynamics.seed] using /dev/urandom" )
+    except:
+        numpy.random.seed()
+        print( "[qm3.actions.dynamics.seed] defaulting to numpy.random.seed" )
 
 
 def fake_cs( self: object, step: int ):

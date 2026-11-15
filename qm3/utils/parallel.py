@@ -58,10 +58,10 @@ class client_fsi( object ):
             os._exit( 0 )
 
     # on overloaded systems "wait" should be increased...
-    def __init__( self, nproc, wait: typing.Optional[float] = 1.0 ):
+    def __init__( self, nproc, wait: typing.Optional[float] = 1.0, bdir: typing.Optional[str] = "." ):
         self.node = -1
         self.ncpu = nproc
-        self.unix = "client_fsi.%d"%( os.getpid() )
+        self.unix = os.path.abspath( os.path.join( bdir, "client_fsi.%d"%( os.getpid() ) ) )
         self.slen = 10240
         pids = list( range( self.ncpu ) )
 

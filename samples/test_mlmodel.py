@@ -52,6 +52,7 @@ if( "build" in sys.argv or not os.path.isfile( "dcd" ) ):
             crd.append( obj.coor.copy() )
             grd.append( obj.grad.copy() )
             obj.dcd.append( obj.coor )
+    qm3.actions.dynamics.seed()
     qm3.actions.dynamics.langevin_verlet( mol, step_number = 40000, print_frequency = 100, current_step = cstep )
     mol.dcd.close()
     ene = numpy.array( ene )
