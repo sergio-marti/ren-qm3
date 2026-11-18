@@ -40,6 +40,7 @@ print( smm.sum() )
 
 emm = qm3.engines.openmm.run( _sys, _psf.topology, sel_QM = sqm, platform = "CPU" )
 eqm = qm3.engines.xtb.run( mol, 0, 0, sel_QM = sqm, sel_MM = smm )
+eqm.img_init( mol )
 
 mol.engines["mm"] = emm
 mol.engines["qm"] = eqm

@@ -486,6 +486,15 @@ class colvar_s( object ):
         dels = cval / self.nwin
         print( "Colective variable s range: [%.3lf - %.3lf: %.6lf]"%( 0.0, cval, dels ) )
         # ----------------------------------------------------
+        if( not numpy.all( self.mass == 1.0 ) ):
+            met = self.met_of()
+            fs = []
+            for i in range( 1, self.nwin ):
+                dd = self.rcrd[i] - self.rcrd[i-1]
+                fs.append( numpy.sqrt( dd @ met[i] @ dd ) / numpy.linalg.norm( dd ) )
+            fs = numpy.mean( numpy.array( fs ) ) ** 2.0
+            print( "K_UMB average scaling factor (kJ/mol.Ang^2 >> kJ/mol.Ang^2.amu): %.10lf"%( 1.0 / fs ) )
+        # ----------------------------------------------------
         numpy.savetxt( str_crd, self.rcrd, fmt = "%16.8lf" )
         return( self.delz, dels, self.arcl )
 

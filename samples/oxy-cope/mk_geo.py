@@ -29,13 +29,9 @@ for i in range( num ):
             npt[j][i] += 1.0
     f.close()
 
-f = open( "geom.avr", "wt" )
 for i in range( num ):
     for j in range( siz ):
         avr[j][i] /= npt[j][i]
-        f.write( "%20.10lf"%( avr[j][i] ) )
-    f.write( "\n" )
-f.close()
 
 skp = 1000
 x = []
@@ -64,11 +60,3 @@ for i in range( num ):
         f.write( "%20.10lf"%( gau[j][i] ) )
     f.write( "\n" )
 f.close()
-
-plt.clf()
-plt.grid( True )
-for i in range( siz ):
-    plt.plot( x, avr[i], "." )
-for i in range( siz ):
-    plt.plot( x, gau[i], "-", linewidth = 2.0 )
-plt.savefig( "geom.pdf" )

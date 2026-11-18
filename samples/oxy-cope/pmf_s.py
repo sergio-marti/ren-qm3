@@ -16,14 +16,15 @@ import  qm3.actions.dynamics
 import  pickle
 import  zipfile
 
-opar = qm3.utils.parallel.client_fsi( int( sys.argv[1] ) )
+#opar = qm3.utils.parallel.client_fsi( int( sys.argv[1] ) )
+opar = qm3.utils.parallel.client_mpi()
 
 mol = qm3.molecule()
 mol.psf_read( open( "oxy-cope.psf" ) )
 mol.guess_atomic_numbers()
 mol.boxl = numpy.array( [ 40.0, 40.0, 40.0 ] )
-zzz = zipfile.ZipFile( "neb.zip", "r" )
-mol.xyz_read( zzz.open( "node.%02d"%( opar.node ), "r" ), replace = True )
+zzz = zipfile.ZipFile( "s3/otfs.zip", "r" )
+mol.xyz_read( zzz.open( "node.%03d"%( opar.node ), "r" ), replace = True )
 zzz.close()
 
 _psf = openmm.app.charmmpsffile.CharmmPsfFile( "oxy-cope.psf" )
@@ -47,14 +48,20 @@ with open( "sele_MM.pk", "rb" ) as f:
 
 mol.engines["mm"] = qm3.engines.openmm.run( _sys, _psf.topology, sel_QM = sqm, platform = "CPU" )
 mol.engines["qm"] = qm3.engines.xtb.run( mol, 0, 0, sel_QM = sqm, sel_MM = smm )
+mol.engines["qm"].img_init( mol )
 
 with open( "pmf_s.delz", "rt" ) as f:
     dz = float( f.read().strip() )
 with open( "pmf_s.dels", "rt" ) as f:
     ds = float( f.read().strip() )
-kb = 5000
+kb = 600 # kJ/mol.Ang^2.amu
 rx = opar.node * ds
-mol.engines["umb"] = qm3.engines.mmres.cvs_umb( mol, "pmf_s.cnf", "pmf_s.str", kb, rx, dz, True )
+mol.engines["umb"] = qm3.engines.mmres.cvs_umb(
+        qm3.engines.mmres.colvar_s( mol, "pmf_s.cnf", "pmf_s.str", dz, True ),
+        kb, rx )
+
+mol.engines["w0"] = qm3.engines.mmres.distance( 2500., 3.3, [ 1, 2 ], skip_LE = 3.5 )
+mol.engines["w1"] = qm3.engines.mmres.distance( 2500., 3.3, [ 4, 5 ], skip_LE = 3.5 )
 
 mol.fdat = open( "dat.%02d"%( opar.node ), "wt" )
 mol.fdat.write( "%12.6lf%12.6lf\n"%( kb, rx ) )
@@ -83,9 +90,13 @@ def cstep( obj, stp ):
     obj.fgeo.write( "\n" )
     obj.fgeo.flush()
 
+qm3.actions.dynamics.seed()
 qm3.actions.dynamics.langevin_verlet( mol, step_size = 0.001, temperature = 300.0,
     gamma_factor = 100.0, print_frequency = 100, step_number = 10000,
     current_step = cstep )
 
 mol.fdat.close()
 mol.fgeo.close()
+
+opar.barrier()
+opar.stop()

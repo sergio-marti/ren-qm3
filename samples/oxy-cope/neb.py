@@ -16,7 +16,8 @@ import  qm3.actions.neb
 import  sys
 import  pickle
 
-opar = qm3.utils.parallel.client_fsi( int( sys.argv[1] ) )
+#opar = qm3.utils.parallel.client_fsi( int( sys.argv[1] ) )
+opar = qm3.utils.parallel.client_mpi()
 
 mol = qm3.molecule()
 mol.boxl = numpy.array( [ 40.0, 40.0, 40.0 ] )
@@ -46,6 +47,7 @@ with open( "sele_MM.pk", "rb" ) as f:
 mol.engines["mm"] = qm3.engines.openmm.run( _sys, _psf.topology, sel_QM = sqm, platform = "CPU" )
 
 eqm = qm3.engines.xtb.run( mol, 0, 0, sel_QM = sqm, sel_MM = smm )
+eqm.img_init( mol )
 
 reac = mol.coor.copy()
 

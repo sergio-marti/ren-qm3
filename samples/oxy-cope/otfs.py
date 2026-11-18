@@ -17,7 +17,8 @@ import  pickle
 import  sys
 import  zipfile
 
-opar = qm3.utils.parallel.client_fsi( int( sys.argv[1] ) )
+#opar = qm3.utils.parallel.client_fsi( int( sys.argv[1] ) )
+opar = qm3.utils.parallel.client_mpi()
 
 mol = qm3.molecule()
 mol.boxl = numpy.array( [ 40.0, 40.0, 40.0 ] )
@@ -49,6 +50,7 @@ with open( "sele_MM.pk", "rb" ) as f:
     smm[pickle.load( f )] = True
 
 mol.engines["qm"] = qm3.engines.xtb.run( mol, 0, 0, sel_QM = sqm, sel_MM = smm )
+mol.engines["qm"].img_init( mol )
 
 mol.engines["ss"] = qm3.engines.string.string( mol, opar.node, open( "str.config" ), True )
 
@@ -64,10 +66,11 @@ def cstep( obj, stp ):
     obj.x_met.append(   obj.engines["ss"].cmet )
     obj.x_frc.append( - obj.engines["ss"].cdif )
 
-    if( stp % 100 == 0 ):
-
+    if( stp % 20 == 0 ):
         if( hasattr( obj, "dcd" ) ):
             obj.dcd.append( obj.coor )
+
+    if( stp % 100 == 0 ):
 
         obj.engines["ss"].integrate()
         #obj.engines["ss"].integrate( 1.e-6 )
@@ -115,6 +118,7 @@ def next_block( who, dcd = False ):
         mol.dcd = qm3.utils._dcd.dcd()
         mol.dcd.open_write( who + "/dcd.%03d"%( opar.node ), mol.natm )
 
+    qm3.actions.dynamics.seed()
     qm3.actions.dynamics.langevin_verlet( mol, print_frequency = 1, current_step = cstep,
                 step_size = 0.001, step_number = 10_000 )
 
@@ -127,11 +131,11 @@ def next_block( who, dcd = False ):
         mol.xyz_write( f )
 
 
-for who in [ "s1", "s2", "s3", "s4", "s5", "s6" ]:
+for who in [ "s1", "s2" ]:
     next_block( who )
     opar.barrier()
 
-who = "s7"
+who = "s3"
 next_block( who, True )
 mol.dcd.close()
 opar.barrier()

@@ -17,7 +17,8 @@ import  qm3.actions.dynamics
 import  pickle
 import  zipfile
 
-opar = qm3.utils.parallel.client_fsi( int( sys.argv[1] ) )
+#opar = qm3.utils.parallel.client_fsi( int( sys.argv[1] ) )
+opar = qm3.utils.parallel.client_mpi()
 
 mol = qm3.molecule()
 mol.psf_read( open( "oxy-cope.psf" ) )
@@ -48,6 +49,7 @@ with open( "sele_MM.pk", "rb" ) as f:
 
 mol.engines["mm"] = qm3.engines.openmm.run( _sys, _psf.topology, sel_QM = sqm, platform = "CPU" )
 mol.engines["qm"] = qm3.engines.xtb.run( mol, 0, 0, sel_QM = sqm, sel_MM = smm )
+mol.engines["qm"].img_init( mol )
 
 ww = [ mol.indx["A"][1]["C2"], mol.indx["A"][1]["C3"], mol.indx["A"][1]["C5"], mol.indx["A"][1]["C6"] ]
 kb = 2500
@@ -77,6 +79,7 @@ def cstep( obj, stp ):
             pickle.dump( obj.coor, f )
             pickle.dump( obj.velo, f )
 
+qm3.actions.dynamics.seed()
 qm3.actions.dynamics.langevin_verlet( mol, step_size = 0.001, temperature = 300.0,
     gamma_factor = 100.0, print_frequency = 100, step_number = 10000,
     current_step = cstep )
@@ -84,4 +87,5 @@ qm3.actions.dynamics.langevin_verlet( mol, step_size = 0.001, temperature = 300.
 mol.fdat.close()
 mol.fgeo.close()
 
+opar.barrier()
 opar.stop()
