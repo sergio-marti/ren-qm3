@@ -16,9 +16,9 @@ import  sys
 import  os
 
 mol = qm3.molecule()
+mol.psf_read( open( "oxy-cope.psf" ) )
 mol.xyz_read( open( "node.19" ) )
 mol.boxl = numpy.array( [ 40.0, 40.0, 40.0 ] )
-mol.psf_read( open( "oxy-cope.psf" ) )
 mol.guess_atomic_numbers()
 
 _psf = openmm.app.charmmpsffile.CharmmPsfFile( "oxy-cope.psf" )
