@@ -66,8 +66,17 @@ fidx = []
 
 idx = numpy.flatnonzero( sqm )
 dcd = qm3.utils._dcd.dcd()
-with tqdm.tqdm( total = 42 * 500 ) as p:
-    for w in range( 42 ):
+# ----------------------------------------------
+#with tqdm.tqdm( total = 42 * 500 ) as p:
+#    for w in range( 42 ):
+# ----------------------------------------------
+#with tqdm.tqdm( total = 5 * 500 ) as p:
+#    for w in range( 5 ):
+#with tqdm.tqdm( total = 7 * 500 ) as p:
+#    for w in range( 15, 21 + 1 ):
+with tqdm.tqdm( total = 5 * 500 ) as p:
+    for w in range( 37, 42 ):
+# ----------------------------------------------
         dcd.open_read( f"s3/dcd.{w:03d}" )
         k = 0
         while( dcd.next( mol.coor ) ):

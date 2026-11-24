@@ -1,6 +1,7 @@
 import  sys
 import  math
 import  json
+import  pickle
 import  types
 import  numpy
 import  typing
@@ -54,10 +55,12 @@ class colvar_hts( qm3.engines.mmres.colvar_s ):
         self.set_state( self.z, numpy.ones( self.ncrd ), numpy.eye( self.ncrd ) )
 
     def get_info( self, mol: object ) -> tuple:
-        """ como colvar_s.get_info, pero con la masa efectiva sincronizada con el mol.actv ACTUAL
-            ( los atomos congelados pesan 0 ): set_active() puede cambiar entre etapas """
+        """ como colvar_s.get_info, pero con la masa efectiva sincronizada con mol.actv y mol.mass ACTUALES
+            ( los atomos congelados pesan 0 ): set_active() o un cambio isotopico pueden ocurrir entre etapas """
         if( hasattr( mol, "actv" ) ):
             self._w = self._act_weights( mol )
+        if( hasattr( mol, "mass" ) ):          # sustituciones isotopicas posteriores a la construccion
+            self._m0 = 1.0 / numpy.repeat( mol.mass[self.indx].ravel(), 3 )
         self.mass = self._m0 * self._w         # sin mol.actv ( arrays de coordenadas ): ultimo actv conocido
         return( super().get_info( mol ) )
 
@@ -90,6 +93,13 @@ class colvar_hts( qm3.engines.mmres.colvar_s ):
         s.gnorm = math.sqrt( max( float( self.u @ s.Mt @ self.u ), 1.e-300 ) )     # eq. A1
         return( s )
 
+    def inplane( self, mol: object ) -> float:
+        """ distancia en el plano d = sqrt( ( theta - z )^T M^-1 ( theta - z ) - q^2 ) [amu^1/2 Ang], la misma que usa
+            el muro dmax de bias; sirve para vigilar en la produccion ( q = 0 ) hacia donde se desplaza el sistema """
+        s = self.evaluate( mol )
+        dl = s.theta - self.z
+        return( math.sqrt( max( float( dl @ self.Minv @ dl ) - s.q * s.q, 0.0 ) ) )
+
     def value( self, mol: object ) -> tuple:
         """ ( q, distancias ) """
         s = self.evaluate( mol )
@@ -118,6 +128,57 @@ class colvar_hts( qm3.engines.mmres.colvar_s ):
                 numpy.concatenate( ( mr, mp ) ).mean( axis = 0 ) )
         self.z0, self.n0 = self.z.copy(), self.n.copy()
 
+    def ts_mode( self, mol: object, hess: numpy.array, sele: typing.Optional[numpy.array] = None,
+            project: typing.Optional[bool] = False ) -> dict:
+        """
+        modo imaginario del Hessiano cartesiano ( ver initial_guess_ts para sele / project ):
+        devuelve { "dx": desplazamiento cartesiano ( natm, 3 ) por unidad de paso ponderado por masa, "freq": cm^-1,
+                   "nneg": numero de autovalores negativos, "w", "e", "sele": autovalores ( kJ/mol/amu/Ang^2 ),
+                   autovectores ponderados por masa y atomos del Hessiano }
+        """
+        if( sele is None ):
+            sele = numpy.flatnonzero( mol.actv.ravel() )
+        else:
+            sele = numpy.asarray( sele )
+            sele = numpy.flatnonzero( sele.ravel() ) if sele.dtype == numpy.bool_ else numpy.sort( sele.ravel() )
+            if( project ):
+                raise ValueError( "colvar_hts.initial_guess_ts: project=True requiere sele = mol.actv" )
+        if( hess.shape[0] != 3 * len( sele ) ):
+            raise ValueError( "colvar_hts.initial_guess_ts: el Hessiano es %d x %d y sele tiene %d atomos"%( hess.shape[0], hess.shape[1], len( sele ) ) )
+        m  = numpy.repeat( mol.mass[sele].ravel(), 3 )
+        Hw = hess / numpy.sqrt( numpy.outer( m, m ) )
+        if( project ):
+            Hw = qm3.utils.hessian.project_RT( Hw, qm3.utils.RT_modes( mol ) )
+        w, e = numpy.linalg.eigh( Hw )
+        nneg = int( numpy.sum( w < - 1.e-6 * max( abs( w ).max(), 1.e-30 ) ) )
+        if( nneg == 0 ):
+            raise ValueError( "colvar_hts.initial_guess_ts: el Hessiano no tiene ningun autovalor negativo ( no es un TS )" )
+        dx = numpy.zeros( ( mol.natm, 3 ) )
+        dx[sele] = ( e[:,0] / numpy.sqrt( m ) ).reshape( ( len( sele ), 3 ) )      # desplazamiento cartesiano del modo
+        return( { "dx": dx, "freq": - math.sqrt( abs( w[0] ) ) * 1.0e11 / ( 2. * math.pi * qm3.data.C ), "nneg": nneg,
+                  "w": w, "e": e, "sele": sele } )
+
+    def k_min( self, mol: object, md: dict ) -> float:
+        """
+        K minima ( ps^-2 ) para que V + K q^2 / 2 sea localmente estable en el TS, es decir para que el sesgo pueda
+        confinar al walker en el plano frente a la curvatura negativa de la barrera:
+
+            K_min = 1 / ( - g^T H^-1 g ),     g = dq/dx ponderado por masa,  H = Hessiano ponderado por masa
+
+        ( si g es paralelo al modo imaginario, K_min = omega_imag^2 ). Usa el Hessiano de md = ts_mode( ... ), con el
+        entorno congelado, asi que es una estimacion: con el entorno movil la curvatura efectiva suele ser mayor.
+        Con K <= K_min los walkers escapan del plano ( el ensemble sesgado no esta confinado ) y el optimizador
+        no es fiable; usar K >~ 1.5 K_min. Devuelve inf si ningun K estabiliza.
+        """
+        sele, w, e = md["sele"], md["w"], md["e"]
+        gfull = numpy.zeros( ( mol.natm, 3 ) )
+        gfull[self.indx] = self.evaluate( mol ).gq.reshape( ( len( self.indx ), 3 ) )
+        g = ( gfull[sele] / numpy.sqrt( mol.mass[sele] ) ).ravel()
+        lam = 100.0 * w                                       # ps^-2
+        use = numpy.abs( lam ) > 1.0e-6 * numpy.abs( lam ).max()
+        S = float( numpy.sum( ( e.T @ g )[use]**2 / lam[use] ) )
+        return( 1.0 / ( - S ) if S < 0.0 else float( "inf" ) )
+
     def initial_guess_ts( self, mol: object, hess: numpy.array,
             sele: typing.Optional[numpy.array] = None,
             project: typing.Optional[bool] = False,
@@ -139,27 +200,11 @@ class colvar_hts( qm3.engines.mmres.colvar_s ):
         react:   estructura ( molecula o array ) del lado de reactivos, solo para fijar el signo de q
                  ( q < 0 hacia reactivos ). Sin ella el signo es el de la fase arbitraria del autovector.
         devuelve { "overlap": fraccion del modo imaginario expresable con estas distancias ( 0-1 ),
-                   "freq": cm^-1 ( negativa ), "nneg": numero de autovalores negativos }
+                   "freq": cm^-1 ( negativa ), "nneg": numero de autovalores negativos,
+                   "kmin": K minima ( ps^-2 ) para confinar al walker en el plano, ver k_min }
         """
-        if( sele is None ):
-            sele = numpy.flatnonzero( mol.actv.ravel() )
-        else:
-            sele = numpy.asarray( sele )
-            sele = numpy.flatnonzero( sele.ravel() ) if sele.dtype == numpy.bool_ else numpy.sort( sele.ravel() )
-            if( project ):
-                raise ValueError( "colvar_hts.initial_guess_ts: project=True requiere sele = mol.actv" )
-        if( hess.shape[0] != 3 * len( sele ) ):
-            raise ValueError( "colvar_hts.initial_guess_ts: el Hessiano es %d x %d y sele tiene %d atomos"%( hess.shape[0], hess.shape[1], len( sele ) ) )
-        m  = numpy.repeat( mol.mass[sele].ravel(), 3 )
-        Hw = hess / numpy.sqrt( numpy.outer( m, m ) )
-        if( project ):
-            Hw = qm3.utils.hessian.project_RT( Hw, qm3.utils.RT_modes( mol ) )
-        w, e = numpy.linalg.eigh( Hw )
-        nneg = int( numpy.sum( w < - 1.e-6 * max( abs( w ).max(), 1.e-30 ) ) )
-        if( nneg == 0 ):
-            raise ValueError( "colvar_hts.initial_guess_ts: el Hessiano no tiene ningun autovalor negativo ( no es un TS )" )
-        dx = numpy.zeros( ( mol.natm, 3 ) )
-        dx[sele] = ( e[:,0] / numpy.sqrt( m ) ).reshape( ( len( sele ), 3 ) )      # desplazamiento cartesiano del modo
+        md = self.ts_mode( mol, hess, sele, project )
+        dx, nneg = md["dx"], md["nneg"]
         th, J, imet = self.get_info( mol )
         r  = J @ dx[self.indx].ravel()                                              # d theta por unidad de paso ponderado
         Mt = numpy.linalg.inv( imet )
@@ -172,8 +217,7 @@ class colvar_hts( qm3.engines.mmres.colvar_s ):
                 r = - r
         self.set_state( th, r, Mt )
         self.z0, self.n0 = self.z.copy(), self.n.copy()
-        wns = 1.0e11 / ( 2. * math.pi * qm3.data.C )
-        return( { "overlap": ov, "freq": - math.sqrt( abs( w[0] ) ) * wns, "nneg": nneg } )
+        return( { "overlap": ov, "freq": md["freq"], "nneg": nneg, "kmin": self.k_min( mol, md ) } )
 
     # ---------------------------------------------------------------- E/S
     def save( self, fname: str ):
@@ -204,6 +248,18 @@ class bias( object ):
     def __init__( self, hts: colvar_hts, kumb: float, dmax: typing.Optional[float] = None ):
         self.hts, self.kumb, self.dmax = hts, kumb, dmax
         self.sample = None
+        self.ncall = self.nwall = 0            # pasos totales y pasos con el muro activo ( d > dmax )
+        self.dsum = self.dmax_seen = 0.0
+
+    def wall_report( self ) -> tuple:
+        """ ( fraccion de pasos con el muro activo, <d>, max d ) desde la ultima llamada a reset_wall();
+            si la fraccion es grande ( > ~5% ) dmax esta sesgando el plano optimizado """
+        n = max( self.ncall, 1 )
+        return( ( self.nwall / n, self.dsum / n, self.dmax_seen ) )
+
+    def reset_wall( self ):
+        self.ncall = self.nwall = 0
+        self.dsum = self.dmax_seen = 0.0
 
     def _eval( self, mol: object ) -> tuple:
         h = self.hts
@@ -227,6 +283,11 @@ class bias( object ):
         e, g, q, d = self._eval( mol )
         mol.func += e
         mol.grad[self.hts.indx] += g.reshape( ( len( self.hts.indx ), 3 ) )
+        self.ncall += 1
+        self.dsum += d
+        self.dmax_seen = max( self.dmax_seen, d )
+        if( self.dmax is not None and d > self.dmax ):
+            self.nwall += 1
         return( ( e, q, d ) )
 
 
@@ -236,7 +297,7 @@ class optimizer( object ):
     cada 'nsync' pasos ( igual en todos los walkers ):                    opt.update( nsync * step_size )
     Con 'opar' ( client_fsi / client_mpi ) hay un walker por proceso y todos conservan el mismo
     hiperplano ( como metadyn.run_mw ); sin opar se promedia lo recogido localmente.
-    Todos los walkers deben partir del MISMO hiperplano inicial.
+    Todos los walkers deben partir del MISMO hiperplano inicial, mitad en reactivos, mitad en productos.
     """
     def __init__( self, hts: colvar_hts, kumb: float,
             temperature: typing.Optional[float] = 300.0,
@@ -244,8 +305,10 @@ class optimizer( object ):
             gamma_n: typing.Optional[float] = 2000.0,
             gamma_p: typing.Optional[float] = 1000.0,
             opar: typing.Optional[object] = None,
-            log_file: typing.Optional[typing.IO] = None ):
+            log_file: typing.Optional[typing.IO] = None,
+            walker_log: typing.Optional[typing.IO] = None ):
         self.hts, self.kumb, self.kT = hts, kumb, kT_int( temperature )
+        self.wlog = walker_log
         self.gz, self.gn, self.gp = gamma_z, gamma_n, gamma_p
         self.opar, self.log = opar, log_file
         self.time = self.tM = 0.0
@@ -259,6 +322,9 @@ class optimizer( object ):
         self.cnt = 0
         self.az, self.bn, self.pz = numpy.zeros( D ), numpy.zeros( D ), numpy.zeros( D )
         self.mt = numpy.zeros( ( D, D ) )
+        self.qs = self.ds = 0.0                 # diagnosticos LOCALES ( de este proceso ) desde el ultimo update
+        self.qx = self.dx = 0.0
+        self.ths = numpy.zeros( D )
 
     def start_storing( self, stride: typing.Optional[int] = 10 ):
         """ guarda ( d, Mt ) cada 'stride' pasos para importance(); llamar tras la convergencia """
@@ -273,6 +339,12 @@ class optimizer( object ):
         self.pz += dp                                                                  # eq. 19
         self.mt += s.Mt
         self.cnt += 1
+        if( self.wlog is not None ):
+            dl = s.theta - h.z
+            d  = math.sqrt( max( float( dl @ h.Minv @ dl ) - s.q * s.q, 0.0 ) )
+            self.qs += s.q; self.qx = max( self.qx, abs( s.q ) )
+            self.ds += d;   self.dx = max( self.dx, d )
+            self.ths += s.theta
         if( self.store and self.cnt % self.stride == 0 ):
             self.sth.append( s.theta.copy() )
             self.smt.append( s.Mt.copy() )
@@ -298,6 +370,17 @@ class optimizer( object ):
     def update( self, dt: float ):
         """ avanza el hiperplano dt [ps] """
         h = self.hts
+        if( self.wlog is not None and self.cnt > 0 ):          # promedios locales ANTES de la reduccion entre walkers
+            D = h.ncrd
+            row = [ self.time + dt, self.qs / self.cnt, self.qx, self.ds / self.cnt, self.dx,
+                    numpy.linalg.norm( self.az / self.cnt ), numpy.linalg.norm( self.bn / self.cnt ) ]
+            row += list( self.ths / self.cnt ) + list( h.z ) + list( h.n )
+            if( self.time == 0.0 ):
+                self.wlog.write( "#K %.8g kT %.8g\n"%( self.kumb, self.kT ) )
+                self.wlog.write( "#time  <q>  max|q|  <d>  max_d  |az|  |bn|  " + "  ".join( [ "theta%d"%( i ) for i in range( D ) ] +
+                    [ "z%d"%( i ) for i in range( D ) ] + [ "n%d"%( i ) for i in range( D ) ] ) + "\n" )
+            self.wlog.write( " ".join( "%.6g"%( x ) for x in row ) + "\n" )
+            self.wlog.flush()
         az, bn, pz, mt = self._reduce()
         z = h.z + dt * ( - az / self.gz + pz / self.gp )
         n = h.n + dt * bn / self.gn
@@ -314,6 +397,11 @@ class optimizer( object ):
             self.log.write( "%16.6lf%16.8lf%16.8lf\n"%( self.time, cz, cn ) )
             self.log.flush()
 
+    def save_history( self, fname: str ):
+        """ guarda opt.hist ( time, z, n, Cz, Cn ) para promediar a posteriori con final_from_files """
+        with open( fname, "wb" ) as f:
+            pickle.dump( self.hist, f )
+
     def final( self, t_conv: float ) -> tuple:
         """ promedios de z y n para t >= t_conv [eqs. 24, 25]; los aplica a hts """
         sel = [ i for i in self.hist if i[0] >= t_conv ]
@@ -323,22 +411,25 @@ class optimizer( object ):
                 numpy.mean( [ i[2] for i in sel ], axis = 0 ), self.hts.M )
         return( ( self.hts.z.copy(), self.hts.n.copy() ) )
 
-    def importance( self, kumb: typing.Optional[float] = None ) -> tuple:
+    def importance( self, kumb: typing.Optional[float] = None, return_ess: typing.Optional[bool] = False ) -> tuple:
         return( importance_analysis( self.hts, numpy.array( self.sth ), numpy.array( self.smt ),
-                self.kumb if kumb is None else kumb, self.kT ) )
+                self.kumb if kumb is None else kumb, self.kT, return_ess ) )
 
 
-def importance_analysis( hts: colvar_hts, theta: numpy.array, Mt: numpy.array, kumb: float, kT: float ) -> tuple:
+def importance_analysis( hts: colvar_hts, theta: numpy.array, Mt: numpy.array, kumb: float, kT: float,
+        return_ess: typing.Optional[bool] = False ) -> tuple:
     """
     kappa( q_-i ) / kappa( q ) al quitar cada distancia [eqs. 26 y B6]; ~1 irrelevante, << 1 esencial.
     theta ( S, D ), Mt ( S, D, D ): muestras CON el sesgo ( bias ) de constante kumb tras converger.
-    devuelve ( eq26, eqB6 )
+    devuelve ( eq26, eqB6 ); con return_ess = True, ( eq26, eqB6, ess ) donde ess[i] es el tamano efectivo de muestra
+    de los pesos exp( beta K / 2 ( q^2 - q_-i^2 ) ) de la CV i ( ess << numero de muestras: solape pobre, valor NO fiable;
+    el apendice B del articulo recomienda K pequena para este analisis )
     """
     D  = hts.ncrd
     dl = theta - hts.z
     q  = dl @ hts.u
     gn = numpy.sqrt( numpy.einsum( "i,sij,j->s", hts.u, Mt, hts.u ) )
-    r26, rB6 = numpy.zeros( D ), numpy.zeros( D )
+    r26, rB6, ess = numpy.zeros( D ), numpy.zeros( D ), numpy.zeros( D )
     for i in range( D ):
         v = hts.u.copy(); v[i] = 0.0
         ui = v / math.sqrt( float( v @ hts.M @ v ) )                    # M^-1 n_-i  [B3]
@@ -349,4 +440,29 @@ def importance_analysis( hts: colvar_hts, theta: numpy.array, Mt: numpy.array, k
         eb = numpy.exp( b - bm )
         r26[i] = gn.mean() * math.exp( - bm ) / ( gi * eb ).mean()
         rB6[i] = math.exp( - bm ) / eb.mean()
-    return( ( r26, rB6 ) )
+        ess[i] = float( eb.sum()**2 / numpy.sum( eb * eb ) )
+    return( ( r26, rB6, ess ) if return_ess else ( r26, rB6 ) )
+
+
+def final_from_files( hist_file: str, json_last: str, t_conv: float, json_out: str,
+        t_end: typing.Optional[float] = None ) -> tuple:
+    """
+    promedia z y n de la historia guardada ( optimizer.save_history ) en la ventana [ t_conv, t_end ] y escribe el
+    .json del hiperplano final, sin necesitar construir el sistema. json_last: cualquier .json guardado con hts.save
+    durante la optimizacion ( aporta M y los pares de atomos ). Permite elegir la ventana estacionaria DESPUES de
+    ver Cz / Cn ( no se debe promediar sobre una deriva ).
+    """
+    with open( hist_file, "rb" ) as f:
+        hist = pickle.load( f )
+    sel = [ h for h in hist if h[0] >= t_conv and ( t_end is None or h[0] <= t_end ) ]
+    if( not sel ):
+        raise ValueError( "final_from_files: no hay datos en la ventana pedida" )
+    with open( json_last, "rt" ) as f:
+        d = json.load( f )
+    M = numpy.array( d["M"], dtype = numpy.float64 )
+    z = numpy.mean( [ h[1] for h in sel ], axis = 0 )
+    n = numpy.mean( [ h[2] for h in sel ], axis = 0 )
+    n = n / math.sqrt( float( n @ numpy.linalg.inv( M ) @ n ) )
+    with open( json_out, "wt" ) as f:
+        json.dump( { "atom": d["atom"], "z": z.tolist(), "n": n.tolist(), "M": M.tolist() }, f, indent = 1 )
+    return( ( z, n, len( sel ), sel[0][0], sel[-1][0] ) )

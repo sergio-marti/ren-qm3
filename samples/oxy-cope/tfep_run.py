@@ -34,6 +34,7 @@ def _env( name: str, default ):
 
 
 NWIN        = 42          # windows ( string nodes )
+NWIN        = 7
 TEMP        = 300.0
 TRAIN_FRAC  = 0.5         # first part of every window -> training, the rest -> evaluation
 DEGREE      = _env( "DEGREE", 2 )           # polynomial degree in s of the conditioning
